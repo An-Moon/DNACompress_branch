@@ -3,16 +3,18 @@ from __future__ import annotations
 """Train or evaluate Nugget encoder-decoder models on DNACorpus.
 
 Examples:
-
+,
   # Train/evaluate a BART Nugget autoencoder.
   torchrun --nproc_per_node=1 scripts/run_nugget_experiment.py \
     --config configs/dna_nugget_modified.json \
     --seed 42 \
-    --gpu-ids 0 \
-    --init-from scratch \
+    --gpu-ids 1 \
+    --no-nugget-enabled \
+    --init-from pretrained \
+    --pretrained-weight-path outputs/dna_nugget_modified_decoder_warmup/best.pt \
     --nugget-bottleneck-layer-norm \
     --nugget-latent-mode flatten_bottleneck \
-    --nugget-flatten-bottleneck-dim 256 \
+    --nugget-flatten-bottleneck-dim 64 \
     --nugget-code-dim 64 \
     --mode all \
     --implementation nugget \
@@ -20,7 +22,7 @@ Examples:
     --nugget-tokenizer fixed_kmer \
     --token-merge-size 6 \
     --token-merge-alphabet ACGTN \
-    --nugget-ratio 0.75 \
+    --nugget-ratio 1 \
     --nugget-scorer-layer 3 \
     --nugget-residual-start 0 \
     --nugget-residual-end -1 \
@@ -39,7 +41,7 @@ Examples:
     --epochs 1 \
     --batch-size 32 \
     --eval-batch-size 32 \
-    --learning-rate 5e-5 \
+    --learning-rate 1e-4 \
     --weight-decay 0 \
     --lr-scheduler cosine \
     --lr-warmup-steps 500 \
@@ -53,7 +55,7 @@ Examples:
     --eval-interval 2000 \
     --print-config \
     --wandb-project dna-compress \
-    --wandb-name dna_nugget_bart_r0.75_flatten_d256
+    --wandb-name dna_bart_flatten_d64
 
   # Train a T5 Nugget autoencoder.
   python scripts/run_nugget_experiment.py \
@@ -190,6 +192,7 @@ def _apply_overrides(config: Any, args: argparse.Namespace) -> None:
     _apply_if_not_none(config, "model.pretrained_weight_scope", args.pretrained_weight_scope)
     _apply_if_not_none(config, "model.seq_length", args.seq_length)
     _apply_if_not_none(config, "model.nugget_backbone", args.nugget_backbone)
+    _apply_if_not_none(config, "model.nugget_enabled", args.nugget_enabled)
     _apply_if_not_none(config, "model.nugget_ratio", args.nugget_ratio)
     _apply_if_not_none(config, "model.nugget_value_ffn", args.nugget_value_ffn)
     _apply_if_not_none(config, "model.nugget_value_ffn_layer_norm", args.nugget_value_ffn_layer_norm)
@@ -245,6 +248,7 @@ def _apply_overrides(config: Any, args: argparse.Namespace) -> None:
     for field in (
         "run_name",
         "output_dir",
+        "tracking_backend",
         "wandb_project",
         "wandb_entity",
         "wandb_name",
@@ -294,6 +298,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     model_group.add_argument("--seq-length", type=int)
     model_group.add_argument("--nugget-backbone", choices=list(NUGGET_BACKBONES))
+    model_group.add_argument("--nugget-enabled", action=argparse.BooleanOptionalAction, default=None)
     model_group.add_argument("--nugget-ratio", type=float)
     model_group.add_argument("--nugget-value-ffn", action=argparse.BooleanOptionalAction)
     model_group.add_argument("--nugget-value-ffn-layer-norm", action=argparse.BooleanOptionalAction)
@@ -351,6 +356,11 @@ def _build_parser() -> argparse.ArgumentParser:
     output_group = parser.add_argument_group("output overrides")
     output_group.add_argument("--run-name")
     output_group.add_argument("--output-dir")
+    output_group.add_argument(
+        "--tracking-backend",
+        choices=["swanlab", "wandb", "both"],
+        help="Experiment tracking backend. Reuses the wandb_* project/name fields for compatibility.",
+    )
     output_group.add_argument("--wandb-project")
     output_group.add_argument("--wandb-entity")
     output_group.add_argument("--wandb-name")

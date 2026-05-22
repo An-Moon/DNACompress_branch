@@ -18,7 +18,7 @@ Run the full DNACorpus reproduction one group at a time:
         --mode all \
         --run prokaryotic_dnacorpus
 
-    python scripts/run_gencoder_experiment.py \
+    CUDA_VISIBLE_DEVICES=1 python scripts/run_gencoder_experiment.py \
         --config configs/dna_gencoder_dnacorpus.json \
         --mode all \
         --run hosa_learning_curve
@@ -30,8 +30,8 @@ Train first, then compress later from the saved checkpoint:
         --mode train \
         --run eukaryotic_dnacorpus
 
-    python scripts\\run_gencoder_experiment.py \
-        --config configs\\dna_gencoder_dnacorpus.json \
+    python scripts/run_gencoder_experiment.py \
+        --config configs/dna_gencoder_dnacorpus.json \
         --mode compress \
         --run hosa_learning_curve
 

@@ -185,7 +185,29 @@ def init_wandb_run(config: ExperimentConfig, output_dir: Path) -> Any | None:
         return None
 
     if not config.output.wandb_project:
-        raise ValueError("W&B is enabled but output.wandb_project is empty.")
+        raise ValueError("Experiment tracking is enabled but output.wandb_project is empty.")
+
+    tracking_backend = getattr(config.output, "tracking_backend", "swanlab")
+    if tracking_backend not in {"swanlab", "wandb", "both"}:
+        raise ValueError("output.tracking_backend must be one of: swanlab, wandb, both")
+
+    swanlab_mode = {
+        "online": "cloud",
+        "offline": "local",
+        "disabled": "disabled",
+    }.get(config.output.wandb_mode, config.output.wandb_mode)
+
+    if tracking_backend in {"swanlab", "both"}:
+        try:
+            import swanlab
+        except ImportError as error:
+            raise ImportError("SwanLab realtime logging requires swanlab. Install with: pip install swanlab") from error
+
+        swanlab.sync_wandb(
+            mode=swanlab_mode,
+            wandb_run=tracking_backend == "both",
+            logdir=str(output_dir / "swanlog"),
+        )
 
     try:
         import wandb
@@ -203,7 +225,7 @@ def init_wandb_run(config: ExperimentConfig, output_dir: Path) -> Any | None:
         name=run_name,
         group=group,
         tags=tags,
-        mode=config.output.wandb_mode,
+        mode="offline" if tracking_backend == "swanlab" else config.output.wandb_mode,
         job_type="train",
         dir=str(output_dir),
         config=config.to_dict(),

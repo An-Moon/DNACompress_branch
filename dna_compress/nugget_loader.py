@@ -256,7 +256,7 @@ class NuggetAutoencoder(torch.nn.Module):
     def __init__(
         self,
         *,
-        scorer: torch.nn.Module,
+        scorer: torch.nn.Module | None,
         encoder: torch.nn.Module,
         decoder: torch.nn.Module,
         vocab_size: int,
@@ -277,7 +277,9 @@ class NuggetAutoencoder(torch.nn.Module):
             raise ValueError("flatten_max_nuggets must be > 0")
         if flatten_bottleneck_dim <= 0:
             raise ValueError("flatten_bottleneck_dim must be > 0")
-        self.scorer = scorer
+        self.nugget_enabled = scorer is not None
+        if scorer is not None:
+            self.scorer = scorer
         self.encoder = encoder
         self.decoder = decoder
         self.vocab_size = int(vocab_size)
@@ -380,6 +382,15 @@ class NuggetAutoencoder(torch.nn.Module):
 
     def encode_nuggets(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         encoder_out = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
+        if not self.nugget_enabled:
+            return SimpleNamespace(
+                encoding=encoder_out.last_hidden_state,
+                mask=attention_mask,
+                scores=None,
+                index=None,
+                all_scores=None,
+                index_in_batch=None,
+            )
         return self.scorer(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -395,6 +406,13 @@ class NuggetAutoencoder(torch.nn.Module):
         labels: torch.Tensor,
         decoder_attention_mask: torch.Tensor,
     ):
+        if not self.nugget_enabled:
+            return self.decoder(
+                encoder_outputs=[nugget_encoding],
+                attention_mask=nugget_mask,
+                labels=labels,
+                decoder_attention_mask=decoder_attention_mask,
+            )
         score_payload = SimpleNamespace(scores=nugget_scores)
         with self.scorer.score_context(score_payload):
             return self.decoder(
@@ -437,28 +455,48 @@ class NuggetAutoencoder(torch.nn.Module):
         )
 
 
-def build_nugget_model(model_config: ModelConfig, tokenizer_spec: NuggetTokenizerSpec) -> tuple[NuggetAutoencoder, NuggetBackboneSpec]:
-    validate_transformers_for_nugget()
-    ensure_nugget_repo_on_path()
-    from nugget import nuggify
+def _isolate_encoder_for_plain_seq2seq(base_model, backbone: str):
+    """Mirror the encoder isolation done by ``nuggify`` adaptors so that
+    state-dict keys match between nugget-enabled and nugget-disabled models.
+    """
+    if backbone in {"bart", "mbart"}:
+        encoder = base_model.model.encoder
+        base_model.model.encoder = None
+        return encoder, base_model
+    if backbone == "t5":
+        encoder = base_model.encoder
+        base_model.encoder = None
+        return encoder, base_model
+    raise ValueError(f"Unsupported backbone for plain seq2seq isolation: {backbone}")
 
+
+def build_nugget_model(model_config: ModelConfig, tokenizer_spec: NuggetTokenizerSpec) -> tuple[NuggetAutoencoder, NuggetBackboneSpec]:
     backbone_spec = _resolve_backbone_spec(model_config, tokenizer_spec)
     flatten_max_nuggets = max(1, math.ceil(model_config.seq_length * model_config.nugget_ratio))
-    base_model = _build_hf_seq2seq_model(backbone_spec, model_config.seq_length)
-    scorer, encoder, decoder, _ = nuggify(
-        base_model,
-        scorer_layer=model_config.nugget_scorer_layer,
-        residual_start=model_config.nugget_residual_start,
-        residual_end=model_config.nugget_residual_end,
-        value_ffn=model_config.nugget_value_ffn,
-        straight_through=model_config.nugget_straight_through,
-        ratio=model_config.nugget_ratio,
-    )
-    if model_config.nugget_value_ffn_layer_norm and getattr(scorer, "value_ffn", None) is not None:
-        scorer.value_ffn = torch.nn.Sequential(
-            scorer.value_ffn,
-            torch.nn.LayerNorm(backbone_spec.d_model),
+    if model_config.nugget_enabled:
+        validate_transformers_for_nugget()
+        ensure_nugget_repo_on_path()
+        from nugget import nuggify
+
+        base_model = _build_hf_seq2seq_model(backbone_spec, model_config.seq_length)
+        scorer, encoder, decoder, _ = nuggify(
+            base_model,
+            scorer_layer=model_config.nugget_scorer_layer,
+            residual_start=model_config.nugget_residual_start,
+            residual_end=model_config.nugget_residual_end,
+            value_ffn=model_config.nugget_value_ffn,
+            straight_through=model_config.nugget_straight_through,
+            ratio=model_config.nugget_ratio,
         )
+        if model_config.nugget_value_ffn_layer_norm and getattr(scorer, "value_ffn", None) is not None:
+            scorer.value_ffn = torch.nn.Sequential(
+                scorer.value_ffn,
+                torch.nn.LayerNorm(backbone_spec.d_model),
+            )
+    else:
+        base_model = _build_hf_seq2seq_model(backbone_spec, model_config.seq_length)
+        encoder, decoder = _isolate_encoder_for_plain_seq2seq(base_model, backbone_spec.backbone)
+        scorer = None
     return (
         NuggetAutoencoder(
             scorer=scorer,

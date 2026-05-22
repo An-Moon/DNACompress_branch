@@ -207,6 +207,7 @@ def _apply_overrides(config: Any, args: argparse.Namespace) -> None:
     _apply_if_not_none(config, "train.log_interval", args.log_interval)
     _apply_if_not_none(config, "train.eval_interval", args.eval_interval)
     _apply_if_not_none(config, "output.output_dir", args.output_dir)
+    _apply_if_not_none(config, "output.tracking_backend", args.tracking_backend)
     _apply_if_not_none(config, "output.wandb_project", args.wandb_project)
     _apply_if_not_none(config, "output.wandb_name", args.wandb_name)
     _apply_if_not_none(config, "arithmetic.coding_mode", args.arithmetic_coding_mode)
@@ -272,6 +273,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--log-interval", type=int, default=None)
     parser.add_argument("--eval-interval", type=int, default=None)
     parser.add_argument("--output-dir", default=None)
+    parser.add_argument(
+        "--tracking-backend",
+        choices=["swanlab", "wandb", "both"],
+        default=None,
+        help="Experiment tracking backend. Reuses the wandb_* project/name fields for compatibility.",
+    )
     parser.add_argument("--wandb-project", default=None)
     parser.add_argument("--wandb-name", default=None)
     parser.add_argument("--arithmetic-coding-mode", choices=["model_symbol", "fixed_token_units"], default=None)
