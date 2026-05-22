@@ -63,14 +63,15 @@ def validate_nugget_config(config: ExperimentConfig) -> None:
         raise ValueError("model.nugget_code_dim must be > 0.")
     if config.model.nugget_flatten_bottleneck_dim <= 0:
         raise ValueError("model.nugget_flatten_bottleneck_dim must be > 0.")
-    if config.model.nugget_scorer_layer <= 0:
-        raise ValueError("model.nugget_scorer_layer must be >= 1.")
-    if config.model.nugget_backbone in {"bart", "mbart"}:
-        encoder_layers = config.model.nugget_bart_encoder_layers
-        if encoder_layers is not None and config.model.nugget_scorer_layer > encoder_layers:
-            raise ValueError("model.nugget_scorer_layer must be <= model.nugget_bart_encoder_layers.")
-    if config.model.nugget_backbone == "t5" and config.model.nugget_scorer_layer > config.model.nugget_t5_num_layers:
-        raise ValueError("model.nugget_scorer_layer must be <= model.nugget_t5_num_layers.")
+    if config.model.nugget_enabled:
+        if config.model.nugget_scorer_layer <= 0:
+            raise ValueError("model.nugget_scorer_layer must be >= 1.")
+        if config.model.nugget_backbone in {"bart", "mbart"}:
+            encoder_layers = config.model.nugget_bart_encoder_layers
+            if encoder_layers is not None and config.model.nugget_scorer_layer > encoder_layers:
+                raise ValueError("model.nugget_scorer_layer must be <= model.nugget_bart_encoder_layers.")
+        if config.model.nugget_backbone == "t5" and config.model.nugget_scorer_layer > config.model.nugget_t5_num_layers:
+            raise ValueError("model.nugget_scorer_layer must be <= model.nugget_t5_num_layers.")
     validate_nugget_hidden_policy(config.model.nugget_hidden_mode, config.model.nugget_hidden_storage_dtype)
     if config.train.dtype not in {"float32", "float16", "bfloat16"}:
         raise ValueError("train.dtype must be one of: float32, float16, bfloat16")
@@ -604,6 +605,7 @@ def run_nugget_experiment(config: ExperimentConfig, mode: str = "all") -> dict[s
             "dataset": splits.summary,
             "nugget": {
                 "backbone": backbone_spec.backbone,
+                "enabled": config.model.nugget_enabled,
                 "tokenizer": tokenizer_spec.name,
                 "vocab_size": tokenizer_spec.vocab_size,
                 "pad_id": tokenizer_spec.pad_id,

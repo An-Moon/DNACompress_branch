@@ -1,17 +1,17 @@
 {
   "seq_length": 18096,
   "bottleneck_dim": 603,
-  "checkpoint_path": "outputs\\dna_gencoder_dnacorpus\\hosa_learning_curve\\best.pt",
+  "checkpoint_path": "outputs/dna_gencoder_dnacorpus/hosa_learning_curve/best.pt",
   "compression": {
     "aggregate": {
       "source_count": 1,
       "total_sample_bases": 189752667,
-      "total_paper_compressed_bytes": 233870124,
-      "total_compression_ratio": 1.2324997993308837,
-      "total_bits_per_base": 9.85999839464707,
-      "checkpoint_bytes": 5591577253,
-      "size_including_model_bytes": 5825447377,
-      "size_including_model_ratio": 30.700213436262267,
+      "total_paper_compressed_bytes": 431720718,
+      "total_compression_ratio": 2.2751760216366286,
+      "total_bits_per_base": 18.20140817309303,
+      "checkpoint_bytes": 621441282,
+      "size_including_model_bytes": 1053162000,
+      "size_including_model_ratio": 5.550182859880436,
       "all_exact_reconstruction": true
     },
     "per_source": [
@@ -28,19 +28,19 @@
           10486,
           603
         ],
-        "residual_nonzeros": 35045722,
-        "residual_density": 0.1846896552567332,
-        "csr_residual_bytes": 210317290,
-        "fpzip_latent_bytes": 23552834,
-        "paper_compressed_bytes": 233870124,
-        "compression_ratio": 1.2324997993308837,
-        "bits_per_base": 9.85999839464707,
+        "residual_nonzeros": 67937820,
+        "residual_density": 0.35802979190139084,
+        "csr_residual_bytes": 407669878,
+        "fpzip_latent_bytes": 24050840,
+        "paper_compressed_bytes": 431720718,
+        "compression_ratio": 2.2751760216366286,
+        "bits_per_base": 18.20140817309303,
         "side_info_bytes": 0,
         "header_huffman_bytes": 0,
-        "compression_seconds": 1001.8622713000004,
-        "decompression_seconds": 423.0537970999976,
+        "compression_seconds": 19.475566458015237,
+        "decompression_seconds": 3.446311223000521,
         "exact_reconstruction": true,
-        "artifact_dir": "outputs\\dna_gencoder_dnacorpus\\hosa_learning_curve\\artifacts\\hosa_learning_curve\\HoSa"
+        "artifact_dir": "outputs/dna_gencoder_dnacorpus/hosa_learning_curve/artifacts/hosa_learning_curve/HoSa"
       }
     ]
   }

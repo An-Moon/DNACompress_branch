@@ -187,6 +187,7 @@ def _apply_overrides(config: Any, args: argparse.Namespace) -> None:
 
     _apply_if_not_none(config, "output.run_name", args.run_name)
     _apply_if_not_none(config, "output.output_dir", args.output_dir)
+    _apply_if_not_none(config, "output.tracking_backend", args.tracking_backend)
     _apply_if_not_none(config, "output.wandb_project", args.wandb_project)
     _apply_if_not_none(config, "output.wandb_entity", args.wandb_entity)
     _apply_if_not_none(config, "output.wandb_name", args.wandb_name)
@@ -276,6 +277,11 @@ def _build_parser() -> argparse.ArgumentParser:
     output_group = parser.add_argument_group("output overrides")
     output_group.add_argument("--run-name")
     output_group.add_argument("--output-dir")
+    output_group.add_argument(
+        "--tracking-backend",
+        choices=["swanlab", "wandb", "both"],
+        help="Experiment tracking backend. Reuses the wandb_* project/name fields for compatibility.",
+    )
     output_group.add_argument("--wandb-project", help="Enable realtime W&B logging and set project name.")
     output_group.add_argument("--wandb-entity", help="Optional W&B entity/team.")
     output_group.add_argument("--wandb-name", help="Optional W&B run name.")

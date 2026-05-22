@@ -13,12 +13,16 @@ env/
 # Python cache / bytecode
 *.py[cod]
 __pycache__/
+*.egg-info/
 
 **/*.pt
 **/*.npz
 **/*.fpzip
 **/__pycache__/
 **/__pycache__/**
+
+# Local model checkpoints and Hugging Face download cache
+third_party/megaDNA/checkpoints/
 
 # Generated GenCoder artifacts / temporary PDF page renders
 tmp_gencoder_pages/

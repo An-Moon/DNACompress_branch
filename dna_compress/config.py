@@ -27,6 +27,7 @@ class ModelConfig:
     initializer_range: float = 0.02
     pad_id: int = 257
     eos_id: int = 258
+    nugget_enabled: bool = True
     nugget_backbone: str = "bart"
     nugget_bart_config_path: str = "configs/hf/facebook_bart_base_config.json"
     nugget_bart_d_model: int | None = None
@@ -126,6 +127,7 @@ class TrainConfig:
 class OutputConfig:
     run_name: str = "dna_megabyte_quick"
     output_dir: str = "outputs/dna_megabyte_quick"
+    tracking_backend: str = "wandb"
     wandb_enabled: bool = False
     wandb_project: str = ""
     wandb_entity: str = ""
