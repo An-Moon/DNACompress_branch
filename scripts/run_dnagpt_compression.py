@@ -7,8 +7,8 @@ Example: evaluate official DNAGPT 0.1B multi-organism weights on HoSa test split
     python scripts/run_dnagpt_compression.py \
       --split train val test \
       --eval-batch-size 10 \
-      --config configs/dna_dnagpt_h_quick.json \
-      --weight third_party/DNAGPT/checkpoints/dna_gpt0.1b_h.pth \
+      --config configs/dna_dnagpt_quick.json \
+      --weight outputs/dna_dnagpt_0p1bm_all_finetuned_1/last.pt \
       --compression-modes windows_nonoverlap \
       --compression-sample-bytes 60000 \
       --train-ratio 0.6 \
@@ -20,8 +20,6 @@ Example: evaluate official DNAGPT 0.1B multi-organism weights on HoSa test split
       --output-dir outputs/dna_dnagpt_0p1bh_all \
       --output-json outputs/dna_dnagpt_0p1bh_all/compression_compare.json \
       --export-out-dir outputs/dna_dnagpt_0p1bh_all/statistics 
-      
-      --device cuda:2 \
       
     python scripts/run_dnagpt_compression.py \
       --split train val test \
