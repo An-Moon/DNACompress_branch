@@ -1,7 +1,7 @@
 {
   "device": "cuda:1",
   "base_weight": "/home/Liang_junnan/DNACompress/third_party/megaDNA/checkpoints/megaDNA_phage_145M.pt",
-  "loaded_checkpoint": null,
+  "loaded_checkpoint": "outputs/megadna_145m_all_20260522_154950/best.pt",
   "model_parameters": 145559182,
   "non_acgt_policy": "filter",
   "encoding": {

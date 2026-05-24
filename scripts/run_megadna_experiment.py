@@ -33,6 +33,8 @@ Examples:
       --sequence-source-mode auto \
       --multi-sequence-mode separate \
       --species OrSa HoSa DaRe ScPo EsCo YeMi BuEb AgPh GaGa DrMe EnIn PlFa HePy AeCa HaHi AnCa WaMe \
+      --checkpoint outputs/megadna_145m_all_20260522_154950/best.pt \
+      --init-from resume \
       --seq-length 131072 \
       --print-config \
       --batch-size 2 \
@@ -56,17 +58,16 @@ Examples:
       --run-name megadna_145m_all \
       --output-dir outputs/megadna_145m_all \
       --wandb-project dna-compress \
-      --wandb-name megadna_145m_all 
+      --wandb-name megadna_145m_all_resume
 
     # Resume from this script's checkpoint.
     python scripts/run_megadna_experiment.py \
-      --mode train \
-      --checkpoint outputs/megadna_hosa/last.pt \
+      --mode all \
+      --checkpoint outputs/megadna_145m_all_20260522_154950/best.pt \
       --init-from resume \
-      --output-dir outputs/megadna_hosa \
+      --device cuda:1 \
       --wandb-project dna-compress \
-      --wandb-name megadna_hosa_resume \
-      --no-timestamp-output
+      --wandb-name megadna_145m_all_resume 
 
 Optional generic overrides (repeatable):
 

@@ -110,7 +110,7 @@
     "seed": 42,
     "device": "cuda:1",
     "dtype": "bfloat16",
-    "init_from": "pretrained",
+    "init_from": "resume",
     "epochs": 1,
     "batch_size": 2,
     "eval_batch_size": 2,
@@ -130,11 +130,12 @@
   },
   "output": {
     "run_name": "megadna_145m_all",
-    "output_dir": "outputs/megadna_145m_all_20260522_154950",
+    "output_dir": "outputs/megadna_145m_all",
+    "tracking_backend": "wandb",
     "wandb_enabled": true,
     "wandb_project": "dna-compress",
     "wandb_entity": "",
-    "wandb_name": "megadna_145m_all",
+    "wandb_name": "megadna_145m_all_resume",
     "wandb_group": "",
     "wandb_tags": [],
     "wandb_mode": "online"
