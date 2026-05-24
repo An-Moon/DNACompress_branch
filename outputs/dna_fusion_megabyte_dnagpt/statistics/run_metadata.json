@@ -1,0 +1,10 @@
+{
+  "project": "dna-compress",
+  "entity": "",
+  "name": "dna_fusion_megabyte_dnagpt",
+  "run_dir": "outputs/dna_fusion_megabyte_dnagpt",
+  "has_resolved_config": false,
+  "has_metrics_json": false,
+  "has_compression_compare_json": true,
+  "compression_json": "outputs/dna_fusion_megabyte_dnagpt/statistics/compression_compare.json"
+}

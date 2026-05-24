@@ -1,0 +1,1750 @@
+species,geco2_level,input_bytes,compressed_bytes,compressed_bits_per_base,paper_compressed_bytes,paper_bits_per_base,delta_bytes_vs_paper,relative_error_vs_paper,elapsed_seconds,geco2_command,geco2_returncode,geco2_stderr_tail
+HoSa,12,189752667,38845642,1.6377379085796986,38845642,1.6377379085796986,0,0.0,180.0053821951151,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""12"", ""/tmp/geco2_paper_fbud_m0y/HoSa""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.850
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 9
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 5:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 6:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 7:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 20
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 3
+  [+] Substitutions alpha den ...... 10
+  [+] Substitutions gamma .......... 0.900
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_fbud_m0y/HoSa
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+GaGa,11,148532294,33877671,1.8246629113531365,33877671,1.8246629113531365,0,0.0,132.27518451958895,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""11"", ""/tmp/geco2_paper_dm90vnej/GaGa""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.910
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 1
+  [+] Substitutions alpha den ...... 20
+  [+] Substitutions gamma .......... 0.940
+Target model 4:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 15
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 3
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_dm90vnej/GaGa
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+DaRe,10,62565020,11488819,1.469040559724907,11488819,1.469040559724907,0,0.0,56.14723801612854,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""10"", ""/tmp/geco2_paper_p1hq3d0j/DaRe""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 9
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 5:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 6:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 7:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 8
+  [+] Gamma ........................ 0.890
+  [+] Allowable substitutions ...... 5
+  [+] Substitutions alpha den ...... 10
+  [+] Substitutions gamma .......... 0.900
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_p1hq3d0j/DaRe
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+OrSa,10,43262523,8646543,1.5988975955008449,8646543,1.5988975955008449,0,0.0,45.08336975425482,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""10"", ""/tmp/geco2_paper_shbkhm_u/OrSa""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 9
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 5:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 6:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 7:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 8
+  [+] Gamma ........................ 0.890
+  [+] Allowable substitutions ...... 5
+  [+] Substitutions alpha den ...... 10
+  [+] Substitutions gamma .......... 0.900
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_shbkhm_u/OrSa
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+DrMe,10,32181429,7481093,1.8597292245785606,7481093,1.8597292245785606,0,0.0,35.642278991639614,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""10"", ""/tmp/geco2_paper_amf62p2w/DrMe""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 9
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 5:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 6:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 7:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 8
+  [+] Gamma ........................ 0.890
+  [+] Allowable substitutions ...... 5
+  [+] Substitutions alpha den ...... 10
+  [+] Substitutions gamma .......... 0.900
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_amf62p2w/DrMe
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+EnIn,9,26403087,5170889,1.5667528573458096,5170889,1.5667528573458096,0,0.0,28.40802250802517,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""9"", ""/tmp/geco2_paper_vef47fh8/EnIn""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.910
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 1
+  [+] Substitutions alpha den ...... 20
+  [+] Substitutions gamma .......... 0.940
+Target model 4:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 8
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 3
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_vef47fh8/EnIn
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+ScPo,8,10652155,2518963,1.8917959793112287,2518963,1.8917959793112287,0,0.0,15.08385405689478,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""8"", ""/tmp/geco2_paper_ncveapc_/ScPo""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.800
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 1
+  [+] Substitutions alpha den ...... 20
+  [+] Substitutions gamma .......... 0.940
+Target model 4:
+  [+] Context order ................ 16
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 5
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 3
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_ncveapc_/ScPo
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+PlFa,7,8986712,1925726,1.7142874946921633,1925726,1.7142874946921633,0,0.0,10.173412948846817,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""7"", ""/tmp/geco2_paper_zyl3adgc/PlFa""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.790
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 8
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.910
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.940
+  [+] Allowable substitutions ...... 1
+  [+] Substitutions alpha den ...... 20
+  [+] Substitutions gamma .......... 0.940
+Target model 5:
+  [+] Context order ................ 16
+  [+] Alpha denominator ............ 200
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 5
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 4
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_zyl3adgc/PlFa
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+EsCo,6,4641652,1098552,1.893381063466197,1098552,1.893381063466197,0,0.0,2.357702113687992,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""6"", ""/tmp/geco2_paper_3v4zbyns/EsCo""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.880
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.760
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_3v4zbyns/EsCo
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+HaHi,5,3890005,902831,1.8567194643708684,902831,1.8567194643708684,0,0.0,1.6458685025572777,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""5"", ""/tmp/geco2_paper_gdicm07j/HaHi""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.720
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_gdicm07j/HaHi
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+AeCa,5,1591049,380115,1.9112673462602345,380115,1.9112673462602345,0,0.0,0.872686855494976,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""5"", ""/tmp/geco2_paper_2zc4bmr6/AeCa""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.720
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_2zc4bmr6/AeCa
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+HePy,4,1667825,375481,1.801057065339589,375481,1.801057065339589,0,0.0,0.8727832809090614,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""4"", ""/tmp/geco2_paper_bc2vwelh/HePy""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.800
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.840
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.940
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_bc2vwelh/HePy
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+"
+YeMi,3,73689,16798,1.8236643189621247,16798,1.8236643189621247,0,0.0,0.12836403399705887,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""3"", ""/tmp/geco2_paper_41zjvysm/YeMi""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.800
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.840
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 12
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.940
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_41zjvysm/YeMi
+"
+AgPh,2,43970,10708,1.94823743461451,10708,1.94823743461451,0,0.0,0.0387580469250679,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""2"", ""/tmp/geco2_paper_lcxq11vc/AgPh""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 2
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.780
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.780
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 80
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.960
+  [+] Allowable substitutions ...... 0
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_lcxq11vc/AgPh
+"
+BuEb,1,18940,4686,1.9793030623020063,4686,1.9793030623020063,0,0.0,0.08309905976057053,"[""/usr/local/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""1"", ""/tmp/geco2_paper_dqi3d5zi/BuEb""]",0,"Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.700
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 12
+  [+] Alpha denominator ............ 20
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.970
+  [+] Allowable substitutions ...... 0
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_paper_dqi3d5zi/BuEb
+"
