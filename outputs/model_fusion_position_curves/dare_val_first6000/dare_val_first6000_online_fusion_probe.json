@@ -1,0 +1,106 @@
+{
+  "megabyte_mean_bpb": 1.879847592620179,
+  "dnagpt_mean_bpb": 1.8623721399936604,
+  "oracle_min_mean_bpb": 1.7341673969146878,
+  "oracle_gain_vs_best_single_bpb": 0.12820474307897256,
+  "trailing_hard_winrate": {
+    "16": {
+      "mean_bpb": 1.8697831073262885,
+      "megabyte_choice_fraction": 0.387
+    },
+    "32": {
+      "mean_bpb": 1.869080817234594,
+      "megabyte_choice_fraction": 0.38966666666666666
+    },
+    "64": {
+      "mean_bpb": 1.8678553153227802,
+      "megabyte_choice_fraction": 0.40066666666666667
+    },
+    "128": {
+      "mean_bpb": 1.866557090027718,
+      "megabyte_choice_fraction": 0.426
+    },
+    "256": {
+      "mean_bpb": 1.864979609200988,
+      "megabyte_choice_fraction": 0.4405
+    },
+    "512": {
+      "mean_bpb": 1.865464871088178,
+      "megabyte_choice_fraction": 0.41783333333333333
+    }
+  },
+  "trailing_hard_score": {
+    "16": {
+      "mean_bpb": 1.8688182279736372,
+      "megabyte_choice_fraction": 0.419
+    },
+    "32": {
+      "mean_bpb": 1.8684195149272567,
+      "megabyte_choice_fraction": 0.38033333333333336
+    },
+    "64": {
+      "mean_bpb": 1.8656959882335695,
+      "megabyte_choice_fraction": 0.362
+    },
+    "128": {
+      "mean_bpb": 1.8635247214361537,
+      "megabyte_choice_fraction": 0.3475
+    },
+    "256": {
+      "mean_bpb": 1.8645929718462815,
+      "megabyte_choice_fraction": 0.2861666666666667
+    },
+    "512": {
+      "mean_bpb": 1.8638312083898794,
+      "megabyte_choice_fraction": 0.1985
+    }
+  },
+  "ewma_score": {
+    "0.005": {
+      "mean_bpb": 1.8618836659289233,
+      "megabyte_choice_fraction": 0.293
+    },
+    "0.01": {
+      "mean_bpb": 1.861723123136277,
+      "megabyte_choice_fraction": 0.3155
+    },
+    "0.02": {
+      "mean_bpb": 1.8628354013297876,
+      "megabyte_choice_fraction": 0.3396666666666667
+    },
+    "0.05": {
+      "mean_bpb": 1.8651067181953747,
+      "megabyte_choice_fraction": 0.39016666666666666
+    },
+    "0.1": {
+      "mean_bpb": 1.8660474359918646,
+      "megabyte_choice_fraction": 0.4155
+    }
+  },
+  "hedge_mixture": {
+    "0.05": {
+      "mean_bpb": 1.8593748602835576,
+      "mean_megabyte_weight": 0.1947112125786764
+    },
+    "0.1": {
+      "mean_bpb": 1.8613179407319558,
+      "mean_megabyte_weight": 0.11918227157716696
+    },
+    "0.2": {
+      "mean_bpb": 1.8619393001053113,
+      "mean_megabyte_weight": 0.0780106005376991
+    },
+    "0.5": {
+      "mean_bpb": 1.8623245837659448,
+      "mean_megabyte_weight": 0.0431490468673725
+    },
+    "1.0": {
+      "mean_bpb": 1.862538806660327,
+      "mean_megabyte_weight": 0.02665020500258643
+    },
+    "2.0": {
+      "mean_bpb": 1.8627905985760713,
+      "mean_megabyte_weight": 0.015752457768736117
+    }
+  }
+}

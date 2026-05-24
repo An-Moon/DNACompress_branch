@@ -11,6 +11,7 @@ import torch
 
 from dna_compress.compression_eval import NON_OVERLAP_MODE, OVERLAP_MODE, SLIDING_TOKEN_MODE, compress_source
 from dna_compress.config import ExperimentConfig
+from dna_compress.fast_arithmetic import load_fast_arithmetic_extension
 from dna_compress.fixed_token_factorization import (
     build_fixed_token_arithmetic_factorizer,
     factorize_fixed_token_log_probs,
@@ -182,6 +183,38 @@ class MegabyteFactorizationTests(unittest.TestCase):
         self.assertLess(
             int(factorized["arithmetic_vocab_size"]),
             int(model_symbol["arithmetic_vocab_size"]),
+        )
+
+    def test_compress_source_can_use_fast_cpp_backend(self) -> None:
+        try:
+            load_fast_arithmetic_extension()
+        except Exception as error:
+            self.skipTest(f"fast arithmetic extension is unavailable: {error}")
+
+        model = _FakeMegabyteModel(self.regular_vocab_size + 2)
+        metrics = compress_source(
+            model=model,
+            source=b"ACGTNACGTACG",
+            seq_length=4,
+            pad_id=self.pad_id,
+            eos_id=self.eos_id,
+            device=torch.device("cpu"),
+            dtype_name="float32",
+            batch_size=2,
+            requested_bytes=None,
+            mode=NON_OVERLAP_MODE,
+            token_merge_size=self.model_merge_size,
+            token_merge_alphabet=self.alphabet,
+            arithmetic_coding_mode="model_symbol",
+            arithmetic_backend="fast_cpp",
+        )
+
+        self.assertEqual(metrics["arithmetic_backend"], "fast_cpp")
+        self.assertGreater(float(metrics["arithmetic_quantize_seconds"]), 0.0)
+        self.assertGreater(float(metrics["arithmetic_range_seconds"]), 0.0)
+        self.assertEqual(
+            int(metrics["emitted_arithmetic_symbol_count"]),
+            int(metrics["sample_symbols_with_eos"]),
         )
 
     def test_position_bits_profile_tracks_nonoverlap_base_positions(self) -> None:

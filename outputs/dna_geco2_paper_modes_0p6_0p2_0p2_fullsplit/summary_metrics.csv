@@ -1,0 +1,22 @@
+metric,value
+geco2_baseline.binary,/home/Liang_junnan/miniconda3/bin/GeCo2
+geco2_baseline.compression_sample_bytes,0
+geco2_baseline.fallback_level,5
+geco2_baseline.level,paper_modes
+geco2_baseline.mode,geco2_paper_modes
+geco2_baseline.splits,"[""train"", ""val"", ""test""]"
+compression_compare.train.geco2_paper_modes.total_theoretical_bits_per_base,1.6908215758228913
+compression_compare.train.geco2_paper_modes.total_arithmetic_bits_per_base,1.6908215758228913
+compression_compare.train.geco2_paper_modes.total_sample_bases,411358271
+compression_compare.train.geco2_paper_modes.total_arithmetic_coded_bytes,86941680
+compression_compare.train.geco2_paper_modes.total_compression_bases_per_second,1188880.0665282253
+compression_compare.val.geco2_paper_modes.total_theoretical_bits_per_base,1.7319930446904825
+compression_compare.val.geco2_paper_modes.total_arithmetic_bits_per_base,1.7319930446904825
+compression_compare.val.geco2_paper_modes.total_sample_bases,137119419
+compression_compare.val.geco2_paper_modes.total_arithmetic_coded_bytes,29686235
+compression_compare.val.geco2_paper_modes.total_compression_bases_per_second,1058496.3658179601
+compression_compare.test.geco2_paper_modes.total_theoretical_bits_per_base,1.7252364679393295
+compression_compare.test.geco2_paper_modes.total_arithmetic_bits_per_base,1.7252364679393295
+compression_compare.test.geco2_paper_modes.total_sample_bases,137119434
+compression_compare.test.geco2_paper_modes.total_arithmetic_coded_bytes,29570431
+compression_compare.test.geco2_paper_modes.total_compression_bases_per_second,1050859.9809195907

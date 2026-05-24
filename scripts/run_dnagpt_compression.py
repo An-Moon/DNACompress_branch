@@ -64,6 +64,7 @@ from dna_compress.dnagpt_loader import (
 )
 from dna_compress.dnagpt_prefix_coding import build_dnagpt_prefix_trie
 from dna_compress.experiment import resolve_device
+from dna_compress.fast_arithmetic import ARITHMETIC_BACKENDS
 
 
 def _parse_scalar(value: str) -> Any:
@@ -139,6 +140,7 @@ def _apply_overrides(config: ExperimentConfig, args: argparse.Namespace) -> None
     _apply_if_not_none(config, "output.output_dir", args.output_dir)
     _apply_if_not_none(config, "arithmetic.coding_mode", args.arithmetic_coding_mode)
     _apply_if_not_none(config, "arithmetic.merge_size", args.arithmetic_merge_size)
+    _apply_if_not_none(config, "arithmetic.backend", args.arithmetic_backend)
 
     for item in args.override:
         if "=" not in item:
@@ -252,6 +254,7 @@ def _run_split(
                 arithmetic_target_uniform_mass=config.arithmetic.target_uniform_mass,
                 arithmetic_coding_mode=config.arithmetic.coding_mode,
                 arithmetic_merge_size=config.arithmetic.merge_size,
+                arithmetic_backend=config.arithmetic.backend,
                 prefix_trie=prefix_trie,
                 progress_callback=_on_progress,
             )
@@ -344,6 +347,7 @@ def _build_parser() -> argparse.ArgumentParser:
     runtime_group.add_argument("--output-dir")
     runtime_group.add_argument("--arithmetic-coding-mode", choices=list(DNAGPT_ARITHMETIC_CODING_MODES))
     runtime_group.add_argument("--arithmetic-merge-size", type=int)
+    runtime_group.add_argument("--arithmetic-backend", choices=list(ARITHMETIC_BACKENDS))
 
     return parser
 
@@ -391,6 +395,7 @@ def main() -> None:
             "max_len_tokens": spec.max_len,
             "arithmetic_coding_mode": config.arithmetic.coding_mode,
             "arithmetic_merge_size": config.arithmetic.merge_size,
+            "arithmetic_backend": config.arithmetic.backend,
         },
         "results": {},
     }
@@ -424,6 +429,7 @@ def main() -> None:
                             "target_uniform_mass": aggregate.get("arithmetic_target_uniform_mass"),
                             "effective_uniform_mass": aggregate.get("arithmetic_effective_uniform_mass"),
                             "merge_size": aggregate.get("arithmetic_merge_size"),
+                            "backend": aggregate.get("arithmetic_backend"),
                         }
                         break
 

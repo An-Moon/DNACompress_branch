@@ -14,6 +14,7 @@ from dna_compress.dnagpt_prefix_coding import (
     factorize_dnagpt_log_probs_to_base_prefix_stream,
     factorize_dnagpt_log_probs_to_grouped_prefix_stream,
 )
+from dna_compress.fast_arithmetic import load_fast_arithmetic_extension
 
 
 class _FakeDNAGPTModel(torch.nn.Module):
@@ -195,6 +196,46 @@ class DNAGPTPrefixCodingTests(unittest.TestCase):
         self.assertEqual(int(grouped["arithmetic_merge_size"]), 2)
         self.assertGreater(int(grouped["emitted_arithmetic_symbol_count"]), 0)
         self.assertGreater(int(grouped["arithmetic_vocab_size"]), DNAGPT_PREFIX_ALPHABET_SIZE)
+
+    def test_grouped_compression_can_use_fast_cpp_backend(self) -> None:
+        try:
+            load_fast_arithmetic_extension()
+        except Exception as error:
+            self.skipTest(f"fast arithmetic extension is unavailable: {error}")
+
+        variant = "dna_gpt0.1b_m"
+        tokenizer = build_dnagpt_tokenizer(variant)
+        trie = build_dnagpt_prefix_trie(tokenizer)
+        spec = get_variant_spec(variant)
+        model = _FakeDNAGPTModel(len(tokenizer))
+
+        metrics = compress_dnagpt_source(
+            model=model,
+            species="HoSa",
+            source=b"ACGTNNAGCTAA",
+            tokenizer=tokenizer,
+            kmer_size=spec.kmer_size,
+            dynamic_kmer=spec.dynamic_kmer,
+            species_prefix_map=None,
+            seq_length=32,
+            pad_id=tokenizer.pad_id,
+            device=torch.device("cpu"),
+            dtype_name="float32",
+            batch_size=2,
+            requested_bytes=None,
+            mode="windows_nonoverlap",
+            arithmetic_frequency_total=None,
+            arithmetic_target_uniform_mass=0.01,
+            arithmetic_coding_mode="base_prefix_exact_gpu_cpu",
+            arithmetic_merge_size=2,
+            arithmetic_backend="fast_cpp",
+            prefix_trie=trie,
+        )
+
+        self.assertEqual(metrics["arithmetic_backend"], "fast_cpp")
+        self.assertGreater(float(metrics["arithmetic_quantize_seconds"]), 0.0)
+        self.assertGreater(float(metrics["arithmetic_range_seconds"]), 0.0)
+        self.assertGreater(int(metrics["emitted_arithmetic_symbol_count"]), 0)
 
 
 if __name__ == "__main__":

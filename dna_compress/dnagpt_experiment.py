@@ -18,6 +18,7 @@ from .config import ExperimentConfig, save_experiment_config
 from .data import load_splits
 from .dnagpt_data import IGNORE_INDEX, RandomDNAGPTWindowDataset, SequentialDNAGPTWindowDataset
 from .dnagpt_compression import DNAGPT_ARITHMETIC_CODING_MODES
+from .fast_arithmetic import ARITHMETIC_BACKENDS
 from .dnagpt_loader import (
     build_dnagpt_components,
     default_pretrained_weight_path,
@@ -91,6 +92,8 @@ def validate_dnagpt_config(config: ExperimentConfig) -> None:
             "arithmetic.coding_mode must be one of: "
             + ", ".join(DNAGPT_ARITHMETIC_CODING_MODES)
         )
+    if config.arithmetic.backend not in ARITHMETIC_BACKENDS:
+        raise ValueError("arithmetic.backend must be one of: " + ", ".join(ARITHMETIC_BACKENDS))
     if config.arithmetic.merge_size < 1 or config.arithmetic.merge_size > spec.kmer_size:
         raise ValueError(
             f"arithmetic.merge_size must be in [1, {spec.kmer_size}] for {config.model.variant}."

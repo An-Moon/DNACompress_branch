@@ -1,0 +1,68 @@
+{
+  "species": "DaRe",
+  "split": "val",
+  "length_bases": 6000,
+  "device": "cuda:3",
+  "source_metadata": {
+    "species": "DaRe",
+    "source_name": "DaRe",
+    "source_mode": "flat_file",
+    "source_path": "datasets/DNACorpus/DaRe",
+    "sequence_keys": [
+      "DaRe"
+    ],
+    "sequence_files": [
+      "DaRe"
+    ],
+    "selected_sequence_count": 1,
+    "total_size": 62565020,
+    "train_start": 0,
+    "train_bytes": 37539012,
+    "val_start": 37539012,
+    "val_bytes": 12513004,
+    "test_start": 50052016,
+    "test_bytes": 12513004,
+    "clean_cache_status": "not_applicable",
+    "clean_cache_path": null
+  },
+  "megabyte_run_dir": "outputs/dna_megabyte_large_b128_ensembl_all_finetune",
+  "megabyte_checkpoint": "outputs/dna_megabyte_large_b128_ensembl_all_finetune/best.pt",
+  "megabyte_single_window": {
+    "real_tokens": 2000,
+    "padded_tokens": 2016,
+    "token_merge_size": 3,
+    "patch_size": 32,
+    "mean_bits_per_base": 1.8823332330104896
+  },
+  "megabyte_two_window_existing": {
+    "mean_bits_per_base": 1.879847592620179,
+    "window_boundary_position_one_based": 3072,
+    "source_csv": "outputs/model_fusion_position_curves/dare_val_first6000/dare_val_first6000_position_curves.csv"
+  },
+  "dnagpt_two_window_existing": {
+    "mean_bits_per_base": 1.8623721399936604,
+    "source_csv": "outputs/model_fusion_position_curves/dare_val_first6000/dare_val_first6000_position_curves.csv",
+    "direct_6000bp_status": "not_run: dna_gpt0.1b_m max_len=512 tokens; 6000bp requires 1000 6-mer target tokens and forward raises IndexError"
+  },
+  "deltas": {
+    "single_minus_two_window_megabyte_mean_bits_per_base": 0.0024856403903104366,
+    "single_minus_dnagpt_mean_bits_per_base": 0.019961093016829176,
+    "single_better_than_two_window_positions": 1684,
+    "two_window_better_than_single_positions": 2119
+  },
+  "boundary_region": {
+    "position_range_one_based": [
+      2850,
+      3300
+    ],
+    "single_mean_bits_per_base": 1.9240047455230467,
+    "two_window_mean_bits_per_base": 1.9100410471734346,
+    "single_minus_two_window_mean_bits_per_base": 0.01396369834961225
+  },
+  "outputs": {
+    "csv": "outputs/model_fusion_position_curves/dare_val_first6000_longwindow/dare_val_first6000_megabyte_single_window_comparison.csv",
+    "plot": "outputs/model_fusion_position_curves/dare_val_first6000_longwindow/dare_val_first6000_megabyte_single_window_comparison.png",
+    "boundary_plot": "outputs/model_fusion_position_curves/dare_val_first6000_longwindow/dare_val_first6000_megabyte_single_window_boundary.png",
+    "sequence": "outputs/model_fusion_position_curves/dare_val_first6000_longwindow/dare_val_first6000_sequence.txt"
+  }
+}

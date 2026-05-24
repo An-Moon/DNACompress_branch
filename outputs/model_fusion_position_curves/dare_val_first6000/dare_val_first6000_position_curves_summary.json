@@ -1,0 +1,161 @@
+{
+  "species": "DaRe",
+  "split": "val",
+  "length": 6000,
+  "source_metadata": {
+    "species": "DaRe",
+    "source_name": "DaRe",
+    "source_mode": "flat_file",
+    "source_path": "datasets/DNACorpus/DaRe",
+    "sequence_keys": [
+      "DaRe"
+    ],
+    "sequence_files": [
+      "DaRe"
+    ],
+    "selected_sequence_count": 1,
+    "total_size": 62565020,
+    "train_start": 0,
+    "train_bytes": 37539012,
+    "val_start": 37539012,
+    "val_bytes": 12513004,
+    "test_start": 50052016,
+    "test_bytes": 12513004,
+    "clean_cache_status": "not_applicable",
+    "clean_cache_path": null
+  },
+  "device": "cuda:3",
+  "megabyte_run_dir": "outputs/dna_megabyte_large_b128_ensembl_all_finetune",
+  "megabyte_checkpoint": "outputs/dna_megabyte_large_b128_ensembl_all_finetune/best.pt",
+  "dnagpt_run_dir": "outputs/dna_dnagpt_0p1bm_all_finetune",
+  "dnagpt_checkpoint": "outputs/dna_dnagpt_0p1bm_all_finetuned_1/last.pt",
+  "dnagpt_checkpoint_note": "fallback_for_missing_requested_checkpoint:outputs/dna_dnagpt_0p1bm_all_finetune/best.pt",
+  "dnagpt_checkpoint_metadata": {
+    "step": 18750,
+    "best_val_bpb": 1.6836531370877088
+  },
+  "alignment": "per-base bits are from hierarchical prefix factorization; Megabyte 3-mer tokens are factorized into one-base conditional steps, and DNA-GPT dynamic k-mers are factorized through the tokenizer prefix trie with token-stop symbols omitted from base positions",
+  "outputs": {
+    "sequence": "outputs/model_fusion_position_curves/dare_val_first6000/dare_val_first6000_sequence.txt",
+    "csv": "outputs/model_fusion_position_curves/dare_val_first6000/dare_val_first6000_position_curves.csv",
+    "plots": [
+      "outputs/model_fusion_position_curves/dare_val_first6000/dare_val_first6000_position_curves.png",
+      "outputs/model_fusion_position_curves/dare_val_first6000/dare_val_first6000_delta_bits.png"
+    ]
+  },
+  "summary": {
+    "position_count": 6000,
+    "smooth_window": 101,
+    "megabyte_mean_bits_per_base": 1.879847592620179,
+    "dnagpt_mean_bits_per_base": 1.8623721399936604,
+    "megabyte_minus_dnagpt_mean_bits_per_base": 0.01747545262651874,
+    "megabyte_win_positions": 2962,
+    "dnagpt_win_positions": 3038,
+    "tie_positions": 0,
+    "megabyte_win_fraction": 0.49366666666666664,
+    "dnagpt_win_fraction": 0.5063333333333333,
+    "bits_curve_correlation": 0.836660102697192,
+    "long_smoothed_winner_segments": [
+      {
+        "winner": "dnagpt",
+        "start": 4,
+        "end": 121
+      },
+      {
+        "winner": "dnagpt",
+        "start": 539,
+        "end": 707
+      },
+      {
+        "winner": "dnagpt",
+        "start": 795,
+        "end": 934
+      },
+      {
+        "winner": "megabyte",
+        "start": 993,
+        "end": 1148
+      },
+      {
+        "winner": "dnagpt",
+        "start": 1158,
+        "end": 1475
+      },
+      {
+        "winner": "dnagpt",
+        "start": 1778,
+        "end": 1905
+      },
+      {
+        "winner": "dnagpt",
+        "start": 2020,
+        "end": 2129
+      },
+      {
+        "winner": "dnagpt",
+        "start": 2196,
+        "end": 2473
+      },
+      {
+        "winner": "dnagpt",
+        "start": 2574,
+        "end": 3060
+      },
+      {
+        "winner": "megabyte",
+        "start": 3066,
+        "end": 3171
+      },
+      {
+        "winner": "megabyte",
+        "start": 3186,
+        "end": 3345
+      },
+      {
+        "winner": "megabyte",
+        "start": 3381,
+        "end": 3593
+      },
+      {
+        "winner": "dnagpt",
+        "start": 3659,
+        "end": 3849
+      },
+      {
+        "winner": "megabyte",
+        "start": 3901,
+        "end": 4102
+      },
+      {
+        "winner": "dnagpt",
+        "start": 4109,
+        "end": 4276
+      },
+      {
+        "winner": "megabyte",
+        "start": 4277,
+        "end": 4411
+      },
+      {
+        "winner": "megabyte",
+        "start": 4415,
+        "end": 4517
+      },
+      {
+        "winner": "megabyte",
+        "start": 4711,
+        "end": 4828
+      },
+      {
+        "winner": "dnagpt",
+        "start": 4829,
+        "end": 5476
+      },
+      {
+        "winner": "dnagpt",
+        "start": 5734,
+        "end": 6000
+      }
+    ]
+  }
+}

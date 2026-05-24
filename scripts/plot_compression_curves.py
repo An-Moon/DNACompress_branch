@@ -27,6 +27,31 @@ from typing import Any
 
 GECO2_EXPERIMENT_MODE_NAME = "geco2_paper_modes"
 
+DNACORPUS_SOURCE_ORDER = {
+    source_name: index
+    for index, source_name in enumerate(
+        (
+            "HoSa",
+            "GaGa",
+            "AnCa",
+            "DaRe",
+            "OrSa",
+            "DrMe",
+            "EnIn",
+            "ScPo",
+            "WaMe",
+            "PlFa",
+            "EsCo",
+            "HaHi",
+            "HePy",
+            "AeCa",
+            "YeMi",
+            "AgPh",
+            "BuEb",
+        )
+    )
+}
+
 GECO2_PAPER_BASELINE_BY_SOURCE: dict[str, dict[str, int]] = {
     "HoSa": {"compressed_bytes": 38_845_642, "mode": 12},
     "GaGa": {"compressed_bytes": 33_877_671, "mode": 11},
@@ -91,17 +116,29 @@ def _source_order_map(compression_compare: dict[str, Any]) -> dict[str, int]:
     if not isinstance(species_rows, list):
         return {}
 
-    order: dict[str, int] = {}
+    dataset_order: dict[str, int] = {}
+    source_names: set[str] = set()
     for index, row in enumerate(species_rows):
         if not isinstance(row, dict):
             continue
         source_name = row.get("source_name")
         species = row.get("species")
-        if isinstance(source_name, str) and source_name not in order:
-            order[source_name] = index
-        if isinstance(species, str) and species not in order:
-            order[species] = index
-    return order
+        if isinstance(source_name, str):
+            source_names.add(source_name)
+            if source_name not in dataset_order:
+                dataset_order[source_name] = index
+        if isinstance(species, str):
+            source_names.add(species)
+            if species not in dataset_order:
+                dataset_order[species] = index
+
+    if source_names and source_names.issubset(DNACORPUS_SOURCE_ORDER):
+        return {
+            source_name: DNACORPUS_SOURCE_ORDER[source_name]
+            for source_name in source_names
+        }
+
+    return dataset_order
 
 
 def _source_metadata_map(compression_compare: dict[str, Any]) -> dict[str, dict[str, Any]]:

@@ -1,0 +1,185 @@
+{
+  "input_csv": "outputs/model_fusion_position_curves/dare_val_first6000/dare_val_first6000_position_curves.csv",
+  "position_count": 6000,
+  "baseline": {
+    "megabyte_mean_bpb": 1.879847592620179,
+    "dnagpt_mean_bpb": 1.8623721399936604,
+    "oracle_min_mean_bpb": 1.7341673969146878
+  },
+  "method": {
+    "name": "Exponential Moving Loss soft mixture",
+    "state": "S_model(t) = (1-alpha)*S_model(t-1) + alpha*loss_model(t-1)",
+    "weight": "w_M(t) = 1 / (1 + 2 ** (eta * (S_M(t)-S_D(t))))",
+    "fused_probability": "p = w_M*p_M + (1-w_M)*p_D",
+    "causal": true
+  },
+  "best_soft": {
+    "alpha": 0.005,
+    "eta": 32,
+    "mean_bpb": 1.8559854872802244,
+    "gain_vs_dnagpt_bpb": 0.00638665271343597,
+    "gain_vs_best_single_bpb": 0.00638665271343597,
+    "mean_megabyte_weight": 0.41641897224735225,
+    "final_megabyte_weight": 0.30983313004949314
+  },
+  "top10_soft": [
+    {
+      "alpha": 0.005,
+      "eta": 32,
+      "mean_bpb": 1.8559854872802244,
+      "gain_vs_dnagpt_bpb": 0.00638665271343597,
+      "gain_vs_best_single_bpb": 0.00638665271343597,
+      "mean_megabyte_weight": 0.41641897224735225,
+      "final_megabyte_weight": 0.30983313004949314
+    },
+    {
+      "alpha": 0.002,
+      "eta": 32,
+      "mean_bpb": 1.8560078399563658,
+      "gain_vs_dnagpt_bpb": 0.006364300037294601,
+      "gain_vs_best_single_bpb": 0.006364300037294601,
+      "mean_megabyte_weight": 0.4199023459634123,
+      "final_megabyte_weight": 0.342839708501374
+    },
+    {
+      "alpha": 0.01,
+      "eta": 16,
+      "mean_bpb": 1.8561004037429543,
+      "gain_vs_dnagpt_bpb": 0.006271736250706095,
+      "gain_vs_best_single_bpb": 0.006271736250706095,
+      "mean_megabyte_weight": 0.45484041547343734,
+      "final_megabyte_weight": 0.3862211514827047
+    },
+    {
+      "alpha": 0.005,
+      "eta": 16,
+      "mean_bpb": 1.8561407446103544,
+      "gain_vs_dnagpt_bpb": 0.006231395383305971,
+      "gain_vs_best_single_bpb": 0.006231395383305971,
+      "mean_megabyte_weight": 0.4557058049330791,
+      "final_megabyte_weight": 0.4012042818323561
+    },
+    {
+      "alpha": 0.001,
+      "eta": 32,
+      "mean_bpb": 1.8561883207238319,
+      "gain_vs_dnagpt_bpb": 0.006183819269828472,
+      "gain_vs_best_single_bpb": 0.006183819269828472,
+      "mean_megabyte_weight": 0.4257796300510438,
+      "final_megabyte_weight": 0.37546367800784813
+    },
+    {
+      "alpha": 0.01,
+      "eta": 32,
+      "mean_bpb": 1.8561894709870363,
+      "gain_vs_dnagpt_bpb": 0.006182669006624009,
+      "gain_vs_best_single_bpb": 0.006182669006624009,
+      "mean_megabyte_weight": 0.4169861724520972,
+      "final_megabyte_weight": 0.2836456721336999
+    },
+    {
+      "alpha": 0.001,
+      "eta": 64,
+      "mean_bpb": 1.856197001207297,
+      "gain_vs_dnagpt_bpb": 0.006175138786363332,
+      "gain_vs_best_single_bpb": 0.006175138786363332,
+      "mean_megabyte_weight": 0.3604861259272049,
+      "final_megabyte_weight": 0.2654765311327096
+    },
+    {
+      "alpha": 0.002,
+      "eta": 64,
+      "mean_bpb": 1.8562277726749892,
+      "gain_vs_dnagpt_bpb": 0.0061443673186711845,
+      "gain_vs_best_single_bpb": 0.0061443673186711845,
+      "mean_megabyte_weight": 0.3556841528862144,
+      "final_megabyte_weight": 0.21394128277753852
+    },
+    {
+      "alpha": 0.02,
+      "eta": 16,
+      "mean_bpb": 1.85626079352545,
+      "gain_vs_dnagpt_bpb": 0.006111346468210321,
+      "gain_vs_best_single_bpb": 0.006111346468210321,
+      "mean_megabyte_weight": 0.4547196111267286,
+      "final_megabyte_weight": 0.3812805076778403
+    },
+    {
+      "alpha": 0.002,
+      "eta": 16,
+      "mean_bpb": 1.8563035502431788,
+      "gain_vs_dnagpt_bpb": 0.006068589750481523,
+      "gain_vs_best_single_bpb": 0.006068589750481523,
+      "mean_megabyte_weight": 0.45864995790312363,
+      "final_megabyte_weight": 0.41937673564873756
+    }
+  ],
+  "best_hard_sign": {
+    "alpha": 0.01,
+    "mean_bpb": 1.861723123136277,
+    "gain_vs_dnagpt_bpb": 0.0006490168573833888,
+    "megabyte_choice_fraction": 0.3155
+  },
+  "top10_hard_sign": [
+    {
+      "alpha": 0.01,
+      "mean_bpb": 1.861723123136277,
+      "gain_vs_dnagpt_bpb": 0.0006490168573833888,
+      "megabyte_choice_fraction": 0.3155
+    },
+    {
+      "alpha": 0.005,
+      "mean_bpb": 1.8618836659289233,
+      "gain_vs_dnagpt_bpb": 0.0004884740647370656,
+      "megabyte_choice_fraction": 0.293
+    },
+    {
+      "alpha": 0.02,
+      "mean_bpb": 1.8628354013297876,
+      "gain_vs_dnagpt_bpb": -0.00046326133612728526,
+      "megabyte_choice_fraction": 0.3396666666666667
+    },
+    {
+      "alpha": 0.002,
+      "mean_bpb": 1.8648251351321978,
+      "gain_vs_dnagpt_bpb": -0.0024529951385374726,
+      "megabyte_choice_fraction": 0.24883333333333332
+    },
+    {
+      "alpha": 0.05,
+      "mean_bpb": 1.8651067181953747,
+      "gain_vs_dnagpt_bpb": -0.0027345782017142994,
+      "megabyte_choice_fraction": 0.39016666666666666
+    },
+    {
+      "alpha": 0.1,
+      "mean_bpb": 1.8660474359918646,
+      "gain_vs_dnagpt_bpb": -0.0036752959982042643,
+      "megabyte_choice_fraction": 0.4155
+    },
+    {
+      "alpha": 0.2,
+      "mean_bpb": 1.8667447690725234,
+      "gain_vs_dnagpt_bpb": -0.004372629078863044,
+      "megabyte_choice_fraction": 0.4415
+    },
+    {
+      "alpha": 0.001,
+      "mean_bpb": 1.8669175454766538,
+      "gain_vs_dnagpt_bpb": -0.004545405482993425,
+      "megabyte_choice_fraction": 0.26466666666666666
+    },
+    {
+      "alpha": 0.3,
+      "mean_bpb": 1.8671317255014779,
+      "gain_vs_dnagpt_bpb": -0.004759585507817521,
+      "megabyte_choice_fraction": 0.4553333333333333
+    },
+    {
+      "alpha": 0.5,
+      "mean_bpb": 1.8697131570359662,
+      "gain_vs_dnagpt_bpb": -0.007341017042305831,
+      "megabyte_choice_fraction": 0.4703333333333333
+    }
+  ]
+}

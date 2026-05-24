@@ -9,11 +9,10 @@ import numpy as np
 import torch
 
 from .compression import (
-    ArithmeticEncoder,
     baseline_sizes,
-    probabilities_to_cumulative_batch,
     resolve_arithmetic_coding_metadata,
 )
+from .fast_arithmetic import StreamingArithmeticEncoder
 from .fixed_token_factorization import (
     FixedTokenArithmeticFactorizer,
     factorize_fixed_token_log_probs,
@@ -201,15 +200,22 @@ def _finalize_metrics(
     arithmetic_merge_size: int = 1,
     gpu_prefix_aggregate_seconds: float = 0.0,
     cpu_small_alphabet_quantize_seconds: float = 0.0,
+    arithmetic_range_seconds: float = 0.0,
+    arithmetic_backend: str = "python",
     emitted_arithmetic_symbol_count: int | None = None,
     mode_details: dict[str, object] | None = None,
     position_bits_profile: dict[str, object] | None = None,
+    include_codec_baselines: bool = True,
 ) -> dict[str, object]:
     sample_bytes = len(payload)
     sample_bases = symbol_count_without_eos * token_merge_size
     model_forward_softmax_seconds = model_forward_seconds + softmax_seconds
     compression_process_seconds = (
-        model_forward_seconds + softmax_seconds + data_transfer_seconds + arithmetic_encode_seconds
+        model_forward_seconds
+        + softmax_seconds
+        + gpu_prefix_aggregate_seconds
+        + data_transfer_seconds
+        + arithmetic_encode_seconds
     )
     if emitted_arithmetic_symbol_count is None:
         emitted_arithmetic_symbol_count = len(symbols)
@@ -230,6 +236,9 @@ def _finalize_metrics(
         "arithmetic_encode_seconds": arithmetic_encode_seconds,
         "gpu_prefix_aggregate_seconds": gpu_prefix_aggregate_seconds,
         "cpu_small_alphabet_quantize_seconds": cpu_small_alphabet_quantize_seconds,
+        "arithmetic_quantize_seconds": cpu_small_alphabet_quantize_seconds,
+        "arithmetic_range_seconds": arithmetic_range_seconds,
+        "arithmetic_backend": arithmetic_backend,
         "compression_process_seconds": compression_process_seconds,
         "compression_bytes_per_second": sample_bytes / max(compression_process_seconds, 1e-12),
         "compression_bases_per_second": sample_bases / max(compression_process_seconds, 1e-12),
@@ -238,7 +247,7 @@ def _finalize_metrics(
         "arithmetic_merge_size": arithmetic_merge_size,
         "emitted_arithmetic_symbol_count": emitted_arithmetic_symbol_count,
         **arithmetic_metadata,
-        **baseline_sizes(payload),
+        **baseline_sizes(payload, include_codec_baselines=include_codec_baselines),
         **(mode_details or {}),
     }
     if position_bits_profile is not None:
@@ -276,14 +285,10 @@ def _encode_model_symbol_probabilities(
     probability_rows: np.ndarray,
     target_symbols: np.ndarray,
     total: int,
-    encoder: ArithmeticEncoder,
-) -> tuple[float, int]:
-    quantize_started = perf_counter()
-    cumulative_batch = probabilities_to_cumulative_batch(probability_rows, total=total)
-    quantize_seconds = perf_counter() - quantize_started
-    for cumulative, target in zip(cumulative_batch, target_symbols):
-        encoder.update(cumulative, int(target))
-    return quantize_seconds, len(target_symbols)
+    encoder: StreamingArithmeticEncoder,
+) -> tuple[float, float, int]:
+    timings = encoder.encode_probability_rows(probability_rows, target_symbols, total=total)
+    return timings.quantize_seconds, timings.range_seconds, timings.emitted_count
 
 
 def _encode_factorized_probabilities(
@@ -292,8 +297,8 @@ def _encode_factorized_probabilities(
     target_symbols: torch.Tensor,
     factorizer: FixedTokenArithmeticFactorizer,
     total: int,
-    encoder: ArithmeticEncoder,
-) -> tuple[float, float, float, int, float]:
+    encoder: StreamingArithmeticEncoder,
+) -> tuple[float, float, float, int, float, float]:
     aggregate_started = perf_counter()
     factorized = factorize_fixed_token_log_probs(
         log_probs=log_prob_rows,
@@ -313,29 +318,25 @@ def _encode_factorized_probabilities(
     special_row_positions = factorized.special_row_positions.cpu().numpy()
     data_transfer_seconds = perf_counter() - transfer_started
 
-    quantize_started = perf_counter()
-    root_cumulative = probabilities_to_cumulative_batch(root_probabilities, total=total)
-    regular_step_cumulative = tuple(
-        probabilities_to_cumulative_batch(step, total=total)
-        for step in regular_step_probabilities
-    )
+    row_count = int(root_symbols.shape[0])
+    step_probabilities = [root_probabilities]
+    step_symbols = [root_symbols]
+    step_row_positions = [np.arange(row_count, dtype=np.int64)]
+    for step_probabilities_batch, step_symbols_batch in zip(regular_step_probabilities, regular_step_symbols):
+        step_probabilities.append(step_probabilities_batch)
+        step_symbols.append(step_symbols_batch)
+        step_row_positions.append(regular_row_positions)
     if special_step_probabilities.shape[0] > 0:
-        special_step_cumulative = probabilities_to_cumulative_batch(special_step_probabilities, total=total)
-    else:
-        special_step_cumulative = np.zeros((0, 1), dtype=np.int64)
-    cpu_small_alphabet_quantize_seconds = perf_counter() - quantize_started
-
-    for row_index in range(root_symbols.shape[0]):
-        encoder.update(root_cumulative[row_index], int(root_symbols[row_index]))
-        regular_position = int(regular_row_positions[row_index])
-        if regular_position >= 0:
-            for cumulative_batch, symbol_batch in zip(regular_step_cumulative, regular_step_symbols):
-                encoder.update(cumulative_batch[regular_position], int(symbol_batch[regular_position]))
-            continue
-
-        special_position = int(special_row_positions[row_index])
-        if special_position >= 0:
-            encoder.update(special_step_cumulative[special_position], int(special_step_symbols[special_position]))
+        step_probabilities.append(special_step_probabilities)
+        step_symbols.append(special_step_symbols)
+        step_row_positions.append(special_row_positions)
+    timings = encoder.encode_grouped_steps(
+        step_probabilities,
+        step_symbols,
+        step_row_positions,
+        row_count=row_count,
+        total=total,
+    )
 
     total_bits = float((-factorized.target_log_probs / math.log(2)).sum().item())
     return (
@@ -343,7 +344,8 @@ def _encode_factorized_probabilities(
         data_transfer_seconds,
         gpu_prefix_aggregate_seconds,
         factorized.emitted_symbol_count,
-        cpu_small_alphabet_quantize_seconds,
+        timings.quantize_seconds,
+        timings.range_seconds,
     )
 
 
@@ -363,9 +365,11 @@ def compress_sequence_sliding_token(
     arithmetic_target_uniform_mass: float,
     arithmetic_coding_mode: str = "model_symbol",
     arithmetic_merge_size: int = 1,
+    arithmetic_backend: str = "python",
     factorizer: FixedTokenArithmeticFactorizer | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
     collect_position_bits_profile: bool = False,
+    include_codec_baselines: bool = True,
 ) -> dict[str, object]:
     del collect_position_bits_profile
     symbols = _symbols_with_optional_eos(payload, eos_id, token_merge_size, token_merge_alphabet)
@@ -378,13 +382,14 @@ def compress_sequence_sliding_token(
     total_bits = 0.0
     total_batches = max(1, math.ceil(len(symbols) / batch_size))
     processed_batches = 0
-    encoder = ArithmeticEncoder()
+    encoder = StreamingArithmeticEncoder(arithmetic_backend)
     model_forward_seconds = 0.0
     softmax_seconds = 0.0
     data_transfer_seconds = 0.0
     arithmetic_encode_seconds = 0.0
     gpu_prefix_aggregate_seconds = 0.0
     cpu_small_alphabet_quantize_seconds = 0.0
+    arithmetic_range_seconds = 0.0
     emitted_arithmetic_symbol_count = 0
     arithmetic_metadata = _resolve_megabyte_arithmetic_metadata(
         vocab_size=model.vocab_size if hasattr(model, "vocab_size") else int(max(symbols, default=pad_id) + 1),
@@ -415,20 +420,21 @@ def compress_sequence_sliding_token(
                 log_probs = torch.log_softmax(output.lm_logits[:, -1, :], dim=-1)
                 softmax_seconds += perf_counter() - softmax_started
 
-            encode_started = perf_counter()
             if arithmetic_coding_mode == "model_symbol":
                 target_log_probs = log_probs.gather(1, targets_device.unsqueeze(1)).squeeze(1)
                 total_bits += float((-target_log_probs / math.log(2)).sum().item())
                 transfer_started = perf_counter()
                 probs_np = log_probs.float().exp().cpu().numpy()
                 data_transfer_seconds += perf_counter() - transfer_started
-                quantize_seconds, emitted_count = _encode_model_symbol_probabilities(
+                quantize_seconds, range_seconds, emitted_count = _encode_model_symbol_probabilities(
                     probability_rows=probs_np,
                     target_symbols=targets_np,
                     total=int(arithmetic_metadata["arithmetic_frequency_total"]),
                     encoder=encoder,
                 )
                 cpu_small_alphabet_quantize_seconds += quantize_seconds
+                arithmetic_range_seconds += range_seconds
+                arithmetic_encode_seconds += quantize_seconds + range_seconds
                 emitted_arithmetic_symbol_count += emitted_count
             elif arithmetic_coding_mode == "base_prefix_exact_gpu_cpu":
                 if factorizer is None:
@@ -439,6 +445,7 @@ def compress_sequence_sliding_token(
                     batch_gpu_aggregate_seconds,
                     emitted_count,
                     batch_quantize_seconds,
+                    batch_range_seconds,
                 ) = _encode_factorized_probabilities(
                     log_prob_rows=log_probs,
                     target_symbols=targets_device,
@@ -450,10 +457,11 @@ def compress_sequence_sliding_token(
                 data_transfer_seconds += batch_transfer_seconds
                 gpu_prefix_aggregate_seconds += batch_gpu_aggregate_seconds
                 cpu_small_alphabet_quantize_seconds += batch_quantize_seconds
+                arithmetic_range_seconds += batch_range_seconds
+                arithmetic_encode_seconds += batch_quantize_seconds + batch_range_seconds
                 emitted_arithmetic_symbol_count += emitted_count
             else:
                 raise ValueError(f"Unsupported Megabyte arithmetic coding mode '{arithmetic_coding_mode}'.")
-            arithmetic_encode_seconds += perf_counter() - encode_started
 
             processed_batches += 1
             if progress_callback is not None:
@@ -478,7 +486,10 @@ def compress_sequence_sliding_token(
         arithmetic_merge_size=arithmetic_merge_size,
         gpu_prefix_aggregate_seconds=gpu_prefix_aggregate_seconds,
         cpu_small_alphabet_quantize_seconds=cpu_small_alphabet_quantize_seconds,
+        arithmetic_range_seconds=arithmetic_range_seconds,
+        arithmetic_backend=encoder.backend,
         emitted_arithmetic_symbol_count=emitted_arithmetic_symbol_count,
+        include_codec_baselines=include_codec_baselines,
         mode_details={
             "window_stride": 1,
             "window_policy": "right_aligned_sliding_context",
@@ -515,9 +526,11 @@ def compress_sequence_train_windows(
     arithmetic_target_uniform_mass: float,
     arithmetic_coding_mode: str = "model_symbol",
     arithmetic_merge_size: int = 1,
+    arithmetic_backend: str = "python",
     factorizer: FixedTokenArithmeticFactorizer | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
     collect_position_bits_profile: bool = False,
+    include_codec_baselines: bool = True,
 ) -> dict[str, object]:
     symbols = _symbols_with_optional_eos(payload, eos_id, token_merge_size, token_merge_alphabet)
     token_count_without_eos = len(symbols) - (1 if eos_id is not None else 0)
@@ -530,7 +543,7 @@ def compress_sequence_train_windows(
         collect_position_bits_profile=collect_position_bits_profile,
     )
     total_bits = 0.0
-    encoder = ArithmeticEncoder()
+    encoder = StreamingArithmeticEncoder(arithmetic_backend)
 
     if overlap_stride is None:
         mode = NON_OVERLAP_MODE
@@ -549,6 +562,7 @@ def compress_sequence_train_windows(
     arithmetic_encode_seconds = 0.0
     gpu_prefix_aggregate_seconds = 0.0
     cpu_small_alphabet_quantize_seconds = 0.0
+    arithmetic_range_seconds = 0.0
     emitted_arithmetic_symbol_count = 0
     arithmetic_metadata = _resolve_megabyte_arithmetic_metadata(
         vocab_size=model.vocab_size if hasattr(model, "vocab_size") else (max(pad_id, eos_id) + 1),
@@ -583,7 +597,6 @@ def compress_sequence_train_windows(
                 log_probs = torch.log_softmax(output.lm_logits, dim=-1)
                 softmax_seconds += perf_counter() - softmax_started
 
-            encode_started = perf_counter()
             for row_index, (start, chunk_length) in enumerate(zip(starts, lengths)):
                 if chunk_length <= 0:
                     continue
@@ -616,13 +629,15 @@ def compress_sequence_train_windows(
                     transfer_started = perf_counter()
                     probs_np = row_log_probs.float().exp().cpu().numpy()
                     data_transfer_seconds += perf_counter() - transfer_started
-                    quantize_seconds, emitted_count = _encode_model_symbol_probabilities(
+                    quantize_seconds, range_seconds, emitted_count = _encode_model_symbol_probabilities(
                         probability_rows=probs_np,
                         target_symbols=targets_device.cpu().numpy(),
                         total=int(arithmetic_metadata["arithmetic_frequency_total"]),
                         encoder=encoder,
                     )
                     cpu_small_alphabet_quantize_seconds += quantize_seconds
+                    arithmetic_range_seconds += range_seconds
+                    arithmetic_encode_seconds += quantize_seconds + range_seconds
                     emitted_arithmetic_symbol_count += emitted_count
                 elif arithmetic_coding_mode == "base_prefix_exact_gpu_cpu":
                     if factorizer is None:
@@ -633,6 +648,7 @@ def compress_sequence_train_windows(
                         batch_gpu_aggregate_seconds,
                         emitted_count,
                         batch_quantize_seconds,
+                        batch_range_seconds,
                     ) = _encode_factorized_probabilities(
                         log_prob_rows=row_log_probs,
                         target_symbols=targets_device,
@@ -644,11 +660,11 @@ def compress_sequence_train_windows(
                     data_transfer_seconds += batch_transfer_seconds
                     gpu_prefix_aggregate_seconds += batch_gpu_aggregate_seconds
                     cpu_small_alphabet_quantize_seconds += batch_quantize_seconds
+                    arithmetic_range_seconds += batch_range_seconds
+                    arithmetic_encode_seconds += batch_quantize_seconds + batch_range_seconds
                     emitted_arithmetic_symbol_count += emitted_count
                 else:
                     raise ValueError(f"Unsupported Megabyte arithmetic coding mode '{arithmetic_coding_mode}'.")
-
-            arithmetic_encode_seconds += perf_counter() - encode_started
 
             processed_batches += 1
             if progress_callback is not None:
@@ -690,9 +706,12 @@ def compress_sequence_train_windows(
         arithmetic_merge_size=arithmetic_merge_size,
         gpu_prefix_aggregate_seconds=gpu_prefix_aggregate_seconds,
         cpu_small_alphabet_quantize_seconds=cpu_small_alphabet_quantize_seconds,
+        arithmetic_range_seconds=arithmetic_range_seconds,
+        arithmetic_backend=encoder.backend,
         emitted_arithmetic_symbol_count=emitted_arithmetic_symbol_count,
         mode_details=mode_details,
         position_bits_profile=position_bits_profile.as_dict() if position_bits_profile is not None else None,
+        include_codec_baselines=include_codec_baselines,
     )
 
 
@@ -715,9 +734,11 @@ def compress_source(
     arithmetic_target_uniform_mass: float = 0.01,
     arithmetic_coding_mode: str = "model_symbol",
     arithmetic_merge_size: int = 1,
+    arithmetic_backend: str = "python",
     factorizer: FixedTokenArithmeticFactorizer | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
     collect_position_bits_profile: bool = False,
+    include_codec_baselines: bool = True,
 ) -> dict[str, object]:
     payload = sample_payload(source, requested_bytes)
     if mode == SLIDING_TOKEN_MODE:
@@ -736,9 +757,11 @@ def compress_source(
             arithmetic_target_uniform_mass=arithmetic_target_uniform_mass,
             arithmetic_coding_mode=arithmetic_coding_mode,
             arithmetic_merge_size=arithmetic_merge_size,
+            arithmetic_backend=arithmetic_backend,
             factorizer=factorizer,
             progress_callback=progress_callback,
             collect_position_bits_profile=collect_position_bits_profile,
+            include_codec_baselines=include_codec_baselines,
         )
     if mode == NON_OVERLAP_MODE:
         return compress_sequence_train_windows(
@@ -757,9 +780,11 @@ def compress_source(
             arithmetic_target_uniform_mass=arithmetic_target_uniform_mass,
             arithmetic_coding_mode=arithmetic_coding_mode,
             arithmetic_merge_size=arithmetic_merge_size,
+            arithmetic_backend=arithmetic_backend,
             factorizer=factorizer,
             progress_callback=progress_callback,
             collect_position_bits_profile=collect_position_bits_profile,
+            include_codec_baselines=include_codec_baselines,
         )
     if mode == OVERLAP_MODE:
         return compress_sequence_train_windows(
@@ -778,9 +803,11 @@ def compress_source(
             arithmetic_target_uniform_mass=arithmetic_target_uniform_mass,
             arithmetic_coding_mode=arithmetic_coding_mode,
             arithmetic_merge_size=arithmetic_merge_size,
+            arithmetic_backend=arithmetic_backend,
             factorizer=factorizer,
             progress_callback=progress_callback,
             collect_position_bits_profile=collect_position_bits_profile,
+            include_codec_baselines=include_codec_baselines,
         )
     raise ValueError(f"Unsupported compression mode '{mode}'")
  
@@ -795,9 +822,15 @@ def summarize_per_source(
     total_arithmetic_bytes = sum(int(row["arithmetic_coded_bytes"]) for row in rows)
     total_ascii_bytes = sum(int(row["ascii_bytes"]) for row in rows)
     total_two_bit_pack_bytes = sum(int(row["two_bit_pack_bytes"]) for row in rows)
-    total_gzip_bytes = sum(int(row["gzip_bytes"]) for row in rows)
-    total_bz2_bytes = sum(int(row["bz2_bytes"]) for row in rows)
-    total_lzma_bytes = sum(int(row["lzma_bytes"]) for row in rows)
+    def _optional_int_sum(key: str) -> int | None:
+        values = [row.get(key) for row in rows]
+        if any(value is None for value in values):
+            return None
+        return sum(int(value) for value in values)
+
+    total_gzip_bytes = _optional_int_sum("gzip_bytes")
+    total_bz2_bytes = _optional_int_sum("bz2_bytes")
+    total_lzma_bytes = _optional_int_sum("lzma_bytes")
     total_model_forward_seconds = sum(
         float(row.get("model_forward_seconds", row.get("model_forward_softmax_seconds", row.get("probability_compute_seconds", 0.0))))
         for row in rows
@@ -805,6 +838,7 @@ def summarize_per_source(
     total_softmax_seconds = sum(float(row.get("softmax_seconds", 0.0)) for row in rows)
     total_data_transfer_seconds = sum(float(row.get("data_transfer_seconds", 0.0)) for row in rows)
     total_arithmetic_encode_seconds = sum(float(row.get("arithmetic_encode_seconds", 0.0)) for row in rows)
+    total_arithmetic_range_seconds = sum(float(row.get("arithmetic_range_seconds", 0.0)) for row in rows)
     total_gpu_prefix_aggregate_seconds = sum(float(row.get("gpu_prefix_aggregate_seconds", 0.0)) for row in rows)
     total_cpu_small_alphabet_quantize_seconds = sum(
         float(row.get("cpu_small_alphabet_quantize_seconds", 0.0)) for row in rows
@@ -832,6 +866,8 @@ def summarize_per_source(
         "total_softmax_seconds": total_softmax_seconds,
         "total_data_transfer_seconds": total_data_transfer_seconds,
         "total_arithmetic_encode_seconds": total_arithmetic_encode_seconds,
+        "total_arithmetic_quantize_seconds": total_cpu_small_alphabet_quantize_seconds,
+        "total_arithmetic_range_seconds": total_arithmetic_range_seconds,
         "total_gpu_prefix_aggregate_seconds": total_gpu_prefix_aggregate_seconds,
         "total_cpu_small_alphabet_quantize_seconds": total_cpu_small_alphabet_quantize_seconds,
         "total_compression_process_seconds": total_compression_process_seconds,
@@ -853,6 +889,7 @@ def summarize_per_source(
         "arithmetic_effective_uniform_mass",
         "arithmetic_coding_mode",
         "arithmetic_merge_size",
+        "arithmetic_backend",
     ):
         if rows and all(row.get(key) == rows[0].get(key) for row in rows):
             summary[key] = rows[0].get(key)

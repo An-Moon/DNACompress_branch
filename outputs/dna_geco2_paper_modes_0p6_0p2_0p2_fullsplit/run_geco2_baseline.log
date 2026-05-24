@@ -1,0 +1,57 @@
+[geco2] loading data splits...
+[geco2] split=train source=1/17(OrSa) level=10 bytes=25957513
+[geco2] split=train source=2/17(HoSa) level=12 bytes=113851600
+[geco2] split=train source=3/17(DaRe) level=10 bytes=37539012
+[geco2] split=train source=4/17(ScPo) level=8 bytes=6391293
+[geco2] split=train source=5/17(EsCo) level=6 bytes=2784991
+[geco2] split=train source=6/17(YeMi) level=3 bytes=44213
+[geco2] split=train source=7/17(BuEb) level=1 bytes=11364
+[geco2] split=train source=8/17(AgPh) level=2 bytes=26382
+[geco2] split=train source=9/17(GaGa) level=11 bytes=89119376
+[geco2] split=train source=10/17(DrMe) level=10 bytes=19308857
+[geco2] split=train source=11/17(EnIn) level=9 bytes=15841852
+[geco2] split=train source=12/17(PlFa) level=7 bytes=5392027
+[geco2] split=train source=13/17(HePy) level=4 bytes=1000695
+[geco2] split=train source=14/17(AeCa) level=5 bytes=954629
+[geco2] split=train source=15/17(HaHi) level=5 bytes=2334003
+[geco2] split=train source=16/17(AnCa) level=5 bytes=85313805
+[geco2] split=train source=17/17(WaMe) level=5 bytes=5486659
+[geco2] split=val source=1/17(OrSa) level=10 bytes=8652504
+[geco2] split=val source=2/17(HoSa) level=12 bytes=37950533
+[geco2] split=val source=3/17(DaRe) level=10 bytes=12513004
+[geco2] split=val source=4/17(ScPo) level=8 bytes=2130431
+[geco2] split=val source=5/17(EsCo) level=6 bytes=928330
+[geco2] split=val source=6/17(YeMi) level=3 bytes=14737
+[geco2] split=val source=7/17(BuEb) level=1 bytes=3788
+[geco2] split=val source=8/17(AgPh) level=2 bytes=8794
+[geco2] split=val source=9/17(GaGa) level=11 bytes=29706458
+[geco2] split=val source=10/17(DrMe) level=10 bytes=6436285
+[geco2] split=val source=11/17(EnIn) level=9 bytes=5280617
+[geco2] split=val source=12/17(PlFa) level=7 bytes=1797342
+[geco2] split=val source=13/17(HePy) level=4 bytes=333565
+[geco2] split=val source=14/17(AeCa) level=5 bytes=318209
+[geco2] split=val source=15/17(HaHi) level=5 bytes=778001
+[geco2] split=val source=16/17(AnCa) level=5 bytes=28437935
+[geco2] split=val source=17/17(WaMe) level=5 bytes=1828886
+[geco2] split=test source=1/17(OrSa) level=10 bytes=8652506
+[geco2] split=test source=2/17(HoSa) level=12 bytes=37950534
+[geco2] split=test source=3/17(DaRe) level=10 bytes=12513004
+[geco2] split=test source=4/17(ScPo) level=8 bytes=2130431
+[geco2] split=test source=5/17(EsCo) level=6 bytes=928331
+[geco2] split=test source=6/17(YeMi) level=3 bytes=14739
+[geco2] split=test source=7/17(BuEb) level=1 bytes=3788
+[geco2] split=test source=8/17(AgPh) level=2 bytes=8794
+[geco2] split=test source=9/17(GaGa) level=11 bytes=29706460
+[geco2] split=test source=10/17(DrMe) level=10 bytes=6436287
+[geco2] split=test source=11/17(EnIn) level=9 bytes=5280618
+[geco2] split=test source=12/17(PlFa) level=7 bytes=1797343
+[geco2] split=test source=13/17(HePy) level=4 bytes=333565
+[geco2] split=test source=14/17(AeCa) level=5 bytes=318211
+[geco2] split=test source=15/17(HaHi) level=5 bytes=778001
+[geco2] split=test source=16/17(AnCa) level=5 bytes=28437935
+[geco2] split=test source=17/17(WaMe) level=5 bytes=1828887
+[geco2] generated 14 compression curve artifacts
+Saved GeCo2 baseline metrics to outputs/dna_geco2_paper_modes_0p6_0p2_0p2_fullsplit/compression_compare.json
+[geco2] train: sources=17 bpb=1.690822
+[geco2] val: sources=17 bpb=1.731993
+[geco2] test: sources=17 bpb=1.725236

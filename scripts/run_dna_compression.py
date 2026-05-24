@@ -87,6 +87,7 @@ import argparse
 import csv
 import importlib
 import json
+import math
 from pathlib import Path
 import re
 import subprocess
@@ -114,6 +115,7 @@ from dna_compress.compression_eval import (
 )
 from dna_compress.config import ExperimentConfig
 from dna_compress.data import load_splits
+from dna_compress.fast_arithmetic import ARITHMETIC_BACKENDS
 from dna_compress.fixed_token_factorization import build_fixed_token_arithmetic_factorizer
 from dna_compress.megabyte_loader import build_model
 from dna_compress.tokenization import apply_token_merge_to_model_config, normalize_alphabet
@@ -211,6 +213,7 @@ def _apply_overrides(config: ExperimentConfig, args: argparse.Namespace) -> None
     _apply_if_not_none(config, "data.compression_sample_bytes", args.compression_sample_bytes)
     _apply_if_not_none(config, "arithmetic.coding_mode", args.arithmetic_coding_mode)
     _apply_if_not_none(config, "arithmetic.merge_size", args.arithmetic_merge_size)
+    _apply_if_not_none(config, "arithmetic.backend", args.arithmetic_backend)
     _apply_if_not_none(config, "train.device", args.device)
     _apply_if_not_none(config, "train.dtype", args.dtype)
     _apply_if_not_none(config, "train.eval_batch_size", args.eval_batch_size)
@@ -320,6 +323,8 @@ def _validate_args(config: ExperimentConfig, args: argparse.Namespace) -> None:
             "arithmetic.coding_mode must be one of: "
             + ", ".join(MEGABYTE_ARITHMETIC_CODING_MODES)
         )
+    if config.arithmetic.backend not in ARITHMETIC_BACKENDS:
+        raise ValueError("arithmetic.backend must be one of: " + ", ".join(ARITHMETIC_BACKENDS))
     if config.arithmetic.coding_mode == "base_prefix_exact_gpu_cpu":
         if config.arithmetic.merge_size <= 0:
             raise ValueError("arithmetic.merge_size must be >= 1")
@@ -404,6 +409,27 @@ def _write_position_bits_profile_csv(path: Path, rows: list[dict[str, object]]) 
             writer.writerow({column: row.get(column) for column in columns})
 
 
+def _position_bits_moving_average_window_size(value_count: int) -> int:
+    if value_count < 21:
+        return 0
+    window_size = max(11, min(101, round(value_count * 0.033)))
+    if window_size % 2 == 0:
+        window_size += 1
+    max_odd_window = value_count if value_count % 2 == 1 else value_count - 1
+    return min(window_size, max_odd_window)
+
+
+def _centered_moving_average(y_values: list[float], window_size: int) -> list[float]:
+    radius = window_size // 2
+    smoothed: list[float] = []
+    for index in range(len(y_values)):
+        lower = max(0, index - radius)
+        upper = min(len(y_values), index + radius + 1)
+        finite_values = [value for value in y_values[lower:upper] if not math.isnan(value)]
+        smoothed.append(sum(finite_values) / len(finite_values) if finite_values else float("nan"))
+    return smoothed
+
+
 def _write_position_bits_profile_png(
     *,
     path: Path,
@@ -426,12 +452,23 @@ def _write_position_bits_profile_png(
         total_count = sum(int(base_counts[position]) for base_counts in counts)
         total_bits = sum(float(base_sum_bits[position]) for base_sum_bits in sum_bits)
         y_values.append((total_bits / total_count) if total_count > 0 else float("nan"))
-    axis.plot(x_values, y_values, linewidth=2.0, color="#1f77b4")
+    axis.plot(x_values, y_values, linewidth=1.0, color="#1f77b4", alpha=0.35, label="Mean BPB")
+    smooth_window = _position_bits_moving_average_window_size(len(y_values))
+    if smooth_window > 1:
+        axis.plot(
+            x_values,
+            _centered_moving_average(y_values, smooth_window),
+            linewidth=2.2,
+            color="#d62728",
+            alpha=0.95,
+            label=f"{smooth_window}-position moving average",
+        )
 
     axis.set_xlabel("Window Position (1-based)")
     axis.set_ylabel("Mean Theoretical Bits per Base")
     axis.set_title(f"{split_name} | {mode_name} | {species_name} | {source_name}")
     axis.grid(True, alpha=0.25, linewidth=0.6)
+    axis.legend(loc="best")
     figure.tight_layout()
     path.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(path, dpi=160)
@@ -488,6 +525,7 @@ def _run_split(
     factorizer,
     export_position_bits_curves: bool,
     position_bits_out_dir: Path | None,
+    include_codec_baselines: bool,
 ) -> dict[str, object]:
     sources = _sources_for_split(splits, split_name)
     source_entries = _source_entries(splits)
@@ -538,9 +576,11 @@ def _run_split(
                 arithmetic_target_uniform_mass=config.arithmetic.target_uniform_mass,
                 arithmetic_coding_mode=config.arithmetic.coding_mode,
                 arithmetic_merge_size=config.arithmetic.merge_size,
+                arithmetic_backend=config.arithmetic.backend,
                 factorizer=factorizer,
                 progress_callback=_on_progress,
                 collect_position_bits_profile=export_position_bits_curves and mode != SLIDING_TOKEN_MODE,
+                include_codec_baselines=include_codec_baselines,
             )
             print()
             position_bits_profile = metrics.pop("position_bits_profile", None)
@@ -703,6 +743,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Export per-source average theoretical bits/base curves by window-relative base position.",
     )
     parser.add_argument(
+        "--skip-codec-baselines",
+        action="store_true",
+        help="Skip gzip/bz2/lzma baseline-size computation. ascii and two-bit pack sizes are still recorded.",
+    )
+    parser.add_argument(
         "--position-bits-out-dir",
         default=None,
         help="Optional output directory for position-bits CSV/PNG artifacts. Defaults to <export-out-dir>/position_bits_curves.",
@@ -752,6 +797,11 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Arithmetic coding path for Megabyte compression.",
     )
     runtime_group.add_argument("--arithmetic-merge-size", type=int)
+    runtime_group.add_argument(
+        "--arithmetic-backend",
+        choices=list(ARITHMETIC_BACKENDS),
+        help="Arithmetic encoder implementation backend.",
+    )
 
     return parser
 
@@ -837,6 +887,7 @@ def main() -> None:
             factorizer=factorizer,
             export_position_bits_curves=args.export_position_bits_curves,
             position_bits_out_dir=position_bits_out_dir,
+            include_codec_baselines=not args.skip_codec_baselines,
         )
         if "arithmetic" not in metrics:
             split_result = metrics["results"][split_name]
@@ -855,6 +906,7 @@ def main() -> None:
                             "effective_uniform_mass": aggregate.get("arithmetic_effective_uniform_mass"),
                             "coding_mode": aggregate.get("arithmetic_coding_mode"),
                             "merge_size": aggregate.get("arithmetic_merge_size"),
+                            "backend": aggregate.get("arithmetic_backend"),
                         }
                         break
 

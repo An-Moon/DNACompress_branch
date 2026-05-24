@@ -1,0 +1,356 @@
+{
+  "input_csv": "outputs/model_fusion_position_curves/dare_val_first6000/dare_val_first6000_position_curves.csv",
+  "position_count": 6000,
+  "baselines": {
+    "megabyte_mean_bpb": 1.879847592620179,
+    "dnagpt_mean_bpb": 1.8623721399936604,
+    "best_single_model_bpb": 1.8623721399936604,
+    "oracle_per_position_bpb": 1.7341673969146878,
+    "oracle_gain_vs_best_single_bpb": 0.12820474307897256
+  },
+  "fixed_alpha_eta_scan": {
+    "alpha": 0.005,
+    "best": {
+      "alpha": 0.005,
+      "eta": 28.0,
+      "mean_bpb": 1.8559722061028299,
+      "gain_vs_dnagpt_bpb": 0.006399933890830489,
+      "mean_megabyte_weight": 0.4255985609373333,
+      "final_megabyte_weight": 0.3316377400354057
+    },
+    "top20": [
+      {
+        "alpha": 0.005,
+        "eta": 28.0,
+        "mean_bpb": 1.8559722061028299,
+        "gain_vs_dnagpt_bpb": 0.006399933890830489,
+        "mean_megabyte_weight": 0.4255985609373333,
+        "final_megabyte_weight": 0.3316377400354057
+      },
+      {
+        "alpha": 0.005,
+        "eta": 29.0,
+        "mean_bpb": 1.8559727633225518,
+        "gain_vs_dnagpt_bpb": 0.00639937667110857,
+        "mean_megabyte_weight": 0.4232610340063157,
+        "final_megabyte_weight": 0.3261137208251513
+      },
+      {
+        "alpha": 0.005,
+        "eta": 27.0,
+        "mean_bpb": 1.855973616699133,
+        "gain_vs_dnagpt_bpb": 0.006398523294527392,
+        "mean_megabyte_weight": 0.4279640952067985,
+        "final_megabyte_weight": 0.337208507900462
+      },
+      {
+        "alpha": 0.005,
+        "eta": 30.0,
+        "mean_bpb": 1.855975212507854,
+        "gain_vs_dnagpt_bpb": 0.006396927485806447,
+        "mean_megabyte_weight": 0.4209517844326251,
+        "final_megabyte_weight": 0.32063757234158863
+      },
+      {
+        "alpha": 0.005,
+        "eta": 26.0,
+        "mean_bpb": 1.8559770715088038,
+        "gain_vs_dnagpt_bpb": 0.006395068484856603,
+        "mean_megabyte_weight": 0.43035731952203704,
+        "final_megabyte_weight": 0.34282485375422156
+      },
+      {
+        "alpha": 0.005,
+        "eta": 31.0,
+        "mean_bpb": 1.8559794785540573,
+        "gain_vs_dnagpt_bpb": 0.006392661439603042,
+        "mean_megabyte_weight": 0.41867103681338,
+        "final_megabyte_weight": 0.3152103675758681
+      },
+      {
+        "alpha": 0.005,
+        "eta": 25.0,
+        "mean_bpb": 1.8559826472558227,
+        "gain_vs_dnagpt_bpb": 0.006389492737837621,
+        "mean_megabyte_weight": 0.4327778675562547,
+        "final_megabyte_weight": 0.34848555892167105
+      },
+      {
+        "alpha": 0.005,
+        "eta": 32.0,
+        "mean_bpb": 1.8559854872802244,
+        "gain_vs_dnagpt_bpb": 0.00638665271343597,
+        "mean_megabyte_weight": 0.41641897224735225,
+        "final_megabyte_weight": 0.30983313004949314
+      },
+      {
+        "alpha": 0.005,
+        "eta": 24.0,
+        "mean_bpb": 1.8559904207488813,
+        "gain_vs_dnagpt_bpb": 0.006381719244779038,
+        "mean_megabyte_weight": 0.4352253223014362,
+        "final_megabyte_weight": 0.354189357403767
+      },
+      {
+        "alpha": 0.005,
+        "eta": 33.0,
+        "mean_bpb": 1.8559931655869213,
+        "gain_vs_dnagpt_bpb": 0.006378974406739069,
+        "mean_megabyte_weight": 0.41419573031074586,
+        "final_megabyte_weight": 0.30450683352160784
+      },
+      {
+        "alpha": 0.005,
+        "eta": 23.0,
+        "mean_bpb": 1.8560004686177654,
+        "gain_vs_dnagpt_bpb": 0.006371671375895005,
+        "mean_megabyte_weight": 0.4376992145569811,
+        "final_megabyte_weight": 0.3599349366624209
+      },
+      {
+        "alpha": 0.005,
+        "eta": 34.0,
+        "mean_bpb": 1.8560024415946006,
+        "gain_vs_dnagpt_bpb": 0.006369698399059764,
+        "mean_megabyte_weight": 0.41200141106773397,
+        "final_megabyte_weight": 0.29923240179077126
+      },
+      {
+        "alpha": 0.005,
+        "eta": 22.0,
+        "mean_bpb": 1.8560128670283103,
+        "gain_vs_dnagpt_bpb": 0.0063592729653501046,
+        "mean_megabyte_weight": 0.4401990215773786,
+        "final_megabyte_weight": 0.36572093850576354
+      },
+      {
+        "alpha": 0.005,
+        "eta": 35.0,
+        "mean_bpb": 1.8560132447635518,
+        "gain_vs_dnagpt_bpb": 0.006358895230108574,
+        "mean_megabyte_weight": 0.40983607709962266,
+        "final_megabyte_weight": 0.2940107085892483
+      },
+      {
+        "alpha": 0.005,
+        "eta": 36.0,
+        "mean_bpb": 1.8560255059964692,
+        "gain_vs_dnagpt_bpb": 0.006346633997191153,
+        "mean_megabyte_weight": 0.4076997555380046,
+        "final_megabyte_weight": 0.2888425775676035
+      },
+      {
+        "alpha": 0.005,
+        "eta": 21.0,
+        "mean_bpb": 1.8560276913765208,
+        "gain_vs_dnagpt_bpb": 0.006344448617139564,
+        "mean_megabyte_weight": 0.4427241659027407,
+        "final_megabyte_weight": 0.37154596007352086
+      },
+      {
+        "alpha": 0.005,
+        "eta": 37.0,
+        "mean_bpb": 1.856039157724732,
+        "gain_vs_dnagpt_bpb": 0.006332982268928422,
+        "mean_megabyte_weight": 0.40559244008877204,
+        "final_megabyte_weight": 0.28372878236715604
+      },
+      {
+        "alpha": 0.005,
+        "eta": 20.0,
+        "mean_bpb": 1.8560450159627884,
+        "gain_vs_dnagpt_bpb": 0.006327124030871989,
+        "mean_megabyte_weight": 0.44527401439622344,
+        "final_megabyte_weight": 0.3774085549219887
+      },
+      {
+        "alpha": 0.005,
+        "eta": 38.0,
+        "mean_bpb": 1.8560541339795449,
+        "gain_vs_dnagpt_bpb": 0.006318006014115474,
+        "mean_megabyte_weight": 0.40351409303533287,
+        "final_megabyte_weight": 0.27867004677764695
+      },
+      {
+        "alpha": 0.005,
+        "eta": 19.0,
+        "mean_bpb": 1.8560649136475265,
+        "gain_vs_dnagpt_bpb": 0.006307226346133898,
+        "mean_megabyte_weight": 0.4478478775122221,
+        "final_megabyte_weight": 0.3833072342077302
+      }
+    ]
+  },
+  "joint_alpha_eta_scan": {
+    "best": {
+      "alpha": 0.003,
+      "eta": 32.0,
+      "mean_bpb": 1.8559567617485029,
+      "gain_vs_dnagpt_bpb": 0.006415378245157477,
+      "mean_megabyte_weight": 0.41772247382702216,
+      "final_megabyte_weight": 0.32747433840531315
+    },
+    "top20": [
+      {
+        "alpha": 0.003,
+        "eta": 32.0,
+        "mean_bpb": 1.8559567617485029,
+        "gain_vs_dnagpt_bpb": 0.006415378245157477,
+        "mean_megabyte_weight": 0.41772247382702216,
+        "final_megabyte_weight": 0.32747433840531315
+      },
+      {
+        "alpha": 0.003,
+        "eta": 36.0,
+        "mean_bpb": 1.8559572154310378,
+        "gain_vs_dnagpt_bpb": 0.006414924562622604,
+        "mean_megabyte_weight": 0.40872069619118384,
+        "final_megabyte_weight": 0.30797906569184585
+      },
+      {
+        "alpha": 0.004,
+        "eta": 32.0,
+        "mean_bpb": 1.8559600883693672,
+        "gain_vs_dnagpt_bpb": 0.006412051624293147,
+        "mean_megabyte_weight": 0.41677939450088713,
+        "final_megabyte_weight": 0.31790403697193564
+      },
+      {
+        "alpha": 0.004,
+        "eta": 28.0,
+        "mean_bpb": 1.8559644123598331,
+        "gain_vs_dnagpt_bpb": 0.006407727633827243,
+        "mean_megabyte_weight": 0.4260663300418715,
+        "final_megabyte_weight": 0.3389463444856262
+      },
+      {
+        "alpha": 0.005,
+        "eta": 28.0,
+        "mean_bpb": 1.8559722061028299,
+        "gain_vs_dnagpt_bpb": 0.006399933890830489,
+        "mean_megabyte_weight": 0.4255985609373333,
+        "final_megabyte_weight": 0.3316377400354057
+      },
+      {
+        "alpha": 0.003,
+        "eta": 40.0,
+        "mean_bpb": 1.855978049269955,
+        "gain_vs_dnagpt_bpb": 0.006394090723705448,
+        "mean_megabyte_weight": 0.4000863233851993,
+        "final_megabyte_weight": 0.28914540325360183
+      },
+      {
+        "alpha": 0.003,
+        "eta": 28.0,
+        "mean_bpb": 1.8559795677626083,
+        "gain_vs_dnagpt_bpb": 0.006392572231052052,
+        "mean_megabyte_weight": 0.4270803035241867,
+        "final_megabyte_weight": 0.34758383701199136
+      },
+      {
+        "alpha": 0.004,
+        "eta": 36.0,
+        "mean_bpb": 1.8559812954670551,
+        "gain_vs_dnagpt_bpb": 0.0063908445266052105,
+        "mean_megabyte_weight": 0.4079081188777231,
+        "final_megabyte_weight": 0.29758000651046507
+      },
+      {
+        "alpha": 0.002,
+        "eta": 40.0,
+        "mean_bpb": 1.8559833773955545,
+        "gain_vs_dnagpt_bpb": 0.006388762598105835,
+        "mean_megabyte_weight": 0.40206766624396406,
+        "final_megabyte_weight": 0.3071810950515729
+      },
+      {
+        "alpha": 0.005,
+        "eta": 32.0,
+        "mean_bpb": 1.8559854872802244,
+        "gain_vs_dnagpt_bpb": 0.00638665271343597,
+        "mean_megabyte_weight": 0.41641897224735225,
+        "final_megabyte_weight": 0.30983313004949314
+      },
+      {
+        "alpha": 0.002,
+        "eta": 36.0,
+        "mean_bpb": 1.8559868954217476,
+        "gain_vs_dnagpt_bpb": 0.006385244571912807,
+        "mean_megabyte_weight": 0.4108423339710715,
+        "final_megabyte_weight": 0.3247564187550911
+      },
+      {
+        "alpha": 0.005,
+        "eta": 24.0,
+        "mean_bpb": 1.8559904207488813,
+        "gain_vs_dnagpt_bpb": 0.006381719244779038,
+        "mean_megabyte_weight": 0.4352253223014362,
+        "final_megabyte_weight": 0.354189357403767
+      },
+      {
+        "alpha": 0.006,
+        "eta": 28.0,
+        "mean_bpb": 1.8559909382931443,
+        "gain_vs_dnagpt_bpb": 0.006381201700516037,
+        "mean_megabyte_weight": 0.42540411789305693,
+        "final_megabyte_weight": 0.32505499448524966
+      },
+      {
+        "alpha": 0.006,
+        "eta": 24.0,
+        "mean_bpb": 1.855994176114917,
+        "gain_vs_dnagpt_bpb": 0.006377963878743342,
+        "mean_megabyte_weight": 0.43495001774712583,
+        "final_megabyte_weight": 0.3483590221284133
+      },
+      {
+        "alpha": 0.004,
+        "eta": 24.0,
+        "mean_bpb": 1.8559981341282998,
+        "gain_vs_dnagpt_bpb": 0.006374005865360521,
+        "mean_megabyte_weight": 0.43575260210694855,
+        "final_megabyte_weight": 0.3606450388658962
+      },
+      {
+        "alpha": 0.002,
+        "eta": 32.0,
+        "mean_bpb": 1.8560078399563658,
+        "gain_vs_dnagpt_bpb": 0.006364300037294601,
+        "mean_megabyte_weight": 0.4199023459634123,
+        "final_megabyte_weight": 0.342839708501374
+      },
+      {
+        "alpha": 0.008,
+        "eta": 24.0,
+        "mean_bpb": 1.8560197386129678,
+        "gain_vs_dnagpt_bpb": 0.006352401380692596,
+        "mean_megabyte_weight": 0.4347479177468347,
+        "final_megabyte_weight": 0.3390081345680272
+      },
+      {
+        "alpha": 0.006,
+        "eta": 32.0,
+        "mean_bpb": 1.856020472108259,
+        "gain_vs_dnagpt_bpb": 0.006351667885401424,
+        "mean_megabyte_weight": 0.41634459186455486,
+        "final_megabyte_weight": 0.30258603191645617
+      },
+      {
+        "alpha": 0.002,
+        "eta": 48.0,
+        "mean_bpb": 1.85602103589983,
+        "gain_vs_dnagpt_bpb": 0.00635110409383044,
+        "mean_megabyte_weight": 0.3854074043384695,
+        "final_megabyte_weight": 0.2736867042100938
+      },
+      {
+        "alpha": 0.004,
+        "eta": 40.0,
+        "mean_bpb": 1.856024327101325,
+        "gain_vs_dnagpt_bpb": 0.006347812892335325,
+        "mean_megabyte_weight": 0.39945999753806516,
+        "final_megabyte_weight": 0.2780257000744948
+      }
+    ]
+  }
+}

@@ -8,10 +8,8 @@ import numpy as np
 import torch
 
 from .compression import (
-    ArithmeticEncoder,
     BitOutputStream,
     baseline_sizes,
-    probabilities_to_cumulative_batch,
     resolve_arithmetic_coding_metadata,
 )
 from .compression_eval import NON_OVERLAP_MODE, SLIDING_TOKEN_MODE
@@ -26,6 +24,7 @@ from .dnagpt_prefix_coding import (
 )
 from .dnagpt_tokenization import TokenizedDNASource, tokenize_dna_source
 from .experiment import autocast_context
+from .fast_arithmetic import StreamingArithmeticEncoder
 
 
 SUPPORTED_DNAGPT_COMPRESSION_MODES = (
@@ -57,6 +56,8 @@ def _finalize_metrics(
     arithmetic_encode_seconds: float,
     gpu_prefix_aggregate_seconds: float,
     cpu_small_alphabet_quantize_seconds: float,
+    arithmetic_range_seconds: float,
+    arithmetic_backend: str,
     arithmetic_metadata: dict[str, object],
     arithmetic_coding_mode: str,
     arithmetic_merge_size: int,
@@ -70,7 +71,11 @@ def _finalize_metrics(
     sample_bases = tokenized_source.total_bases
     model_forward_softmax_seconds = model_forward_seconds + softmax_seconds
     compression_process_seconds = (
-        model_forward_seconds + softmax_seconds + data_transfer_seconds + arithmetic_encode_seconds
+        model_forward_seconds
+        + softmax_seconds
+        + gpu_prefix_aggregate_seconds
+        + data_transfer_seconds
+        + arithmetic_encode_seconds
     )
     return {
         "mode": mode,
@@ -94,6 +99,9 @@ def _finalize_metrics(
         "arithmetic_encode_seconds": arithmetic_encode_seconds,
         "gpu_prefix_aggregate_seconds": gpu_prefix_aggregate_seconds,
         "cpu_small_alphabet_quantize_seconds": cpu_small_alphabet_quantize_seconds,
+        "arithmetic_quantize_seconds": cpu_small_alphabet_quantize_seconds,
+        "arithmetic_range_seconds": arithmetic_range_seconds,
+        "arithmetic_backend": arithmetic_backend,
         "compression_process_seconds": compression_process_seconds,
         "compression_bytes_per_second": sample_bytes / max(compression_process_seconds, 1e-12),
         "compression_bases_per_second": sample_bases / max(compression_process_seconds, 1e-12),
@@ -112,14 +120,10 @@ def _encode_model_symbol_probabilities(
     probability_rows: np.ndarray,
     target_symbols: np.ndarray,
     total: int,
-    encoder: ArithmeticEncoder,
-) -> tuple[float, int]:
-    quantize_started = perf_counter()
-    cumulative_batch = probabilities_to_cumulative_batch(probability_rows, total=total)
-    quantize_seconds = perf_counter() - quantize_started
-    for cumulative, target in zip(cumulative_batch, target_symbols):
-        encoder.update(cumulative, int(target))
-    return quantize_seconds, len(target_symbols)
+    encoder: StreamingArithmeticEncoder,
+) -> tuple[float, float, int]:
+    timings = encoder.encode_probability_rows(probability_rows, target_symbols, total=total)
+    return timings.quantize_seconds, timings.range_seconds, timings.emitted_count
 
 
 def _encode_base_prefix_probabilities(
@@ -128,8 +132,8 @@ def _encode_base_prefix_probabilities(
     target_token_ids: torch.Tensor,
     trie: DNAGPTPrefixTrie,
     total: int,
-    encoder: ArithmeticEncoder,
-) -> tuple[float, float, float, int, float]:
+    encoder: StreamingArithmeticEncoder,
+) -> tuple[float, float, float, int, float, float]:
     aggregate_started = perf_counter()
     factorized = factorize_dnagpt_log_probs_to_base_prefix_stream(
         log_probs=log_prob_rows,
@@ -143,18 +147,15 @@ def _encode_base_prefix_probabilities(
     flat_symbols = factorized.emitted_symbols[factorized.emitted_valid_mask].cpu().numpy()
     data_transfer_seconds = perf_counter() - transfer_started
 
-    quantize_started = perf_counter()
-    cumulative_batch = probabilities_to_cumulative_batch(flat_probabilities, total=total)
-    cpu_small_alphabet_quantize_seconds = perf_counter() - quantize_started
-    for cumulative, symbol in zip(cumulative_batch, flat_symbols):
-        encoder.update(cumulative, int(symbol))
+    timings = encoder.encode_probability_rows(flat_probabilities, flat_symbols, total=total)
     total_bits = float((-factorized.target_log_probs / math.log(2)).sum().item())
     return (
         total_bits,
         data_transfer_seconds,
         gpu_prefix_aggregate_seconds,
         factorized.emitted_symbol_count,
-        cpu_small_alphabet_quantize_seconds,
+        timings.quantize_seconds,
+        timings.range_seconds,
     )
 
 
@@ -165,8 +166,8 @@ def _encode_grouped_prefix_probabilities(
     trie: DNAGPTPrefixTrie,
     merge_size: int,
     total: int,
-    encoder: ArithmeticEncoder,
-) -> tuple[float, float, float, int, float]:
+    encoder: StreamingArithmeticEncoder,
+) -> tuple[float, float, float, int, float, float]:
     aggregate_started = perf_counter()
     factorized = factorize_dnagpt_log_probs_to_grouped_prefix_stream(
         log_probs=log_prob_rows,
@@ -182,23 +183,13 @@ def _encode_grouped_prefix_probabilities(
     step_row_positions = tuple(step.cpu().numpy() for step in factorized.step_row_positions)
     data_transfer_seconds = perf_counter() - transfer_started
 
-    quantize_started = perf_counter()
-    step_cumulative = tuple(
-        probabilities_to_cumulative_batch(step, total=total)
-        for step in step_probabilities
+    timings = encoder.encode_grouped_steps(
+        step_probabilities,
+        step_symbols,
+        step_row_positions,
+        row_count=int(target_token_ids.shape[0]),
+        total=total,
     )
-    cpu_small_alphabet_quantize_seconds = perf_counter() - quantize_started
-
-    for row_index in range(target_token_ids.shape[0]):
-        for cumulative_batch, symbol_batch, row_positions in zip(
-            step_cumulative,
-            step_symbols,
-            step_row_positions,
-        ):
-            position = int(row_positions[row_index])
-            if position < 0:
-                continue
-            encoder.update(cumulative_batch[position], int(symbol_batch[position]))
 
     total_bits = float((-factorized.target_log_probs / math.log(2)).sum().item())
     return (
@@ -206,7 +197,8 @@ def _encode_grouped_prefix_probabilities(
         data_transfer_seconds,
         gpu_prefix_aggregate_seconds,
         factorized.emitted_symbol_count,
-        cpu_small_alphabet_quantize_seconds,
+        timings.quantize_seconds,
+        timings.range_seconds,
     )
 
 
@@ -245,6 +237,7 @@ def compress_dnagpt_sequence_sliding(
     arithmetic_metadata: dict[str, object],
     arithmetic_coding_mode: str,
     arithmetic_merge_size: int,
+    arithmetic_backend: str,
     prefix_trie: DNAGPTPrefixTrie | None,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> dict[str, object]:
@@ -252,7 +245,7 @@ def compress_dnagpt_sequence_sliding(
     if not dna_tokens:
         raise ValueError("DNAGPT compression requires at least one DNA token.")
 
-    encoder = ArithmeticEncoder()
+    encoder = StreamingArithmeticEncoder(arithmetic_backend)
     total_bits = 0.0
     model_forward_seconds = 0.0
     softmax_seconds = 0.0
@@ -260,6 +253,7 @@ def compress_dnagpt_sequence_sliding(
     arithmetic_encode_seconds = 0.0
     gpu_prefix_aggregate_seconds = 0.0
     cpu_small_alphabet_quantize_seconds = 0.0
+    arithmetic_range_seconds = 0.0
     emitted_arithmetic_symbol_count = 0
     total_batches = max(1, math.ceil(len(dna_tokens) / batch_size))
     processed_batches = 0
@@ -299,7 +293,6 @@ def compress_dnagpt_sequence_sliding(
                 next_token_log_probs = torch.log_softmax(next_token_logits, dim=-1)
                 softmax_seconds += perf_counter() - softmax_started
 
-            encode_started = perf_counter()
             if arithmetic_coding_mode == "model_symbol":
                 targets_device = torch.tensor(batch_targets, dtype=torch.long, device=device)
                 target_log_probs = next_token_log_probs.gather(1, targets_device.unsqueeze(1)).squeeze(1)
@@ -307,13 +300,15 @@ def compress_dnagpt_sequence_sliding(
                 transfer_started = perf_counter()
                 probs_np = next_token_log_probs.float().exp().cpu().numpy()
                 data_transfer_seconds += perf_counter() - transfer_started
-                quantize_seconds, emitted_count = _encode_model_symbol_probabilities(
+                quantize_seconds, range_seconds, emitted_count = _encode_model_symbol_probabilities(
                     probability_rows=probs_np,
                     target_symbols=np.asarray(batch_targets, dtype=np.int64),
                     total=int(arithmetic_metadata["arithmetic_frequency_total"]),
                     encoder=encoder,
                 )
                 cpu_small_alphabet_quantize_seconds += quantize_seconds
+                arithmetic_range_seconds += range_seconds
+                arithmetic_encode_seconds += quantize_seconds + range_seconds
                 emitted_arithmetic_symbol_count += emitted_count
             elif arithmetic_coding_mode == "base_prefix_exact_gpu_cpu":
                 if prefix_trie is None:
@@ -325,6 +320,7 @@ def compress_dnagpt_sequence_sliding(
                         batch_gpu_aggregate_seconds,
                         emitted_count,
                         batch_quantize_seconds,
+                        batch_range_seconds,
                     ) = _encode_base_prefix_probabilities(
                         log_prob_rows=next_token_log_probs,
                         target_token_ids=torch.tensor(batch_targets, dtype=torch.long, device=device),
@@ -339,6 +335,7 @@ def compress_dnagpt_sequence_sliding(
                         batch_gpu_aggregate_seconds,
                         emitted_count,
                         batch_quantize_seconds,
+                        batch_range_seconds,
                     ) = _encode_grouped_prefix_probabilities(
                         log_prob_rows=next_token_log_probs,
                         target_token_ids=torch.tensor(batch_targets, dtype=torch.long, device=device),
@@ -351,10 +348,11 @@ def compress_dnagpt_sequence_sliding(
                 data_transfer_seconds += batch_transfer_seconds
                 gpu_prefix_aggregate_seconds += batch_gpu_aggregate_seconds
                 cpu_small_alphabet_quantize_seconds += batch_quantize_seconds
+                arithmetic_range_seconds += batch_range_seconds
+                arithmetic_encode_seconds += batch_quantize_seconds + batch_range_seconds
                 emitted_arithmetic_symbol_count += emitted_count
             else:
                 raise ValueError(f"Unsupported DNAGPT arithmetic coding mode '{arithmetic_coding_mode}'.")
-            arithmetic_encode_seconds += perf_counter() - encode_started
 
             processed_batches += 1
             if progress_callback is not None:
@@ -373,6 +371,8 @@ def compress_dnagpt_sequence_sliding(
         arithmetic_encode_seconds=arithmetic_encode_seconds,
         gpu_prefix_aggregate_seconds=gpu_prefix_aggregate_seconds,
         cpu_small_alphabet_quantize_seconds=cpu_small_alphabet_quantize_seconds,
+        arithmetic_range_seconds=arithmetic_range_seconds,
+        arithmetic_backend=encoder.backend,
         arithmetic_metadata=arithmetic_metadata,
         arithmetic_coding_mode=arithmetic_coding_mode,
         arithmetic_merge_size=arithmetic_merge_size,
@@ -401,6 +401,7 @@ def compress_dnagpt_sequence_train_windows(
     arithmetic_metadata: dict[str, object],
     arithmetic_coding_mode: str,
     arithmetic_merge_size: int,
+    arithmetic_backend: str,
     prefix_trie: DNAGPTPrefixTrie | None,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> dict[str, object]:
@@ -411,7 +412,7 @@ def compress_dnagpt_sequence_train_windows(
     prefix_length = len(tokenized_source.prefix_ids)
     target_capacity = max_target_tokens(seq_length, prefix_length)
     starts = list(range(0, len(dna_tokens), target_capacity))
-    encoder = ArithmeticEncoder()
+    encoder = StreamingArithmeticEncoder(arithmetic_backend)
     total_bits = 0.0
     model_forward_seconds = 0.0
     softmax_seconds = 0.0
@@ -419,6 +420,7 @@ def compress_dnagpt_sequence_train_windows(
     arithmetic_encode_seconds = 0.0
     gpu_prefix_aggregate_seconds = 0.0
     cpu_small_alphabet_quantize_seconds = 0.0
+    arithmetic_range_seconds = 0.0
     emitted_arithmetic_symbol_count = 0
     total_batches = max(1, math.ceil(len(starts) / batch_size))
     processed_batches = 0
@@ -453,7 +455,6 @@ def compress_dnagpt_sequence_train_windows(
                 log_probs = torch.log_softmax(logits, dim=-1)
                 softmax_seconds += perf_counter() - softmax_started
 
-            encode_started = perf_counter()
             if arithmetic_coding_mode == "model_symbol":
                 transfer_started = perf_counter()
                 rows_cpu = log_probs.float().cpu().numpy()
@@ -469,13 +470,15 @@ def compress_dnagpt_sequence_train_windows(
                     targets_np = np.asarray(chunk, dtype=np.int64)
                     total_bits += float((-row_log_probs[np.arange(row_log_probs.shape[0]), targets_np] / math.log(2)).sum())
                     probs_np = probs_cpu[row_index, prefix_length : prefix_length + chunk_length, :]
-                    quantize_seconds, emitted_count = _encode_model_symbol_probabilities(
+                    quantize_seconds, range_seconds, emitted_count = _encode_model_symbol_probabilities(
                         probability_rows=probs_np,
                         target_symbols=targets_np,
                         total=int(arithmetic_metadata["arithmetic_frequency_total"]),
                         encoder=encoder,
                     )
                     cpu_small_alphabet_quantize_seconds += quantize_seconds
+                    arithmetic_range_seconds += range_seconds
+                    arithmetic_encode_seconds += quantize_seconds + range_seconds
                     emitted_arithmetic_symbol_count += emitted_count
             elif arithmetic_coding_mode == "base_prefix_exact_gpu_cpu":
                 if prefix_trie is None:
@@ -495,6 +498,7 @@ def compress_dnagpt_sequence_train_windows(
                             batch_gpu_aggregate_seconds,
                             emitted_count,
                             batch_quantize_seconds,
+                            batch_range_seconds,
                         ) = _encode_base_prefix_probabilities(
                             log_prob_rows=torch.cat(flat_log_prob_rows, dim=0),
                             target_token_ids=torch.cat(flat_target_ids, dim=0),
@@ -509,6 +513,7 @@ def compress_dnagpt_sequence_train_windows(
                             batch_gpu_aggregate_seconds,
                             emitted_count,
                             batch_quantize_seconds,
+                            batch_range_seconds,
                         ) = _encode_grouped_prefix_probabilities(
                             log_prob_rows=torch.cat(flat_log_prob_rows, dim=0),
                             target_token_ids=torch.cat(flat_target_ids, dim=0),
@@ -521,10 +526,11 @@ def compress_dnagpt_sequence_train_windows(
                     data_transfer_seconds += batch_transfer_seconds
                     gpu_prefix_aggregate_seconds += batch_gpu_aggregate_seconds
                     cpu_small_alphabet_quantize_seconds += batch_quantize_seconds
+                    arithmetic_range_seconds += batch_range_seconds
+                    arithmetic_encode_seconds += batch_quantize_seconds + batch_range_seconds
                     emitted_arithmetic_symbol_count += emitted_count
             else:
                 raise ValueError(f"Unsupported DNAGPT arithmetic coding mode '{arithmetic_coding_mode}'.")
-            arithmetic_encode_seconds += perf_counter() - encode_started
 
             processed_batches += 1
             if progress_callback is not None:
@@ -543,6 +549,8 @@ def compress_dnagpt_sequence_train_windows(
         arithmetic_encode_seconds=arithmetic_encode_seconds,
         gpu_prefix_aggregate_seconds=gpu_prefix_aggregate_seconds,
         cpu_small_alphabet_quantize_seconds=cpu_small_alphabet_quantize_seconds,
+        arithmetic_range_seconds=arithmetic_range_seconds,
+        arithmetic_backend=encoder.backend,
         arithmetic_metadata=arithmetic_metadata,
         arithmetic_coding_mode=arithmetic_coding_mode,
         arithmetic_merge_size=arithmetic_merge_size,
@@ -578,6 +586,7 @@ def compress_dnagpt_source(
     arithmetic_target_uniform_mass: float,
     arithmetic_coding_mode: str,
     arithmetic_merge_size: int,
+    arithmetic_backend: str = "python",
     prefix_trie: DNAGPTPrefixTrie | None = None,
     progress_callback: Callable[[int, int], None] | None = None,
 ) -> dict[str, object]:
@@ -625,6 +634,7 @@ def compress_dnagpt_source(
             arithmetic_metadata=arithmetic_metadata,
             arithmetic_coding_mode=arithmetic_coding_mode,
             arithmetic_merge_size=arithmetic_merge_size,
+            arithmetic_backend=arithmetic_backend,
             prefix_trie=prefix_trie,
             progress_callback=progress_callback,
         )
@@ -641,6 +651,7 @@ def compress_dnagpt_source(
             arithmetic_metadata=arithmetic_metadata,
             arithmetic_coding_mode=arithmetic_coding_mode,
             arithmetic_merge_size=arithmetic_merge_size,
+            arithmetic_backend=arithmetic_backend,
             prefix_trie=prefix_trie,
             progress_callback=progress_callback,
         )

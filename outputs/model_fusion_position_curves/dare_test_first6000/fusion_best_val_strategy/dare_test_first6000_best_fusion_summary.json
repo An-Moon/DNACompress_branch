@@ -1,0 +1,57 @@
+{
+  "selection_policy": "parameters selected on DaRe val first 6000; no test retuning",
+  "selected_best_val_strategy": {
+    "name": "sliding_window_soft",
+    "W": 512,
+    "eta": 32,
+    "mean_bpb": 1.8557228247603386,
+    "gain_vs_dnagpt_bpb": 0.006649315233321795,
+    "mean_megabyte_weight": 0.4130890597475187,
+    "rule": "D_W(t)=mean previous W values of MEGABYTE_bits-DNAGPT_bits; w_M=1/(1+2^(eta*D_W)); p_mix=w_M*p_M+(1-w_M)*p_D"
+  },
+  "val_reference_bpb": {
+    "megabyte": 1.879847592620179,
+    "dnagpt": 1.8623721399936604,
+    "selected_sliding_window_soft": 1.8557228247603386,
+    "best_fixed_weight": 1.8558428933841764,
+    "multiwindow_meta": 1.8558653301390045,
+    "multiwindow_plain_average": 1.8558608950568205,
+    "oracle": 1.7341673969146878
+  },
+  "test_bpb": {
+    "megabyte": 1.6595274947891205,
+    "dnagpt": 1.700377150054695,
+    "best_single_model": 1.6595274947891205,
+    "selected_sliding_window_soft": 1.6488810421437698,
+    "best_fixed_weight_from_val": 1.661101986943643,
+    "multiwindow_meta_from_val": 1.6466379520681536,
+    "multiwindow_plain_average_from_val": 1.6466757368854952,
+    "oracle_per_position": 1.5109550962562877
+  },
+  "test_gain_vs_best_single_bpb": {
+    "megabyte": 0.0,
+    "dnagpt": -0.04084965526557438,
+    "selected_sliding_window_soft": 0.01064645264535069,
+    "best_fixed_weight_from_val": -0.0015744921545224333,
+    "multiwindow_meta_from_val": 0.012889542720966984,
+    "multiwindow_plain_average_from_val": 0.01285175790362536,
+    "oracle_per_position": 0.14857239853283288
+  },
+  "test_weight_summary": {
+    "selected_sliding_mean_megabyte_weight": 0.5832107944548143,
+    "selected_sliding_final_megabyte_weight": 0.8202639470033976,
+    "multiwindow_meta_mean_megabyte_weight": 0.5451750773935364,
+    "multiwindow_meta_final_meta_weights": {
+      "16": 0.20203580234128166,
+      "64": 0.22158102231086702,
+      "256": 0.1779073929865591,
+      "512": 0.19652349949999598,
+      "1024": 0.2019522828612962
+    }
+  },
+  "outputs": {
+    "trace_csv": "outputs/model_fusion_position_curves/dare_test_first6000/fusion_best_val_strategy/dare_test_first6000_best_fusion_trace.csv",
+    "plot": "outputs/model_fusion_position_curves/dare_test_first6000/fusion_best_val_strategy/dare_test_first6000_best_fusion.png",
+    "summary_json": "outputs/model_fusion_position_curves/dare_test_first6000/fusion_best_val_strategy/dare_test_first6000_best_fusion_summary.json"
+  }
+}

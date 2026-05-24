@@ -235,11 +235,25 @@ def arithmetic_encode(
     return encoder.finish()
 
 
-def baseline_sizes(payload: bytes) -> dict[str, int]:
-    return {
+def baseline_sizes(payload: bytes, *, include_codec_baselines: bool = True) -> dict[str, int | None]:
+    sizes: dict[str, int | None] = {
         "ascii_bytes": len(payload),
         "two_bit_pack_bytes": (len(payload) * 2 + 7) // 8,
-        "gzip_bytes": len(gzip.compress(payload)),
-        "bz2_bytes": len(bz2.compress(payload)),
-        "lzma_bytes": len(lzma.compress(payload)),
     }
+    if include_codec_baselines:
+        sizes.update(
+            {
+                "gzip_bytes": len(gzip.compress(payload)),
+                "bz2_bytes": len(bz2.compress(payload)),
+                "lzma_bytes": len(lzma.compress(payload)),
+            }
+        )
+    else:
+        sizes.update(
+            {
+                "gzip_bytes": None,
+                "bz2_bytes": None,
+                "lzma_bytes": None,
+            }
+        )
+    return sizes
