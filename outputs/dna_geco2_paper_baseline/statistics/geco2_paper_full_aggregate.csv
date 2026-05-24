@@ -1,0 +1,10 @@
+metric,value
+species_count,15
+total_input_bytes,534263017
+total_compressed_bytes,112744517
+total_paper_compressed_bytes,112744517
+total_bits_per_base,1.6882249141343804
+total_paper_bits_per_base,1.6882249141343804
+total_delta_bytes_vs_paper,0
+total_relative_error_vs_paper,0.0
+total_elapsed_seconds,508.8180048838258

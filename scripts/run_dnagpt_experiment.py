@@ -7,13 +7,15 @@ Example: warm-start DNAGPT 0.1B multi-organism on HoSa using GPU 3
 python scripts/run_dnagpt_experiment.py \
         --config configs/dna_dnagpt_quick.json \
         --mode all \
+        --seed 43 \
         --variant dna_gpt0.1b_m \
-        --init-from scratch \
+        --init-from pretrained \
+        --pretrained-weight-path outputs/dna_dnagpt_0p1bm_all_finetuned_1/last.pt \
         --dtype bfloat16 \
         --epochs 1 \
         --batch-size 32 \
         --eval-batch-size 32 \
-        --learning-rate 3e-4 \
+        --learning-rate 1e-4 \
         --species OrSa HoSa DaRe ScPo EsCo YeMi BuEb AgPh GaGa DrMe EnIn PlFa HePy AeCa HaHi AnCa WaMe \
         --train-samples-per-epoch 600000 \
         --compression-sample-bytes 100000 \
@@ -21,23 +23,24 @@ python scripts/run_dnagpt_experiment.py \
         --seq-length 512 \
         --weight-decay 0.01 \
         --log-interval 25 \
-        --eval-interval 500 \
+        --eval-interval 5000 \
         --train-ratio 0.6 \
         --val-ratio 0.2 \
         --test-ratio 0.2 \
         --lr-scheduler cosine \
-        --lr-warmup-steps 0 \
+        --lr-warmup-steps 500 \
         --lr-min-ratio 0.1 \
         --grad-clip-norm 1.0 \
         --num-workers 4 \
-        --train-sampling-strategy proportional 
+        --train-sampling-strategy proportional \
+        --wandb-project dna-compress \
+        --wandb-name dna_dnagpt_0p1bm_all_finetune_2
         
         --pretrained-weight-path third_party/DNAGPT/checkpoints/dna_gpt0.1b_m.pth \
         --init-from pretrained \
         --gpu-ids 1 3 \
         --wandb-project dna-compress \
-        --wandb-name dnagpt-realtime \
-        --wandb-project dna-compress 
+        --wandb-name dna_dnagpt_0p1bm_all_finetune
         
 Example: Multi-GPU training
 

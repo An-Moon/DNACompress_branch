@@ -67,12 +67,34 @@ class PlotCompressionCurvesTests(unittest.TestCase):
         compression_compare = {
             "dataset": {
                 "species": [
-                    {"species": "BuEb", "source_name": "BuEb"},
-                    {"species": "HoSa", "source_name": "HoSa"},
+                    {"species": "BuEb", "source_name": "BuEb", "total_size": 18_940},
+                    {"species": "HoSa", "source_name": "HoSa", "total_size": 189_752_667},
                 ]
             },
             "results": {
                 "train": {
+                    "geco2_paper_modes": {
+                        "per_source": [
+                            {
+                                "species": "HoSa",
+                                "source_name": "HoSa",
+                                "sample_bytes": 1000,
+                                "sample_bases": 1000,
+                                "arithmetic_coded_bytes": 210,
+                                "arithmetic_bits_per_base": 1.68,
+                                "geco2_level": 12,
+                            },
+                            {
+                                "species": "BuEb",
+                                "source_name": "BuEb",
+                                "sample_bytes": 1000,
+                                "sample_bases": 1000,
+                                "arithmetic_coded_bytes": 260,
+                                "arithmetic_bits_per_base": 2.08,
+                                "geco2_level": 1,
+                            },
+                        ]
+                    },
                     "windows_nonoverlap": {
                         "per_source": [
                             {
@@ -105,8 +127,10 @@ class PlotCompressionCurvesTests(unittest.TestCase):
 
         self.assertEqual([row["source_name"] for row in rows], ["BuEb", "HoSa"])
         self.assertAlmostEqual(float(rows[0]["vs_2bit_percent"]), 62.5)
-        self.assertAlmostEqual(float(rows[0]["paper_baseline_percent"]), 99.0)
-        self.assertAlmostEqual(float(rows[0]["paper_baseline_bpb"]), 1.98)
+        self.assertAlmostEqual(float(rows[0]["paper_baseline_bpb"]), 4686 * 8 / 18_940)
+        self.assertEqual(int(rows[0]["paper_baseline_compressed_bytes"]), 4686)
+        self.assertEqual(int(rows[0]["paper_baseline_geco2_mode"]), 1)
+        self.assertAlmostEqual(float(rows[0]["experiment_baseline_bpb"]), 2.08)
         self.assertAlmostEqual(float(rows[0]["compression_mbases_per_second"]), 3.0)
         self.assertAlmostEqual(float(rows[1]["compression_mbytes_per_second"]), 0.5)
 
@@ -114,12 +138,34 @@ class PlotCompressionCurvesTests(unittest.TestCase):
         compression_compare = {
             "dataset": {
                 "species": [
-                    {"species": "BuEb", "source_name": "BuEb"},
-                    {"species": "HoSa", "source_name": "HoSa"},
+                    {"species": "BuEb", "source_name": "BuEb", "total_size": 18_940},
+                    {"species": "HoSa", "source_name": "HoSa", "total_size": 189_752_667},
                 ]
             },
             "results": {
                 "train": {
+                    "geco2_paper_modes": {
+                        "per_source": [
+                            {
+                                "species": "BuEb",
+                                "source_name": "BuEb",
+                                "sample_bytes": 1000,
+                                "sample_bases": 1000,
+                                "arithmetic_coded_bytes": 260,
+                                "arithmetic_bits_per_base": 2.08,
+                                "geco2_level": 1,
+                            },
+                            {
+                                "species": "HoSa",
+                                "source_name": "HoSa",
+                                "sample_bytes": 1000,
+                                "sample_bases": 1000,
+                                "arithmetic_coded_bytes": 210,
+                                "arithmetic_bits_per_base": 1.68,
+                                "geco2_level": 12,
+                            },
+                        ]
+                    },
                     "windows_nonoverlap": {
                         "per_source": [
                             {
@@ -156,11 +202,15 @@ class PlotCompressionCurvesTests(unittest.TestCase):
             with patch("scripts.plot_compression_curves._load_matplotlib_pyplot", return_value=_FakePyplot()):
                 generated_paths = generate_artifacts_for_compression_compare(compression_compare_path)
 
-            self.assertEqual(len(generated_paths), 2)
+            self.assertEqual(len(generated_paths), 6)
             csv_path = stats_dir / "compression_curves" / "windows_nonoverlap_compression_curve_data.csv"
             png_path = stats_dir / "compression_curves" / "windows_nonoverlap_compression_curves.png"
+            paper_baseline_path = stats_dir / "compression_curves" / "baselines" / "paper_baseline.csv"
+            geco2_baseline_path = stats_dir / "compression_curves" / "baselines" / "geco2_experiment_baseline.csv"
             self.assertTrue(csv_path.exists())
             self.assertTrue(png_path.exists())
+            self.assertTrue(paper_baseline_path.exists())
+            self.assertTrue(geco2_baseline_path.exists())
 
             with csv_path.open("r", encoding="utf-8", newline="") as handle:
                 rows = list(csv.DictReader(handle))
@@ -168,8 +218,8 @@ class PlotCompressionCurvesTests(unittest.TestCase):
             self.assertEqual(len(rows), 2)
             self.assertEqual(rows[0]["source_name"], "BuEb")
             self.assertEqual(rows[0]["vs_2bit_percent"], "62.5")
-            self.assertEqual(rows[0]["paper_baseline_percent"], "99.0")
-            self.assertEqual(rows[0]["paper_baseline_bpb"], "1.98")
+            self.assertEqual(rows[0]["paper_baseline_compressed_bytes"], "4686")
+            self.assertEqual(rows[0]["experiment_baseline_bpb"], "2.08")
 
 
 if __name__ == "__main__":

@@ -25,22 +25,24 @@ from pathlib import Path
 from typing import Any
 
 
-PAPER_BASELINE_PERCENT_BY_SOURCE: dict[str, float] = {
-    "OrSa": 80.0,
-    "HoSa": 82.0,
-    "GaGa": 91.0,
-    "DaRe": 74.0,
-    "DrMe": 93.0,
-    "EnIn": 79.0,
-    "ScPo": 95.0,
-    "PlFa": 87.0,
-    "EsCo": 95.0,
-    "HePy": 91.0,
-    "AeCa": 97.0,
-    "HaHi": 93.0,
-    "YeMi": 94.0,
-    "BuEb": 99.0,
-    "AgPh": 99.0,
+GECO2_EXPERIMENT_MODE_NAME = "geco2_paper_modes"
+
+GECO2_PAPER_BASELINE_BY_SOURCE: dict[str, dict[str, int]] = {
+    "HoSa": {"compressed_bytes": 38_845_642, "mode": 12},
+    "GaGa": {"compressed_bytes": 33_877_671, "mode": 11},
+    "DaRe": {"compressed_bytes": 11_488_819, "mode": 10},
+    "OrSa": {"compressed_bytes": 8_646_543, "mode": 10},
+    "DrMe": {"compressed_bytes": 7_481_093, "mode": 10},
+    "EnIn": {"compressed_bytes": 5_170_889, "mode": 9},
+    "ScPo": {"compressed_bytes": 2_518_963, "mode": 8},
+    "PlFa": {"compressed_bytes": 1_925_726, "mode": 7},
+    "EsCo": {"compressed_bytes": 1_098_552, "mode": 6},
+    "HaHi": {"compressed_bytes": 902_831, "mode": 5},
+    "AeCa": {"compressed_bytes": 380_115, "mode": 5},
+    "HePy": {"compressed_bytes": 375_481, "mode": 4},
+    "YeMi": {"compressed_bytes": 16_798, "mode": 3},
+    "AgPh": {"compressed_bytes": 10_708, "mode": 2},
+    "BuEb": {"compressed_bytes": 4_686, "mode": 1},
 }
 
 
@@ -102,11 +104,150 @@ def _source_order_map(compression_compare: dict[str, Any]) -> dict[str, int]:
     return order
 
 
-def _paper_baseline_percent(*, source_name: str, species_name: str) -> float | None:
+def _source_metadata_map(compression_compare: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    dataset = compression_compare.get("dataset")
+    if not isinstance(dataset, dict):
+        return {}
+
+    species_rows = dataset.get("species")
+    if not isinstance(species_rows, list):
+        return {}
+
+    metadata: dict[str, dict[str, Any]] = {}
+    for row in species_rows:
+        if not isinstance(row, dict):
+            continue
+        source_name = row.get("source_name")
+        species = row.get("species")
+        if isinstance(source_name, str):
+            metadata.setdefault(source_name, row)
+        if isinstance(species, str):
+            metadata.setdefault(species, row)
+    return metadata
+
+
+def _geco2_paper_baseline_payload(
+    *,
+    source_name: str,
+    species_name: str,
+    total_size: float | None,
+) -> dict[str, float | int | None]:
     for key in (source_name, species_name):
-        if key in PAPER_BASELINE_PERCENT_BY_SOURCE:
-            return PAPER_BASELINE_PERCENT_BY_SOURCE[key]
-    return None
+        baseline = GECO2_PAPER_BASELINE_BY_SOURCE.get(key)
+        if baseline is None:
+            continue
+        compressed_bytes = int(baseline["compressed_bytes"])
+        mode = int(baseline["mode"])
+        if total_size is None or total_size <= 0:
+            return {
+                "paper_baseline_compressed_bytes": compressed_bytes,
+                "paper_baseline_geco2_mode": mode,
+                "paper_baseline_bpb": None,
+                "paper_baseline_percent": None,
+            }
+        bpb = compressed_bytes * 8.0 / total_size
+        return {
+            "paper_baseline_compressed_bytes": compressed_bytes,
+            "paper_baseline_geco2_mode": mode,
+            "paper_baseline_bpb": bpb,
+            "paper_baseline_percent": bpb / 2.0 * 100.0,
+        }
+    return {
+        "paper_baseline_compressed_bytes": None,
+        "paper_baseline_geco2_mode": None,
+        "paper_baseline_bpb": None,
+        "paper_baseline_percent": None,
+    }
+
+
+def _experiment_baseline_rows(compression_compare: dict[str, Any]) -> list[dict[str, Any]]:
+    results = compression_compare.get("results")
+    if not isinstance(results, dict):
+        return []
+
+    rows: list[dict[str, Any]] = []
+    for split_name, split_payload in results.items():
+        if not isinstance(split_payload, dict):
+            continue
+        mode_payload = split_payload.get(GECO2_EXPERIMENT_MODE_NAME)
+        if not isinstance(mode_payload, dict):
+            continue
+        per_source = mode_payload.get("per_source")
+        if not isinstance(per_source, list):
+            continue
+        for row in per_source:
+            if not isinstance(row, dict):
+                continue
+            source_name = str(row.get("source_name") or row.get("species") or "unknown")
+            species_name = str(row.get("species") or source_name)
+            bpb = _safe_float(row.get("arithmetic_bits_per_base"))
+            compressed_bytes = _safe_float(row.get("arithmetic_coded_bytes"))
+            payload = {
+                "split": split_name,
+                "species": species_name,
+                "source_name": source_name,
+                "sample_bytes": row.get("sample_bytes"),
+                "sample_bases": row.get("sample_bases"),
+                "experiment_baseline_compressed_bytes": int(compressed_bytes) if compressed_bytes is not None else None,
+                "experiment_baseline_geco2_mode": row.get("geco2_level"),
+                "experiment_baseline_bpb": bpb,
+                "experiment_baseline_percent": bpb / 2.0 * 100.0 if bpb is not None else None,
+            }
+            rows.append(payload)
+    return rows
+
+
+def _experiment_baseline_map(compression_compare: dict[str, Any], split_name: str) -> dict[str, dict[str, Any]]:
+    rows = [row for row in _experiment_baseline_rows(compression_compare) if row.get("split") == split_name]
+    result: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        source_name = row.get("source_name")
+        species = row.get("species")
+        if isinstance(source_name, str):
+            result[source_name] = row
+        if isinstance(species, str):
+            result[species] = row
+    return result
+
+
+def _baseline_rows(compression_compare: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    metadata_map = _source_metadata_map(compression_compare)
+    order_map = _source_order_map(compression_compare)
+    source_names = sorted(
+        {
+            key
+            for key in metadata_map
+            if isinstance(metadata_map[key].get("source_name", metadata_map[key].get("species")), str)
+        },
+        key=lambda key: (order_map.get(key, 10**9), key),
+    )
+
+    paper_rows: list[dict[str, Any]] = []
+    seen_sources: set[str] = set()
+    for source_name in source_names:
+        metadata = metadata_map[source_name]
+        species_name = str(metadata.get("species") or source_name)
+        canonical_source_name = str(metadata.get("source_name") or source_name)
+        if canonical_source_name in seen_sources:
+            continue
+        seen_sources.add(canonical_source_name)
+        total_size = _safe_float(metadata.get("total_size"))
+        paper_payload = _geco2_paper_baseline_payload(
+            source_name=canonical_source_name,
+            species_name=species_name,
+            total_size=total_size,
+        )
+        if paper_payload["paper_baseline_compressed_bytes"] is not None:
+            paper_rows.append(
+                {
+                    "species": species_name,
+                    "source_name": canonical_source_name,
+                    "total_size": total_size,
+                    **paper_payload,
+                }
+            )
+
+    return paper_rows, _experiment_baseline_rows(compression_compare)
 
 
 def _resolve_run_name(stats_dir: Path, compression_compare: dict[str, Any]) -> str:
@@ -153,6 +294,8 @@ def _build_split_mode_rows(
         return []
 
     order_map = _source_order_map(compression_compare)
+    metadata_map = _source_metadata_map(compression_compare)
+    experiment_map = _experiment_baseline_map(compression_compare, split_name)
     rows: list[dict[str, Any]] = []
     for item in per_source:
         if not isinstance(item, dict):
@@ -160,24 +303,35 @@ def _build_split_mode_rows(
 
         source_name = str(item.get("source_name") or item.get("species") or "unknown")
         species_name = str(item.get("species") or source_name)
+        metadata = metadata_map.get(source_name) or metadata_map.get(species_name) or {}
+        total_size = _safe_float(metadata.get("total_size"))
         arithmetic_bpb = _safe_float(item.get("arithmetic_bits_per_base"))
         theoretical_bpb = _safe_float(item.get("theoretical_bits_per_base"))
         compression_bases_per_second = _safe_float(item.get("compression_bases_per_second"))
         compression_bytes_per_second = _safe_float(item.get("compression_bytes_per_second"))
-        paper_baseline_percent = _paper_baseline_percent(source_name=source_name, species_name=species_name)
+        paper_baseline = _geco2_paper_baseline_payload(
+            source_name=source_name,
+            species_name=species_name,
+            total_size=total_size,
+        )
+        experiment_baseline = experiment_map.get(source_name) or experiment_map.get(species_name) or {}
 
         row = {
             "split": split_name,
             "mode": mode_name,
             "species": species_name,
             "source_name": source_name,
+            "total_size": total_size,
             "sample_bytes": item.get("sample_bytes"),
             "sample_bases": item.get("sample_bases"),
             "arithmetic_bits_per_base": arithmetic_bpb,
             "theoretical_bits_per_base": theoretical_bpb,
             "vs_2bit_percent": (arithmetic_bpb / 2.0 * 100.0) if arithmetic_bpb is not None else None,
-            "paper_baseline_percent": paper_baseline_percent,
-            "paper_baseline_bpb": (paper_baseline_percent / 100.0 * 2.0) if paper_baseline_percent is not None else None,
+            **paper_baseline,
+            "experiment_baseline_compressed_bytes": experiment_baseline.get("experiment_baseline_compressed_bytes"),
+            "experiment_baseline_geco2_mode": experiment_baseline.get("experiment_baseline_geco2_mode"),
+            "experiment_baseline_bpb": experiment_baseline.get("experiment_baseline_bpb"),
+            "experiment_baseline_percent": experiment_baseline.get("experiment_baseline_percent"),
             "compression_bases_per_second": compression_bases_per_second,
             "compression_mbases_per_second": (
                 compression_bases_per_second / 1_000_000.0 if compression_bases_per_second is not None else None
@@ -205,13 +359,20 @@ def _write_rows_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "mode",
         "species",
         "source_name",
+        "total_size",
         "sample_bytes",
         "sample_bases",
         "arithmetic_bits_per_base",
         "theoretical_bits_per_base",
         "vs_2bit_percent",
+        "paper_baseline_compressed_bytes",
+        "paper_baseline_geco2_mode",
         "paper_baseline_percent",
         "paper_baseline_bpb",
+        "experiment_baseline_compressed_bytes",
+        "experiment_baseline_geco2_mode",
+        "experiment_baseline_percent",
+        "experiment_baseline_bpb",
         "compression_bases_per_second",
         "compression_mbases_per_second",
         "compression_bytes_per_second",
@@ -290,6 +451,14 @@ def _write_plot_png(
         float(value) if isinstance(value := row.get("paper_baseline_bpb"), (int, float)) else float("nan")
         for row in rows
     ]
+    experiment_baseline_percent = [
+        float(value) if isinstance(value := row.get("experiment_baseline_percent"), (int, float)) else float("nan")
+        for row in rows
+    ]
+    experiment_baseline_bpb = [
+        float(value) if isinstance(value := row.get("experiment_baseline_bpb"), (int, float)) else float("nan")
+        for row in rows
+    ]
     speed_mbases = [
         float(value) if isinstance(value := row.get("compression_mbases_per_second"), (int, float)) else float("nan")
         for row in rows
@@ -310,8 +479,15 @@ def _write_plot_png(
         axes[0],
         x_values,
         paper_baseline_bpb,
-        label="Paper baseline",
+        label="GeCo2 paper total",
         color="#d62728",
+    )
+    arithmetic_has_experiment_baseline = _plot_baseline(
+        axes[0],
+        x_values,
+        experiment_baseline_bpb,
+        label="GeCo2 experiment split",
+        color="#9467bd",
     )
     _plot_series(
         axes[1],
@@ -326,8 +502,15 @@ def _write_plot_png(
         axes[1],
         x_values,
         paper_baseline_percent,
-        label="Paper baseline",
+        label="GeCo2 paper total",
         color="#d62728",
+    )
+    percent_has_experiment_baseline = _plot_baseline(
+        axes[1],
+        x_values,
+        experiment_baseline_percent,
+        label="GeCo2 experiment split",
+        color="#9467bd",
     )
     _plot_series(
         axes[2],
@@ -338,9 +521,9 @@ def _write_plot_png(
         color="#2ca02c",
         label="Model",
     )
-    if arithmetic_has_baseline:
+    if arithmetic_has_baseline or arithmetic_has_experiment_baseline:
         axes[0].legend(loc="best")
-    if percent_has_baseline:
+    if percent_has_baseline or percent_has_experiment_baseline:
         axes[1].legend(loc="best")
 
     axes[2].set_xlabel("DNA Source")
@@ -355,12 +538,46 @@ def _write_plot_png(
     plt.close(figure)
 
 
+def _write_baseline_tables(output_dir: Path, compression_compare: dict[str, Any]) -> list[Path]:
+    paper_rows, experiment_rows = _baseline_rows(compression_compare)
+    baseline_dir = output_dir / "baselines"
+    paper_path = baseline_dir / "paper_baseline.csv"
+    experiment_path = baseline_dir / "geco2_experiment_baseline.csv"
+    _write_baseline_csv(paper_path, paper_rows)
+    _write_baseline_csv(experiment_path, experiment_rows)
+    return [paper_path, experiment_path]
+
+
+def _write_baseline_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        for key in row:
+            if key not in seen:
+                seen.add(key)
+                fieldnames.append(key)
+    if not fieldnames:
+        path.write_text("", encoding="utf-8")
+        return
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def generate_artifacts_for_compression_compare(
     compression_compare_path: Path,
     *,
     out_dir_name: str = "compression_curves",
+    baseline_compression_compare_path: Path | None = None,
 ) -> list[Path]:
     compression_compare = _read_json(compression_compare_path)
+    if baseline_compression_compare_path is not None:
+        _inject_experiment_baseline(
+            compression_compare=compression_compare,
+            baseline_compression_compare=_read_json(baseline_compression_compare_path),
+        )
     stats_dir = compression_compare_path.parent
     results = compression_compare.get("results")
     if not isinstance(results, dict):
@@ -368,7 +585,7 @@ def generate_artifacts_for_compression_compare(
 
     run_name = _resolve_run_name(stats_dir, compression_compare)
     output_dir = stats_dir / out_dir_name
-    generated_paths: list[Path] = []
+    generated_paths: list[Path] = _write_baseline_tables(output_dir, compression_compare)
 
     for split_name, split_payload in results.items():
         if not isinstance(split_payload, dict):
@@ -398,13 +615,39 @@ def generate_artifacts_for_compression_compare(
     return generated_paths
 
 
-def generate_curves_for_root(root_dir: Path, *, out_dir_name: str = "compression_curves") -> list[Path]:
+def _inject_experiment_baseline(
+    *,
+    compression_compare: dict[str, Any],
+    baseline_compression_compare: dict[str, Any],
+) -> None:
+    source_results = baseline_compression_compare.get("results")
+    target_results = compression_compare.setdefault("results", {})
+    if not isinstance(source_results, dict) or not isinstance(target_results, dict):
+        return
+    for split_name, split_payload in source_results.items():
+        if not isinstance(split_payload, dict):
+            continue
+        baseline_payload = split_payload.get(GECO2_EXPERIMENT_MODE_NAME)
+        if not isinstance(baseline_payload, dict):
+            continue
+        target_split = target_results.setdefault(split_name, {})
+        if isinstance(target_split, dict) and GECO2_EXPERIMENT_MODE_NAME not in target_split:
+            target_split[GECO2_EXPERIMENT_MODE_NAME] = baseline_payload
+
+
+def generate_curves_for_root(
+    root_dir: Path,
+    *,
+    out_dir_name: str = "compression_curves",
+    baseline_compression_compare_path: Path | None = None,
+) -> list[Path]:
     generated_paths: list[Path] = []
     for compression_compare_path in sorted(root_dir.rglob("compression_compare.json")):
         generated_paths.extend(
             generate_artifacts_for_compression_compare(
                 compression_compare_path,
                 out_dir_name=out_dir_name,
+                baseline_compression_compare_path=baseline_compression_compare_path,
             )
         )
     return generated_paths
@@ -420,6 +663,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default="compression_curves",
         help="Artifact subdirectory name created inside each statistics directory.",
     )
+    parser.add_argument(
+        "--baseline-compression-json",
+        help="Optional compression_compare.json containing geco2_paper_modes baseline results to overlay.",
+    )
     return parser
 
 
@@ -429,7 +676,13 @@ def main() -> None:
     if not root_dir.exists():
         raise FileNotFoundError(f"Root directory does not exist: {root_dir}")
 
-    generated_paths = generate_curves_for_root(root_dir, out_dir_name=args.out_dir_name)
+    generated_paths = generate_curves_for_root(
+        root_dir,
+        out_dir_name=args.out_dir_name,
+        baseline_compression_compare_path=Path(args.baseline_compression_json)
+        if args.baseline_compression_json
+        else None,
+    )
     if not generated_paths:
         print(f"[done] no compression_compare.json files found under {root_dir}")
         return
