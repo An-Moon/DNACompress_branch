@@ -82,6 +82,27 @@ class DataConfig:
     species_prefix_map: dict[str, str] = field(default_factory=dict)
     nugget_tokenizer: str = "byte"
     sequence_source_mode: str = "auto"
+    fasta_index_dir: str | None = None
+    source_sampling_weights: dict[str, float] = field(default_factory=dict)
+    indexed_eval_samples: int = 1024
+    indexed_split_seed: int = 0
+    indexed_window_mode: str = "sliding_random"
+    indexed_train_epoch_mode: str = "samples"
+    indexed_file_stream_windows: int = 8192
+    indexed_file_shuffle_buffer_windows: int = 8192
+    indexed_file_stream_order_seed: int = 0
+    indexed_source_balance_batches: int = 8
+    indexed_source_read_block_windows: int = 8192
+    indexed_source_file_order_seed: int = 0
+    repacked_window_dir: str | None = None
+    repacked_schedule_dir: str | None = None
+    repacked_eval_samples: int = 1024
+    repacked_train_epoch_mode: str = "samples"
+    repacked_read_chunk_windows: int = 8192
+    repacked_shard_load_mode: str = "mmap"
+    repacked_shard_sampling_mode: str = "random"
+    repacked_source_sampling_weights: dict[str, float] = field(default_factory=dict)
+    source_loss_weights: dict[str, float] = field(default_factory=dict)
     multi_sequence_mode: str = "separate"
     sequence_include_map: dict[str, list[str]] = field(default_factory=dict)
     clean_cache_enabled: bool = True

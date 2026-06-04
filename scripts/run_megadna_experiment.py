@@ -60,6 +60,38 @@ Examples:
       --wandb-project dna-compress \
       --wandb-name megadna_145m_all_resume
 
+    # Fine-tune from the official 145M checkpoint on OpenGenome2 indexed FASTA.
+    python scripts/run_megadna_experiment.py \
+      --mode all \
+      --sequence-source-mode indexed_fasta \
+      --fasta-index-dir /data/students/Liang_junnan/opengenome2_subset/index \
+      --source-sampling-weights-json '{"gtdb_v220":0.4,"metagenomes":0.2,"mrna":0.1}' \
+      --indexed-eval-samples 1024 \
+      --checkpoint outputs/megadna_145m_all_20260522_154950/best.pt \
+      --init-from resume \
+      --seq-length 131072 \
+      --print-config \
+      --batch-size 2 \
+      --eval-batch-size 2 \
+      --learning-rate 1e-4 \
+      --train-samples-per-epoch 600000 \
+      --train-ratio 0.6 \
+      --val-ratio 0.2 \
+      --test-ratio 0.2 \
+      --lr-scheduler cosine \
+      --lr-min-ratio 0.1 \
+      --num-workers 4 \
+      --prefetch-factor 4 \
+      --persistent-workers \
+      --pin-memory \
+      --log-interval 25 \
+      --eval-interval 2500 \
+      --device cuda:1 \
+      --run-name megadna_145m_opengenome2_indexed \
+      --output-dir outputs/megadna_145m_opengenome2_indexed \
+      --wandb-project dna-compress \
+      --wandb-name megadna_145m_opengenome2_indexed
+
     # Resume from this script's checkpoint.
     python scripts/run_megadna_experiment.py \
       --mode all \
@@ -105,6 +137,7 @@ from dna_compress.experiment import (
     seed_everything,
     write_training_log_event,
 )
+from dna_compress.fasta_fragment_index import IndexedMegaDNAWindowDataset
 from dna_compress.megadna_data import (
     RandomMegaDNAWindowDataset,
     SequentialMegaDNAWindowDataset,
@@ -179,6 +212,25 @@ def _parse_sequence_include(values: list[str] | None) -> dict[str, list[str]] | 
     return parsed
 
 
+def _parse_source_sampling_weights(raw: str | None) -> dict[str, float] | None:
+    if raw is None:
+        return None
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        raise ValueError("--source-sampling-weights-json must be a JSON object")
+    parsed: dict[str, float] = {}
+    for key, value in payload.items():
+        if not isinstance(key, str) or not key:
+            raise ValueError("source sampling weight keys must be non-empty strings")
+        number = float(value)
+        if number < 0:
+            raise ValueError("source sampling weights must be non-negative")
+        parsed[key] = number
+    if sum(parsed.values()) <= 0:
+        raise ValueError("source sampling weights must sum to > 0")
+    return parsed
+
+
 def _apply_overrides(config: ExperimentConfig, args: argparse.Namespace) -> None:
     if args.species is not None:
         config.data.species = args.species
@@ -194,6 +246,10 @@ def _apply_overrides(config: ExperimentConfig, args: argparse.Namespace) -> None
 
     _apply_if_not_none(config, "data.dataset_dir", args.dataset_dir)
     _apply_if_not_none(config, "data.sequence_source_mode", args.sequence_source_mode)
+    _apply_if_not_none(config, "data.fasta_index_dir", args.fasta_index_dir)
+    _apply_if_not_none(config, "data.indexed_eval_samples", args.indexed_eval_samples)
+    if args.source_sampling_weights_json is not None:
+        config.data.source_sampling_weights = _parse_source_sampling_weights(args.source_sampling_weights_json) or {}
     _apply_if_not_none(config, "data.multi_sequence_mode", args.multi_sequence_mode)
     _apply_if_not_none(config, "data.clean_cache_enabled", args.clean_cache_enabled)
     _apply_if_not_none(config, "data.clean_cache_dir", args.clean_cache_dir)
@@ -291,6 +347,11 @@ def _validate(config: ExperimentConfig, args: argparse.Namespace) -> None:
         raise ValueError("--non-acgt-policy must be reject or filter")
     if config.data.train_sampling_strategy not in {"proportional", "uniform", "sqrt"}:
         raise ValueError("data.train_sampling_strategy must be one of: proportional, uniform, sqrt")
+    if config.data.sequence_source_mode == "indexed_fasta":
+        if not config.data.fasta_index_dir:
+            raise ValueError("data.fasta_index_dir is required when sequence_source_mode is indexed_fasta")
+        if config.data.indexed_eval_samples <= 0:
+            raise ValueError("data.indexed_eval_samples must be > 0")
 
 
 def _checkpoint_path(args: argparse.Namespace, output_dir: Path, tag: str = "best") -> Path | None:
@@ -381,7 +442,10 @@ def _build_parser() -> argparse.ArgumentParser:
     data = parser.add_argument_group("data")
     data.add_argument("--dataset-dir")
     data.add_argument("--species", nargs="+")
-    data.add_argument("--sequence-source-mode", choices=["auto", "flat_file", "fasta_dir"])
+    data.add_argument("--sequence-source-mode", choices=["auto", "flat_file", "fasta_dir", "indexed_fasta"])
+    data.add_argument("--fasta-index-dir")
+    data.add_argument("--source-sampling-weights-json")
+    data.add_argument("--indexed-eval-samples", type=int)
     data.add_argument("--multi-sequence-mode", choices=["separate", "concat"])
     data.add_argument("--clean-cache-enabled", dest="clean_cache_enabled", action="store_true", default=None)
     data.add_argument("--no-clean-cache", dest="clean_cache_enabled", action="store_false")
@@ -475,48 +539,96 @@ def main() -> None:
     training_log_path, train_log_handle = open_training_log_file(output_dir)
     wandb_run = init_wandb_run(config, output_dir)
 
-    print("[megadna] loading splits...", flush=True)
-    split_started = time.time()
-    splits = load_splits(config.data, seq_length=config.model.seq_length)
-    train_sources, train_encoding = encode_sources_for_megadna(splits.train_sources, non_acgt_policy=args.non_acgt_policy)
-    val_sources, val_encoding = encode_sources_for_megadna(splits.val_sources, non_acgt_policy=args.non_acgt_policy)
-    test_sources, test_encoding = encode_sources_for_megadna(splits.test_sources, non_acgt_policy=args.non_acgt_policy)
-    split_entries = splits.summary["species"]
-    total_train_bytes = int(sum(int(item["train_bytes"]) for item in split_entries))
-    total_val_bytes = int(sum(int(item["val_bytes"]) for item in split_entries))
-    total_test_bytes = int(sum(int(item["test_bytes"]) for item in split_entries))
-    clean_cache_summary = splits.summary.get("clean_cache", {})
-    print(
-        "[megadna] data splits loaded: "
-        f"sources={len(split_entries)} "
-        f"train_bytes={total_train_bytes} "
-        f"val_bytes={total_val_bytes} "
-        f"test_bytes={total_test_bytes} "
-        f"elapsed={time.time() - split_started:.1f}s",
-        flush=True,
-    )
-    if isinstance(clean_cache_summary, dict) and int(clean_cache_summary.get("applicable_sources", 0)) > 0:
+    print("[megadna] building datasets...", flush=True)
+    dataset_summary: dict[str, object]
+    encoding_summary: dict[str, object]
+    if config.data.sequence_source_mode == "indexed_fasta":
+        index_started = time.time()
+        source_weights = config.data.source_sampling_weights or None
+        train_dataset = IndexedMegaDNAWindowDataset(
+            index_dir=config.data.fasta_index_dir or "",
+            seq_length=config.model.seq_length,
+            samples_per_epoch=config.data.train_samples_per_epoch,
+            seed=config.train.seed,
+            source_weights=source_weights,
+        )
+        val_dataset = IndexedMegaDNAWindowDataset(
+            index_dir=config.data.fasta_index_dir or "",
+            seq_length=config.model.seq_length,
+            samples_per_epoch=config.data.indexed_eval_samples,
+            seed=config.train.seed + 1_000_000,
+            source_weights=source_weights,
+        )
+        test_dataset = IndexedMegaDNAWindowDataset(
+            index_dir=config.data.fasta_index_dir or "",
+            seq_length=config.model.seq_length,
+            samples_per_epoch=config.data.indexed_eval_samples,
+            seed=config.train.seed + 2_000_000,
+            source_weights=source_weights,
+        )
+        dataset_summary = {
+            "source_mode": "indexed_fasta",
+            "split_policy": "none",
+            "train": train_dataset.summary(),
+            "val": val_dataset.summary(),
+            "test": test_dataset.summary(),
+            "build_seconds": time.time() - index_started,
+        }
+        encoding_summary = {
+            "train": {"mode": "indexed_fasta_megadna_tokens"},
+            "val": {"mode": "indexed_fasta_megadna_tokens"},
+            "test": {"mode": "indexed_fasta_megadna_tokens"},
+        }
         print(
-            "[cache] clean "
-            f"enabled={bool(clean_cache_summary.get('enabled'))} "
-            f"dir={clean_cache_summary.get('cache_dir')} "
-            f"hits={int(clean_cache_summary.get('hits', 0))} "
-            f"created={int(clean_cache_summary.get('created', 0))} "
-            f"rebuilt={int(clean_cache_summary.get('rebuilt', 0))} "
-            f"disabled={int(clean_cache_summary.get('disabled', 0))}",
+            "[megadna] indexed FASTA datasets ready: "
+            f"index={config.data.fasta_index_dir} "
+            f"eligible_runs={train_dataset.summary()['eligible_run_count']} "
+            f"elapsed={time.time() - index_started:.1f}s",
             flush=True,
         )
-
-    print("[megadna] building datasets...", flush=True)
-    train_dataset = RandomMegaDNAWindowDataset(
-        train_sources,
-        seq_length=config.model.seq_length,
-        samples_per_epoch=config.data.train_samples_per_epoch,
-        seed=config.train.seed,
-        sampling_strategy=config.data.train_sampling_strategy,
-    )
-    val_dataset = SequentialMegaDNAWindowDataset(val_sources, seq_length=config.model.seq_length)
-    test_dataset = SequentialMegaDNAWindowDataset(test_sources, seq_length=config.model.seq_length)
+    else:
+        print("[megadna] loading splits...", flush=True)
+        split_started = time.time()
+        splits = load_splits(config.data, seq_length=config.model.seq_length)
+        train_sources, train_encoding = encode_sources_for_megadna(splits.train_sources, non_acgt_policy=args.non_acgt_policy)
+        val_sources, val_encoding = encode_sources_for_megadna(splits.val_sources, non_acgt_policy=args.non_acgt_policy)
+        test_sources, test_encoding = encode_sources_for_megadna(splits.test_sources, non_acgt_policy=args.non_acgt_policy)
+        split_entries = splits.summary["species"]
+        total_train_bytes = int(sum(int(item["train_bytes"]) for item in split_entries))
+        total_val_bytes = int(sum(int(item["val_bytes"]) for item in split_entries))
+        total_test_bytes = int(sum(int(item["test_bytes"]) for item in split_entries))
+        clean_cache_summary = splits.summary.get("clean_cache", {})
+        print(
+            "[megadna] data splits loaded: "
+            f"sources={len(split_entries)} "
+            f"train_bytes={total_train_bytes} "
+            f"val_bytes={total_val_bytes} "
+            f"test_bytes={total_test_bytes} "
+            f"elapsed={time.time() - split_started:.1f}s",
+            flush=True,
+        )
+        if isinstance(clean_cache_summary, dict) and int(clean_cache_summary.get("applicable_sources", 0)) > 0:
+            print(
+                "[cache] clean "
+                f"enabled={bool(clean_cache_summary.get('enabled'))} "
+                f"dir={clean_cache_summary.get('cache_dir')} "
+                f"hits={int(clean_cache_summary.get('hits', 0))} "
+                f"created={int(clean_cache_summary.get('created', 0))} "
+                f"rebuilt={int(clean_cache_summary.get('rebuilt', 0))} "
+                f"disabled={int(clean_cache_summary.get('disabled', 0))}",
+                flush=True,
+            )
+        train_dataset = RandomMegaDNAWindowDataset(
+            train_sources,
+            seq_length=config.model.seq_length,
+            samples_per_epoch=config.data.train_samples_per_epoch,
+            seed=config.train.seed,
+            sampling_strategy=config.data.train_sampling_strategy,
+        )
+        val_dataset = SequentialMegaDNAWindowDataset(val_sources, seq_length=config.model.seq_length)
+        test_dataset = SequentialMegaDNAWindowDataset(test_sources, seq_length=config.model.seq_length)
+        dataset_summary = splits.summary
+        encoding_summary = {"train": train_encoding, "val": val_encoding, "test": test_encoding}
     loader_kwargs = _loader_kwargs(config)
     train_loader = DataLoader(train_dataset, batch_size=config.train.batch_size, shuffle=True, **loader_kwargs)
     val_loader = DataLoader(val_dataset, batch_size=config.train.eval_batch_size, shuffle=False, **loader_kwargs)
@@ -554,8 +666,8 @@ def main() -> None:
         "loaded_checkpoint": str(checkpoint_path) if checkpoint_path is not None else None,
         "model_parameters": int(sum(parameter.numel() for parameter in model.parameters())),
         "non_acgt_policy": args.non_acgt_policy,
-        "encoding": {"train": train_encoding, "val": val_encoding, "test": test_encoding},
-        "dataset": splits.summary,
+        "encoding": encoding_summary,
+        "dataset": dataset_summary,
     }
     (output_dir / "run_summary.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
 

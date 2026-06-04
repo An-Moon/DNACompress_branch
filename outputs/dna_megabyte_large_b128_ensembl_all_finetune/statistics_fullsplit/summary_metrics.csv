@@ -11,6 +11,7 @@ compression.aggregate.total_sample_bases,1427304
 compression.aggregate.total_sample_bytes,1427321
 compression.aggregate.total_theoretical_bits,2599545.6236155033
 compression.aggregate.total_theoretical_bits_per_base,1.8212977919318543
+compression_compare.arithmetic.backend,fast_cpp
 compression_compare.arithmetic.coding_mode,model_symbol
 compression_compare.arithmetic.effective_uniform_mass,0.003875732421875
 compression_compare.arithmetic.frequency_total,32768

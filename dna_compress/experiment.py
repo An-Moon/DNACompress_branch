@@ -12,6 +12,7 @@ from typing import Any, Callable, TextIO
 import numpy as np
 import torch
 import torch.distributed as dist
+import torch.nn.functional as F
 from torch.nn.parallel import DistributedDataParallel
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import AdamW
@@ -31,7 +32,14 @@ from .data import (
     SequentialWindowDataset,
     load_splits,
 )
+from .fasta_fragment_index import (
+    IndexedMegabyteFileStreamDataset,
+    IndexedMegabyteSourceBatchStreamDataset,
+    IndexedMegabyteWindowDataset,
+    wait_or_build_fasta_index_runtime_cache,
+)
 from .megabyte_loader import build_model, load_megabyte_checkpoint
+from .repacked_windows import RepackedMegabyteWindowDataset
 from .tokenization import apply_token_merge_to_model_config, tokenize_source_bytes
 
 
@@ -310,26 +318,30 @@ def evaluate_loss(
     model.eval()
     total_nats = 0.0
     total_tokens = 0
+    total_weighted_tokens = 0.0
     start_time = time.time()
 
     with torch.no_grad():
         for batch in dataloader:
             ids = batch["input_ids"].to(device, non_blocking=True)
-            valid_tokens = int((ids != pad_id).sum().item())
             with autocast_context(device, dtype_name):
-                output = model(ids, return_loss=True)
-            total_nats += float(output.loss.item()) * valid_tokens
+                loss, valid_tokens, weighted_tokens = compute_language_model_loss(model, ids, batch, pad_id)
+            total_nats += float(loss.item()) * weighted_tokens
             total_tokens += valid_tokens
+            total_weighted_tokens += weighted_tokens
 
     if is_distributed:
-        reduced = torch.tensor([total_nats, float(total_tokens)], dtype=torch.float64, device=device)
+        reduced = torch.tensor([total_nats, float(total_tokens), total_weighted_tokens], dtype=torch.float64, device=device)
         dist.all_reduce(reduced, op=dist.ReduceOp.SUM)
         total_nats = float(reduced[0].item())
         total_tokens = int(reduced[1].item())
+        total_weighted_tokens = float(reduced[2].item())
 
+    denominator_tokens = total_weighted_tokens if total_weighted_tokens > 0 else float(total_tokens)
+    weighted_bases = denominator_tokens * token_merge_size
     total_bases = total_tokens * token_merge_size
-    average_nats_per_token = total_nats / max(total_tokens, 1)
-    average_nats_per_base = total_nats / max(total_bases, 1)
+    average_nats_per_token = total_nats / max(denominator_tokens, 1.0)
+    average_nats_per_base = total_nats / max(weighted_bases, 1.0)
     bits_per_token = average_nats_per_token / math.log(2)
     bits_per_base = average_nats_per_base / math.log(2)
     return {
@@ -338,9 +350,38 @@ def evaluate_loss(
         "bits_per_token": bits_per_token,
         "bits_per_base": bits_per_base,
         "tokens": total_tokens,
+        "weighted_tokens": total_weighted_tokens,
         "bases": total_bases,
         "elapsed_seconds": time.time() - start_time,
     }
+
+
+def compute_language_model_loss(
+    model: torch.nn.Module,
+    ids: torch.Tensor,
+    batch: dict[str, torch.Tensor],
+    pad_id: int,
+) -> tuple[torch.Tensor, int, float]:
+    valid_mask = ids != pad_id
+    valid_tokens = int(valid_mask.sum().item())
+    loss_weights = batch.get("loss_weight")
+    if loss_weights is None:
+        output = model(ids, return_loss=True)
+        return output.loss, valid_tokens, float(valid_tokens)
+
+    output = model(ids, return_loss=False)
+    logits = output.lm_logits
+    per_token = F.cross_entropy(
+        logits.reshape(-1, logits.shape[-1]),
+        ids.reshape(-1),
+        ignore_index=pad_id,
+        reduction="none",
+    ).reshape_as(ids)
+    sample_weights = loss_weights.to(ids.device, non_blocking=True).float().view(-1, 1)
+    token_weights = valid_mask.float() * sample_weights
+    weighted_tokens = token_weights.sum()
+    loss = (per_token * token_weights).sum() / weighted_tokens.clamp_min(1.0)
+    return loss, valid_tokens, float(weighted_tokens.detach().item())
 
 
 def evaluate_compression(
@@ -574,106 +615,380 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
         missing_keys: list[str] = []
         unexpected_keys: list[str] = []
 
-        if ddp.is_main_process:
-            print("[stage] loading data splits...", flush=True)
-        split_started = time.time()
-        splits = load_splits(config.data, seq_length=config.model.seq_length)
-        if ddp.is_main_process:
-            split_entries = splits.summary["species"]
-            total_train_bytes = int(sum(int(item["train_bytes"]) for item in split_entries))
-            total_val_bytes = int(sum(int(item["val_bytes"]) for item in split_entries))
-            total_test_bytes = int(sum(int(item["test_bytes"]) for item in split_entries))
-            clean_cache_summary = splits.summary.get("clean_cache", {})
-            print(
-                "[stage] data splits loaded: "
-                f"sources={len(split_entries)} "
-                f"train_bytes={total_train_bytes} "
-                f"val_bytes={total_val_bytes} "
-                f"test_bytes={total_test_bytes} "
-                f"elapsed={time.time() - split_started:.1f}s",
-                flush=True,
+        indexed_fasta_mode = config.data.sequence_source_mode == "indexed_fasta"
+        indexed_file_stream_mode = indexed_fasta_mode and config.data.indexed_window_mode == "nonoverlap_file_stream"
+        indexed_source_batch_stream_mode = (
+            indexed_fasta_mode and config.data.indexed_window_mode == "source_batch_file_stream"
+        )
+        repacked_windows_mode = config.data.sequence_source_mode == "repacked_windows"
+        compression_test_sources: list[bytes] = []
+        compression_source_entries: list[dict[str, object]] = []
+        compression_skipped: dict[str, object] | None = None
+
+        if indexed_fasta_mode:
+            if ddp.is_main_process:
+                print("[stage] preparing indexed FASTA runtime cache...", flush=True)
+                wait_or_build_fasta_index_runtime_cache(config.data.fasta_index_dir or "", is_main_process=True)
+            if ddp.is_distributed:
+                dist.barrier()
+            if not ddp.is_main_process:
+                wait_or_build_fasta_index_runtime_cache(config.data.fasta_index_dir or "", is_main_process=False)
+            if ddp.is_distributed:
+                dist.barrier()
+
+            if ddp.is_main_process:
+                print("[stage] building indexed FASTA datasets...", flush=True)
+            indexed_train_samples = (
+                None
+                if config.data.indexed_train_epoch_mode == "all_windows"
+                else config.data.train_samples_per_epoch
             )
-            if isinstance(clean_cache_summary, dict) and int(clean_cache_summary.get("applicable_sources", 0)) > 0:
+            if indexed_source_batch_stream_mode:
+                common_source_batch_kwargs = {
+                    "index_dir": config.data.fasta_index_dir or "",
+                    "seq_length": config.model.seq_length,
+                    "token_merge_size": config.data.token_merge_size,
+                    "token_merge_alphabet": config.data.token_merge_alphabet,
+                    "source_weights": config.data.source_sampling_weights or None,
+                    "source_loss_weights": config.data.source_loss_weights or None,
+                    "pad_id": config.model.pad_id,
+                    "source_balance_batches": config.data.indexed_source_balance_batches,
+                    "source_read_block_windows": config.data.indexed_source_read_block_windows,
+                    "source_file_order_seed": config.data.indexed_source_file_order_seed,
+                    "train_ratio": config.data.train_ratio,
+                    "val_ratio": config.data.val_ratio,
+                    "test_ratio": config.data.test_ratio,
+                    "split_seed": config.data.indexed_split_seed,
+                    "ddp_rank": ddp.rank,
+                    "ddp_world_size": ddp.world_size,
+                }
+                train_dataset = IndexedMegabyteSourceBatchStreamDataset(
+                    split="train",
+                    samples=indexed_train_samples,
+                    seed=config.train.seed,
+                    batch_size=config.train.batch_size,
+                    **common_source_batch_kwargs,
+                )
+                val_dataset = IndexedMegabyteSourceBatchStreamDataset(
+                    split="val",
+                    samples=config.data.indexed_eval_samples,
+                    seed=config.train.seed + 1_000_000,
+                    batch_size=config.train.eval_batch_size,
+                    **common_source_batch_kwargs,
+                )
+                test_dataset = IndexedMegabyteSourceBatchStreamDataset(
+                    split="test",
+                    samples=config.data.indexed_eval_samples,
+                    seed=config.train.seed + 2_000_000,
+                    batch_size=config.train.eval_batch_size,
+                    **common_source_batch_kwargs,
+                )
+            elif indexed_file_stream_mode:
+                common_stream_kwargs = {
+                    "index_dir": config.data.fasta_index_dir or "",
+                    "seq_length": config.model.seq_length,
+                    "token_merge_size": config.data.token_merge_size,
+                    "token_merge_alphabet": config.data.token_merge_alphabet,
+                    "source_loss_weights": config.data.source_loss_weights or None,
+                    "pad_id": config.model.pad_id,
+                    "file_stream_windows": config.data.indexed_file_stream_windows,
+                    "file_shuffle_buffer_windows": config.data.indexed_file_shuffle_buffer_windows,
+                    "file_stream_order_seed": config.data.indexed_file_stream_order_seed,
+                    "train_ratio": config.data.train_ratio,
+                    "val_ratio": config.data.val_ratio,
+                    "test_ratio": config.data.test_ratio,
+                    "split_seed": config.data.indexed_split_seed,
+                    "ddp_rank": ddp.rank,
+                    "ddp_world_size": ddp.world_size,
+                }
+                train_dataset = IndexedMegabyteFileStreamDataset(
+                    split="train",
+                    samples=indexed_train_samples,
+                    seed=config.train.seed,
+                    **common_stream_kwargs,
+                )
+                val_dataset = IndexedMegabyteFileStreamDataset(
+                    split="val",
+                    samples=config.data.indexed_eval_samples,
+                    seed=config.train.seed + 1_000_000,
+                    **common_stream_kwargs,
+                )
+                test_dataset = IndexedMegabyteFileStreamDataset(
+                    split="test",
+                    samples=config.data.indexed_eval_samples,
+                    seed=config.train.seed + 2_000_000,
+                    **common_stream_kwargs,
+                )
+            else:
+                train_dataset = IndexedMegabyteWindowDataset(
+                    index_dir=config.data.fasta_index_dir or "",
+                    split="train",
+                    seq_length=config.model.seq_length,
+                    token_merge_size=config.data.token_merge_size,
+                    token_merge_alphabet=config.data.token_merge_alphabet,
+                    samples=indexed_train_samples,
+                    seed=config.train.seed,
+                    source_weights=config.data.source_sampling_weights or None,
+                    source_loss_weights=config.data.source_loss_weights or None,
+                    pad_id=config.model.pad_id,
+                    window_mode=config.data.indexed_window_mode,
+                    epoch_mode=config.data.indexed_train_epoch_mode,
+                    train_ratio=config.data.train_ratio,
+                    val_ratio=config.data.val_ratio,
+                    test_ratio=config.data.test_ratio,
+                    split_seed=config.data.indexed_split_seed,
+                )
+                val_dataset = IndexedMegabyteWindowDataset(
+                    index_dir=config.data.fasta_index_dir or "",
+                    split="val",
+                    seq_length=config.model.seq_length,
+                    token_merge_size=config.data.token_merge_size,
+                    token_merge_alphabet=config.data.token_merge_alphabet,
+                    samples=config.data.indexed_eval_samples,
+                    seed=config.train.seed + 1_000_000,
+                    source_weights=config.data.source_sampling_weights or None,
+                    source_loss_weights=config.data.source_loss_weights or None,
+                    pad_id=config.model.pad_id,
+                    window_mode=config.data.indexed_window_mode,
+                    epoch_mode="samples",
+                    train_ratio=config.data.train_ratio,
+                    val_ratio=config.data.val_ratio,
+                    test_ratio=config.data.test_ratio,
+                    split_seed=config.data.indexed_split_seed,
+                )
+                test_dataset = IndexedMegabyteWindowDataset(
+                    index_dir=config.data.fasta_index_dir or "",
+                    split="test",
+                    seq_length=config.model.seq_length,
+                    token_merge_size=config.data.token_merge_size,
+                    token_merge_alphabet=config.data.token_merge_alphabet,
+                    samples=config.data.indexed_eval_samples,
+                    seed=config.train.seed + 2_000_000,
+                    source_weights=config.data.source_sampling_weights or None,
+                    source_loss_weights=config.data.source_loss_weights or None,
+                    pad_id=config.model.pad_id,
+                    window_mode=config.data.indexed_window_mode,
+                    epoch_mode="samples",
+                    train_ratio=config.data.train_ratio,
+                    val_ratio=config.data.val_ratio,
+                    test_ratio=config.data.test_ratio,
+                    split_seed=config.data.indexed_split_seed,
+                )
+            dataset_summary: dict[str, object] = {
+                "source_mode": "indexed_fasta",
+                "split_policy": "run_hash",
+                "compression_supported": False,
+                "train": train_dataset.summary(),
+                "val": val_dataset.summary(),
+                "test": test_dataset.summary(),
+            }
+            compression_skipped = {
+                "skipped": True,
+                "reason": "indexed_fasta mode does not yet support compression evaluation",
+            }
+            if ddp.is_main_process:
+                if indexed_source_batch_stream_mode:
+                    train_summary = dataset_summary["train"]
+                    val_summary = dataset_summary["val"]
+                    test_summary = dataset_summary["test"]
+                    print(
+                        "[stage] indexed FASTA datasets ready: "
+                        f"train_windows={train_summary.get('samples')} "
+                        f"train_batches={len(train_dataset)} "
+                        f"val_windows={val_summary.get('samples')} "
+                        f"val_batches={len(val_dataset)} "
+                        f"test_windows={test_summary.get('samples')} "
+                        f"test_batches={len(test_dataset)}",
+                        flush=True,
+                    )
+                else:
+                    print(
+                        "[stage] indexed FASTA datasets ready: "
+                        f"train_samples={len(train_dataset)} "
+                        f"val_samples={len(val_dataset)} "
+                        f"test_samples={len(test_dataset)}",
+                        flush=True,
+                    )
+        elif repacked_windows_mode:
+            if ddp.is_main_process:
+                print("[stage] building repacked window datasets...", flush=True)
+            repacked_train_samples = (
+                None
+                if config.data.repacked_train_epoch_mode == "all_windows"
+                else config.data.train_samples_per_epoch
+            )
+            common_repacked_kwargs = {
+                "repacked_dir": config.data.repacked_window_dir or "",
+                "seq_length": config.model.seq_length,
+                "token_merge_size": config.data.token_merge_size,
+                "token_merge_alphabet": config.data.token_merge_alphabet,
+                "pad_id": config.model.pad_id,
+                "read_chunk_windows": config.data.repacked_read_chunk_windows,
+                "schedule_dir": config.data.repacked_schedule_dir or None,
+                "shard_load_mode": config.data.repacked_shard_load_mode,
+                "shard_sampling_mode": config.data.repacked_shard_sampling_mode,
+                "source_loss_weights": config.data.source_loss_weights or None,
+                "ddp_rank": ddp.rank,
+                "ddp_world_size": ddp.world_size,
+            }
+            train_dataset = RepackedMegabyteWindowDataset(
+                split="train",
+                samples=repacked_train_samples,
+                seed=config.train.seed,
+                epoch_mode=config.data.repacked_train_epoch_mode,
+                **common_repacked_kwargs,
+            )
+            val_dataset = RepackedMegabyteWindowDataset(
+                split="val",
+                samples=config.data.repacked_eval_samples,
+                seed=config.train.seed + 1_000_000,
+                epoch_mode="samples",
+                **common_repacked_kwargs,
+            )
+            test_dataset = RepackedMegabyteWindowDataset(
+                split="test",
+                samples=config.data.repacked_eval_samples,
+                seed=config.train.seed + 2_000_000,
+                epoch_mode="samples",
+                **common_repacked_kwargs,
+            )
+            dataset_summary = {
+                "source_mode": "repacked_windows",
+                "compression_supported": False,
+                "train": train_dataset.summary(),
+                "val": val_dataset.summary(),
+                "test": test_dataset.summary(),
+            }
+            compression_skipped = {
+                "skipped": True,
+                "reason": "repacked_windows mode does not yet support compression evaluation",
+            }
+            if ddp.is_main_process:
                 print(
-                    "[cache] clean "
-                    f"enabled={bool(clean_cache_summary.get('enabled'))} "
-                    f"dir={clean_cache_summary.get('cache_dir')} "
-                    f"hits={int(clean_cache_summary.get('hits', 0))} "
-                    f"created={int(clean_cache_summary.get('created', 0))} "
-                    f"rebuilt={int(clean_cache_summary.get('rebuilt', 0))} "
-                    f"disabled={int(clean_cache_summary.get('disabled', 0))}",
+                    "[stage] repacked window datasets ready: "
+                    f"train_samples={len(train_dataset)} "
+                    f"val_samples={len(val_dataset)} "
+                    f"test_samples={len(test_dataset)}",
+                    flush=True,
+                )
+        else:
+            if ddp.is_main_process:
+                print("[stage] loading data splits...", flush=True)
+            split_started = time.time()
+            splits = load_splits(config.data, seq_length=config.model.seq_length)
+            if ddp.is_main_process:
+                split_entries = splits.summary["species"]
+                total_train_bytes = int(sum(int(item["train_bytes"]) for item in split_entries))
+                total_val_bytes = int(sum(int(item["val_bytes"]) for item in split_entries))
+                total_test_bytes = int(sum(int(item["test_bytes"]) for item in split_entries))
+                clean_cache_summary = splits.summary.get("clean_cache", {})
+                print(
+                    "[stage] data splits loaded: "
+                    f"sources={len(split_entries)} "
+                    f"train_bytes={total_train_bytes} "
+                    f"val_bytes={total_val_bytes} "
+                    f"test_bytes={total_test_bytes} "
+                    f"elapsed={time.time() - split_started:.1f}s",
+                    flush=True,
+                )
+                if isinstance(clean_cache_summary, dict) and int(clean_cache_summary.get("applicable_sources", 0)) > 0:
+                    print(
+                        "[cache] clean "
+                        f"enabled={bool(clean_cache_summary.get('enabled'))} "
+                        f"dir={clean_cache_summary.get('cache_dir')} "
+                        f"hits={int(clean_cache_summary.get('hits', 0))} "
+                        f"created={int(clean_cache_summary.get('created', 0))} "
+                        f"rebuilt={int(clean_cache_summary.get('rebuilt', 0))} "
+                        f"disabled={int(clean_cache_summary.get('disabled', 0))}",
+                        flush=True,
+                    )
+
+            if ddp.is_main_process:
+                print("[stage] building training dataset...", flush=True)
+            train_dataset = RandomWindowDataset(
+                sources=splits.train_sources,
+                seq_length=config.model.seq_length,
+                samples_per_epoch=config.data.train_samples_per_epoch,
+                seed=config.train.seed,
+                sampling_strategy=config.data.train_sampling_strategy,
+                token_merge_size=config.data.token_merge_size,
+                token_merge_alphabet=config.data.token_merge_alphabet,
+            )
+            splits.train_sources = []
+            gc.collect()
+            if ddp.is_main_process:
+                print(
+                    f"[stage] training dataset ready: tokenized_sources={len(train_dataset.sources)} "
+                    f"samples_per_epoch={len(train_dataset)}",
                     flush=True,
                 )
 
-        if ddp.is_main_process:
-            print("[stage] building training dataset...", flush=True)
-        train_dataset = RandomWindowDataset(
-            sources=splits.train_sources,
-            seq_length=config.model.seq_length,
-            samples_per_epoch=config.data.train_samples_per_epoch,
-            seed=config.train.seed,
-            sampling_strategy=config.data.train_sampling_strategy,
-            token_merge_size=config.data.token_merge_size,
-            token_merge_alphabet=config.data.token_merge_alphabet,
-        )
-        splits.train_sources = []
-        gc.collect()
-        if ddp.is_main_process:
-            print(
-                f"[stage] training dataset ready: tokenized_sources={len(train_dataset.sources)} "
-                f"samples_per_epoch={len(train_dataset)}",
-                flush=True,
+            if ddp.is_main_process:
+                print("[stage] building validation dataset...", flush=True)
+            val_dataset = SequentialWindowDataset(
+                sources=splits.val_sources,
+                seq_length=config.model.seq_length,
+                pad_id=config.model.pad_id,
+                token_merge_size=config.data.token_merge_size,
+                token_merge_alphabet=config.data.token_merge_alphabet,
             )
+            splits.val_sources = []
+            gc.collect()
+            if ddp.is_main_process:
+                print(
+                    f"[stage] validation dataset ready: tokenized_sources={len(val_dataset.sources)} "
+                    f"windows={len(val_dataset)}",
+                    flush=True,
+                )
 
-        if ddp.is_main_process:
-            print("[stage] building validation dataset...", flush=True)
-        val_dataset = SequentialWindowDataset(
-            sources=splits.val_sources,
-            seq_length=config.model.seq_length,
-            pad_id=config.model.pad_id,
-            token_merge_size=config.data.token_merge_size,
-            token_merge_alphabet=config.data.token_merge_alphabet,
-        )
-        splits.val_sources = []
-        gc.collect()
-        if ddp.is_main_process:
-            print(
-                f"[stage] validation dataset ready: tokenized_sources={len(val_dataset.sources)} "
-                f"windows={len(val_dataset)}",
-                flush=True,
+            if ddp.is_main_process:
+                print("[stage] building test dataset...", flush=True)
+            test_dataset = SequentialWindowDataset(
+                sources=splits.test_sources,
+                seq_length=config.model.seq_length,
+                pad_id=config.model.pad_id,
+                token_merge_size=config.data.token_merge_size,
+                token_merge_alphabet=config.data.token_merge_alphabet,
             )
-
-        if ddp.is_main_process:
-            print("[stage] building test dataset...", flush=True)
-        test_dataset = SequentialWindowDataset(
-            sources=splits.test_sources,
-            seq_length=config.model.seq_length,
-            pad_id=config.model.pad_id,
-            token_merge_size=config.data.token_merge_size,
-            token_merge_alphabet=config.data.token_merge_alphabet,
-        )
-        compression_test_sources = splits.test_sources if mode in {"eval", "all", "compress"} else []
-        splits.test_sources = []
-        gc.collect()
-        if ddp.is_main_process:
-            print(
-                f"[stage] test dataset ready: tokenized_sources={len(test_dataset.sources)} "
-                f"windows={len(test_dataset)}",
-                flush=True,
+            compression_test_sources = splits.test_sources if mode in {"eval", "all", "compress"} else []
+            compression_source_entries = [dict(item) for item in splits.summary["species"]]
+            splits.test_sources = []
+            gc.collect()
+            if ddp.is_main_process:
+                print(
+                    f"[stage] test dataset ready: tokenized_sources={len(test_dataset.sources)} "
+                    f"windows={len(test_dataset)}",
+                    flush=True,
+                )
+            dataset_summary = splits.summary
+        dataset_provides_random_order = bool(
+            (
+                indexed_fasta_mode
+                and config.data.indexed_window_mode
+                in {"nonoverlap_random", "nonoverlap_file_stream", "source_batch_file_stream"}
             )
+            or repacked_windows_mode
+        )
+        iterable_dataset_mode = indexed_file_stream_mode or indexed_source_batch_stream_mode or repacked_windows_mode
+        batch_producing_dataset_mode = indexed_source_batch_stream_mode
         train_sampler = (
-            DistributedSampler(train_dataset, num_replicas=ddp.world_size, rank=ddp.rank, shuffle=True)
-            if ddp.is_distributed
+            DistributedSampler(
+                train_dataset,
+                num_replicas=ddp.world_size,
+                rank=ddp.rank,
+                shuffle=not dataset_provides_random_order,
+            )
+            if ddp.is_distributed and not iterable_dataset_mode
             else None
         )
         val_sampler = (
             DistributedSampler(val_dataset, num_replicas=ddp.world_size, rank=ddp.rank, shuffle=False)
-            if ddp.is_distributed
+            if ddp.is_distributed and not iterable_dataset_mode
             else None
         )
         test_sampler = (
             DistributedSampler(test_dataset, num_replicas=ddp.world_size, rank=ddp.rank, shuffle=False)
-            if ddp.is_distributed
+            if ddp.is_distributed and not iterable_dataset_mode
             else None
         )
 
@@ -689,21 +1004,21 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
 
         train_loader = DataLoader(
             train_dataset,
-            batch_size=config.train.batch_size,
-            shuffle=train_sampler is None,
+            batch_size=None if batch_producing_dataset_mode else config.train.batch_size,
+            shuffle=train_sampler is None and not dataset_provides_random_order,
             sampler=train_sampler,
             **dataloader_common_kwargs,
         )
         val_loader = DataLoader(
             val_dataset,
-            batch_size=config.train.eval_batch_size,
+            batch_size=None if batch_producing_dataset_mode else config.train.eval_batch_size,
             shuffle=False,
             sampler=val_sampler,
             **dataloader_common_kwargs,
         )
         test_loader = DataLoader(
             test_dataset,
-            batch_size=config.train.eval_batch_size,
+            batch_size=None if batch_producing_dataset_mode else config.train.eval_batch_size,
             shuffle=False,
             sampler=test_sampler,
             **dataloader_common_kwargs,
@@ -762,7 +1077,7 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
             "persistent_workers": dataloader_persistent_workers,
             "pin_memory": dataloader_pin_memory,
             "model_parameters": int(sum(parameter.numel() for parameter in base_model.parameters())),
-            "dataset": splits.summary,
+            "dataset": dataset_summary,
             "megabyte": {
                 "implementation": config.model.implementation,
                 "requested_init_from": config.train.init_from,
@@ -805,16 +1120,23 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
             model.train()
             optimizer.zero_grad(set_to_none=True)
             started = time.time()
+            last_step_finished = started
+            accumulated_data_time = 0.0
+            accumulated_step_time = 0.0
+            accumulated_train_steps = 0
             for epoch in range(config.train.epochs):
                 if train_sampler is not None:
                     train_sampler.set_epoch(epoch)
 
                 for batch in train_loader:
+                    batch_ready = time.time()
+                    data_time = batch_ready - last_step_finished
+                    accumulated_data_time += data_time
                     global_step += 1
+                    accumulated_train_steps += 1
                     ids = batch["input_ids"].to(device, non_blocking=True)
                     with autocast_context(device, config.train.dtype):
-                        output = model(ids, return_loss=True)
-                        loss = output.loss
+                        loss, _, _ = compute_language_model_loss(model, ids, batch, config.model.pad_id)
 
                     scaler.scale(loss).backward()
                     scaler.unscale_(optimizer)
@@ -824,16 +1146,25 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                     if scheduler is not None:
                         scheduler.step()
                     optimizer.zero_grad(set_to_none=True)
+                    step_finished = time.time()
+                    step_time = step_finished - batch_ready
+                    accumulated_step_time += step_time
+                    last_step_finished = step_finished
 
                     if global_step % config.train.log_interval == 0 and ddp.is_main_process:
+                        interval_elapsed = max(time.time() - started, 1e-6)
                         tokens_per_second = (
-                            config.train.batch_size * config.model.seq_length * config.train.log_interval
-                        ) / max(time.time() - started, 1e-6)
+                            config.train.batch_size * config.model.seq_length * accumulated_train_steps
+                        ) / interval_elapsed
                         if ddp.is_distributed:
                             tokens_per_second *= ddp.world_size
                         bases_per_second = tokens_per_second * config.data.token_merge_size
                         bytes_per_second = bases_per_second
                         bits_per_base = (loss.item() / math.log(2)) / config.data.token_merge_size
+                        data_time_fraction = accumulated_data_time / max(
+                            accumulated_data_time + accumulated_step_time,
+                            1e-6,
+                        )
                         if train_log_handle is not None:
                             write_training_log_event(
                                 train_log_handle,
@@ -846,6 +1177,9 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                                     "grad_norm": float(grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm),
                                     "learning_rate": float(optimizer.param_groups[0]["lr"]),
                                     "tokens_per_second": float(tokens_per_second),
+                                    "data_time_seconds": float(accumulated_data_time),
+                                    "step_time_seconds": float(accumulated_step_time),
+                                    "data_time_fraction": float(data_time_fraction),
                                 },
                             )
                         log_wandb_metrics(
@@ -857,6 +1191,7 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                                 "train/grad_norm": float(grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm),
                                 "train/lr": float(optimizer.param_groups[0]["lr"]),
                                 "train/tokens_per_second": float(tokens_per_second),
+                                "train/data_time_fraction": float(data_time_fraction),
                             },
                             step=global_step,
                         )
@@ -864,10 +1199,14 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                             f"[train] epoch={epoch + 1} step={global_step} "
                             f"loss/token={loss.item():.4f} bits/base={bits_per_base:.4f} "
                             f"grad_norm={float(grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm):.4f} "
-                            f"bytes/s={bytes_per_second:.1f} lr={optimizer.param_groups[0]['lr']:.6g}",
+                            f"bytes/s={bytes_per_second:.1f} data_frac={data_time_fraction:.3f} "
+                            f"lr={optimizer.param_groups[0]['lr']:.6g}",
                             flush=True,
                         )
                         started = time.time()
+                        accumulated_data_time = 0.0
+                        accumulated_step_time = 0.0
+                        accumulated_train_steps = 0
 
                     if global_step % config.train.eval_interval == 0:
                         val_metrics = evaluate_loss(
@@ -921,6 +1260,11 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                                     scheduler,
                                 )
                         model.train()
+                        last_step_finished = time.time()
+                        started = last_step_finished
+                        accumulated_data_time = 0.0
+                        accumulated_step_time = 0.0
+                        accumulated_train_steps = 0
 
             if best_val_bpb == float("inf"):
                 val_metrics = evaluate_loss(
@@ -1029,27 +1373,30 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                     },
                     step=global_step,
                 )
-                source_entries = [dict(item) for item in splits.summary["species"]]
-                # Compression runs only on rank 0. Use the underlying module directly so
-                # rank-local forward passes do not depend on other DDP ranks staying active.
-                print("[stage] starting compression on rank 0...", flush=True)
-                compression_model = unwrap_model(model)
-                compression_metrics = evaluate_compression_per_source(
-                    model=compression_model,
-                    test_sources=compression_test_sources,
-                    source_entries=source_entries,
-                    requested_bytes=config.data.compression_sample_bytes,
-                    seq_length=config.model.seq_length,
-                    pad_id=config.model.pad_id,
-                    eos_id=config.model.eos_id,
-                    device=device,
-                    dtype_name=config.train.dtype,
-                    batch_size=config.train.eval_batch_size,
-                    token_merge_size=config.data.token_merge_size,
-                    token_merge_alphabet=config.data.token_merge_alphabet,
-                    arithmetic_frequency_total=config.arithmetic.frequency_total,
-                    arithmetic_target_uniform_mass=config.arithmetic.target_uniform_mass,
-                )
+                if compression_skipped is not None:
+                    compression_metrics = compression_skipped
+                    print(f"[stage] skipping compression: {compression_skipped['reason']}", flush=True)
+                else:
+                    # Compression runs only on rank 0. Use the underlying module directly so
+                    # rank-local forward passes do not depend on other DDP ranks staying active.
+                    print("[stage] starting compression on rank 0...", flush=True)
+                    compression_model = unwrap_model(model)
+                    compression_metrics = evaluate_compression_per_source(
+                        model=compression_model,
+                        test_sources=compression_test_sources,
+                        source_entries=compression_source_entries,
+                        requested_bytes=config.data.compression_sample_bytes,
+                        seq_length=config.model.seq_length,
+                        pad_id=config.model.pad_id,
+                        eos_id=config.model.eos_id,
+                        device=device,
+                        dtype_name=config.train.dtype,
+                        batch_size=config.train.eval_batch_size,
+                        token_merge_size=config.data.token_merge_size,
+                        token_merge_alphabet=config.data.token_merge_alphabet,
+                        arithmetic_frequency_total=config.arithmetic.frequency_total,
+                        arithmetic_target_uniform_mass=config.arithmetic.target_uniform_mass,
+                    )
 
                 run_summary["validation"] = val_metrics
                 run_summary["test"] = test_metrics

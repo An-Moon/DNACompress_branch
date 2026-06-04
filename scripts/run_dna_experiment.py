@@ -2,33 +2,6 @@ from __future__ import annotations
 
 """Run DNA Megabyte experiments.
 
-1x train-split coverage reference for `seq_length=1024`
-(`train_ratio=0.9`, `max_train_bytes_per_species=null`).
-Species shown in the reference figure are listed first in figure order; local-only
-datasets are appended at the end.
-
-| Species | Train bytes | `train_samples_per_epoch` for 1x coverage |
-| --- | ---: | ---: |
-| OrSa | 38,936,271 | 38,024 |
-| HoSa | 170,777,400 | 166,775 |
-| DaRe | 56,308,518 | 54,989 |
-| ScPo | 9,586,940 | 9,363 |
-| EsCo | 4,177,487 | 4,080 |
-| YeMi | 66,320 | 65 |
-| BuEb | 17,046 | 17 |
-| AgPh | 39,573 | 39 |
-| Total (through AgPh) | 273,352,572 | 273,352 |
-| GaGa | 133,679,065 | 130,546 |
-| DrMe | 28,963,286 | 28,285 |
-| EnIn | 23,762,778 | 23,206 |
-| PlFa | 8,088,041 | 7,899 |
-| HePy | 1,501,042 | 1,466 |
-| AeCa | 1,431,944 | 1,399 |
-| HaHi | 3,501,004 | 3,419 |
-| AnCa | 127,970,708 | 124,972 |
-| WaMe | 8,229,989 | 8,038 |
-| Total (all local datasets) | 617,044,512 | 602,582 |
-
 Complete example (train + eval + compression, with common overrides):
 
     python scripts/run_dna_experiment.py \
@@ -77,6 +50,88 @@ Complete example (train + eval + compression, with common overrides):
         --pretrained-weight-path outputs/dna_megabyte_huge_b128_ensembl_all/best.pt \
         --input-causal-conv-kernel-size 7
 
+OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skipped):
+  
+    CUDA_VISIBLE_DEVICES=3 python scripts/run_dna_experiment.py \
+        --config configs/dna_megabyte_large.json \
+        --mode all \
+        --init-from scratch \
+        --seed 42 \
+        --sequence-source-mode indexed_fasta \
+        --fasta-index-dir /data/students/Liang_junnan/opengenome2_subset/index \
+        --indexed-eval-samples 1024 \
+        --indexed-split-seed 0 \
+        --indexed-window-mode source_batch_file_stream \
+        --indexed-train-epoch-mode all_windows \
+        --indexed-file-stream-windows 8192 \
+        --indexed-file-shuffle-buffer-windows 8192 \
+        --indexed-file-stream-order-seed 0 \
+        --indexed-source-balance-batches 8 \
+        --indexed-source-read-block-windows 8192 \
+        --indexed-source-file-order-seed 0 \
+        --source-sampling-weights-json '{"gtdb_v220":0.35,"metagenomes":0.3,"ncbi_eukaryotic_genomes":0.25,"plasmids_phage":0.1}' \
+        --dtype bfloat16 \
+        --epochs 2 \
+        --batch-size 32 \
+        --eval-batch-size 32 \
+        --learning-rate 1e-4 \
+        --print-config \
+        --seq-length 1024 \
+        --token-merge-size 3 \
+        --weight-decay 0.01 \
+        --log-interval 25 \
+        --eval-interval 2500 \
+        --train-ratio 0.98 \
+        --val-ratio 0.01 \
+        --test-ratio 0.01 \
+        --lr-scheduler cosine \
+        --lr-warmup-steps 1024 \
+        --lr-min-ratio 0.1 \
+        --grad-clip-norm 1.0 \
+        --num-workers 1 \
+        --wandb-project dna-compress \
+        --wandb-name dna_megabyte_large_opengenome2 
+
+OpenGenome2 repacked window variant (train + eval; compression is recorded as skipped):
+  
+    CUDA_VISIBLE_DEVICES=3 python scripts/run_dna_experiment.py \
+        --config configs/dna_megabyte_large.json \
+        --mode all \
+        --init-from scratch \
+        --seed 42 \
+        --sequence-source-mode repacked_windows \
+        --repacked-window-dir /data/students/Liang_junnan/opengenome2_subset/repacked_megabyte_s1024_m3_hashshard \
+        --repacked-schedule-dir /data/students/Liang_junnan/opengenome2_subset/repacked_megabyte_s1024_m3_hashshard/schedules/split_seed_0_train_0.98_val_0.01_test_0.01 \
+        --repacked-eval-samples 1024 \
+        --repacked-train-epoch-mode samples \
+        --repacked-read-chunk-windows 8192 \
+        --repacked-shard-load-mode mmap \
+        --repacked-shard-sampling-mode random \
+        --source-loss-weights-json '{"gtdb_v220":0.35,"metagenomes":0.3,"ncbi_eukaryotic_genomes":0.25,"plasmids_phage":0.1}' \
+        --dtype bfloat16 \
+        --epochs 2 \
+        --batch-size 32 \
+        --eval-batch-size 32 \
+        --learning-rate 1e-4 \
+        --print-config \
+        --seq-length 1024 \
+        --token-merge-size 3 \
+        --weight-decay 0.01 \
+        --log-interval 25 \
+        --eval-interval 2500 \
+        --train-ratio 0.98 \
+        --val-ratio 0.01 \
+        --test-ratio 0.01 \
+        --lr-scheduler cosine \
+        --lr-warmup-steps 1024 \
+        --lr-min-ratio 0.1 \
+        --grad-clip-norm 1.0 \
+        --num-workers 4 \
+        
+        --wandb-project dna-compress \
+        --wandb-name dna_megabyte_large_opengenome2 \
+        --gpu-ids 2 3 
+
 Multi-GPU DDP example (2 GPUs):
 
     torchrun --nproc_per_node=2 scripts/run_dna_experiment.py \
@@ -95,7 +150,6 @@ Multi-GPU DDP example (2 GPUs):
         --pin-memory \
         --gpus 0 1
     
-          
 Optional generic overrides (repeatable):
 
     --override train.epochs=2 --override data.species='["GaGa","DrMe"]'
@@ -108,6 +162,12 @@ import math
 import os
 from pathlib import Path
 import sys
+
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
+os.environ.setdefault("ARROW_NUM_THREADS", "1")
 from typing import Any
 
 
@@ -218,6 +278,41 @@ def _parse_sequence_include(values: list[str] | None) -> dict[str, list[str]] | 
     return parsed
 
 
+def _parse_weight_map(raw: str | None, *, option_name: str, key_label: str) -> dict[str, float] | None:
+    if raw is None:
+        return None
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        raise ValueError(f"{option_name} must be a JSON object")
+    parsed: dict[str, float] = {}
+    for key, value in payload.items():
+        if not isinstance(key, str) or not key:
+            raise ValueError(f"{key_label} keys must be non-empty strings")
+        weight = float(value)
+        if weight < 0:
+            raise ValueError(f"{key_label} weights must be non-negative")
+        parsed[key] = weight
+    if sum(parsed.values()) <= 0:
+        raise ValueError(f"{key_label} weights must sum to > 0")
+    return parsed
+
+
+def _parse_source_sampling_weights(raw: str | None) -> dict[str, float] | None:
+    return _parse_weight_map(raw, option_name="--source-sampling-weights-json", key_label="source sampling")
+
+
+def _parse_source_loss_weights(raw: str | None) -> dict[str, float] | None:
+    return _parse_weight_map(raw, option_name="--source-loss-weights-json", key_label="source loss")
+
+
+def _parse_repacked_source_sampling_weights(raw: str | None) -> dict[str, float] | None:
+    return _parse_weight_map(
+        raw,
+        option_name="--repacked-source-sampling-weights-json",
+        key_label="repacked source sampling",
+    )
+
+
 def _set_nested_attr(config: Any, dotted_key: str, value: Any) -> None:
     parts = dotted_key.split(".")
     if len(parts) < 2:
@@ -262,6 +357,32 @@ def _apply_overrides(config: Any, args: argparse.Namespace) -> None:
 
     _apply_if_not_none(config, "data.dataset_dir", args.dataset_dir)
     _apply_if_not_none(config, "data.sequence_source_mode", args.sequence_source_mode)
+    _apply_if_not_none(config, "data.fasta_index_dir", args.fasta_index_dir)
+    _apply_if_not_none(config, "data.indexed_eval_samples", args.indexed_eval_samples)
+    _apply_if_not_none(config, "data.indexed_split_seed", args.indexed_split_seed)
+    _apply_if_not_none(config, "data.indexed_window_mode", args.indexed_window_mode)
+    _apply_if_not_none(config, "data.indexed_train_epoch_mode", args.indexed_train_epoch_mode)
+    _apply_if_not_none(config, "data.indexed_file_stream_windows", args.indexed_file_stream_windows)
+    _apply_if_not_none(config, "data.indexed_file_shuffle_buffer_windows", args.indexed_file_shuffle_buffer_windows)
+    _apply_if_not_none(config, "data.indexed_file_stream_order_seed", args.indexed_file_stream_order_seed)
+    _apply_if_not_none(config, "data.indexed_source_balance_batches", args.indexed_source_balance_batches)
+    _apply_if_not_none(config, "data.indexed_source_read_block_windows", args.indexed_source_read_block_windows)
+    _apply_if_not_none(config, "data.indexed_source_file_order_seed", args.indexed_source_file_order_seed)
+    _apply_if_not_none(config, "data.repacked_window_dir", args.repacked_window_dir)
+    _apply_if_not_none(config, "data.repacked_schedule_dir", args.repacked_schedule_dir)
+    _apply_if_not_none(config, "data.repacked_eval_samples", args.repacked_eval_samples)
+    _apply_if_not_none(config, "data.repacked_train_epoch_mode", args.repacked_train_epoch_mode)
+    _apply_if_not_none(config, "data.repacked_read_chunk_windows", args.repacked_read_chunk_windows)
+    _apply_if_not_none(config, "data.repacked_shard_load_mode", args.repacked_shard_load_mode)
+    _apply_if_not_none(config, "data.repacked_shard_sampling_mode", args.repacked_shard_sampling_mode)
+    if args.repacked_source_sampling_weights_json is not None:
+        config.data.repacked_source_sampling_weights = (
+            _parse_repacked_source_sampling_weights(args.repacked_source_sampling_weights_json) or {}
+        )
+    if args.source_sampling_weights_json is not None:
+        config.data.source_sampling_weights = _parse_source_sampling_weights(args.source_sampling_weights_json) or {}
+    if args.source_loss_weights_json is not None:
+        config.data.source_loss_weights = _parse_source_loss_weights(args.source_loss_weights_json) or {}
     _apply_if_not_none(config, "data.multi_sequence_mode", args.multi_sequence_mode)
     _apply_if_not_none(config, "data.clean_cache_enabled", args.clean_cache_enabled)
     _apply_if_not_none(config, "data.clean_cache_dir", args.clean_cache_dir)
@@ -322,7 +443,7 @@ def _apply_overrides(config: Any, args: argparse.Namespace) -> None:
         _set_nested_attr(config, key.strip(), _parse_scalar(raw_value.strip()))
 
 
-def _validate_config_for_megabyte(config: Any) -> None:
+def _validate_config_for_megabyte(config: Any, mode: str = "all") -> None:
     if config.model.implementation not in {
         "megabyte",
         "megabyte_in_action",
@@ -376,8 +497,92 @@ def _validate_config_for_megabyte(config: Any) -> None:
         raise ValueError("data.token_merge_size must be >= 1")
 
     normalize_alphabet(config.data.token_merge_alphabet)
-    if config.data.sequence_source_mode not in {"auto", "flat_file", "fasta_dir"}:
-        raise ValueError("data.sequence_source_mode must be one of: auto, flat_file, fasta_dir")
+    if config.data.sequence_source_mode not in {"auto", "flat_file", "fasta_dir", "indexed_fasta", "repacked_windows"}:
+        raise ValueError(
+            "data.sequence_source_mode must be one of: auto, flat_file, fasta_dir, indexed_fasta, repacked_windows"
+        )
+    if config.data.sequence_source_mode == "indexed_fasta":
+        if mode == "compress":
+            raise ValueError("indexed_fasta mode does not support --mode compress; use train, eval, or all.")
+        if not config.data.fasta_index_dir:
+            raise ValueError("data.fasta_index_dir is required when sequence_source_mode is indexed_fasta")
+        if config.data.indexed_eval_samples <= 0:
+            raise ValueError("data.indexed_eval_samples must be > 0")
+        if not isinstance(config.data.indexed_split_seed, int):
+            raise ValueError("data.indexed_split_seed must be an integer")
+        if config.data.indexed_window_mode not in {
+            "sliding_random",
+            "nonoverlap_random",
+            "nonoverlap_file_stream",
+            "source_batch_file_stream",
+        }:
+            raise ValueError(
+                "data.indexed_window_mode must be one of: sliding_random, nonoverlap_random, "
+                "nonoverlap_file_stream, source_batch_file_stream"
+            )
+        if config.data.indexed_train_epoch_mode not in {"samples", "all_windows"}:
+            raise ValueError("data.indexed_train_epoch_mode must be one of: samples, all_windows")
+        if config.data.indexed_train_epoch_mode == "all_windows" and config.data.indexed_window_mode not in {
+            "nonoverlap_random",
+            "nonoverlap_file_stream",
+            "source_batch_file_stream",
+        }:
+            raise ValueError(
+                "data.indexed_train_epoch_mode='all_windows' requires "
+                "indexed_window_mode='nonoverlap_random', 'nonoverlap_file_stream', or 'source_batch_file_stream'"
+            )
+        if config.data.indexed_file_stream_windows <= 0:
+            raise ValueError("data.indexed_file_stream_windows must be > 0")
+        if config.data.indexed_file_shuffle_buffer_windows < 0:
+            raise ValueError("data.indexed_file_shuffle_buffer_windows must be >= 0")
+        if not isinstance(config.data.indexed_file_stream_order_seed, int):
+            raise ValueError("data.indexed_file_stream_order_seed must be an integer")
+        if config.data.indexed_source_balance_batches <= 0:
+            raise ValueError("data.indexed_source_balance_batches must be > 0")
+        if config.data.indexed_source_read_block_windows <= 0:
+            raise ValueError("data.indexed_source_read_block_windows must be > 0")
+        if not isinstance(config.data.indexed_source_file_order_seed, int):
+            raise ValueError("data.indexed_source_file_order_seed must be an integer")
+        if not isinstance(config.data.source_sampling_weights, dict):
+            raise ValueError("data.source_sampling_weights must be a dict[str, float]")
+        if not isinstance(config.data.source_loss_weights, dict):
+            raise ValueError("data.source_loss_weights must be a dict[str, float]")
+        if config.data.indexed_window_mode not in {"sliding_random", "source_batch_file_stream"} and config.data.source_sampling_weights:
+            raise ValueError(
+                "source_sampling_weights are supported only with indexed_window_mode='sliding_random' "
+                "or 'source_batch_file_stream'; use --source-loss-weights-json for other nonoverlap indexed modes."
+            )
+    if config.data.sequence_source_mode == "repacked_windows":
+        if mode == "compress":
+            raise ValueError("repacked_windows mode does not support --mode compress; use train, eval, or all.")
+        if not config.data.repacked_window_dir:
+            raise ValueError("data.repacked_window_dir is required when sequence_source_mode is repacked_windows")
+        if config.data.repacked_eval_samples <= 0:
+            raise ValueError("data.repacked_eval_samples must be > 0")
+        if config.data.repacked_train_epoch_mode not in {"samples", "all_windows"}:
+            raise ValueError("data.repacked_train_epoch_mode must be one of: samples, all_windows")
+        if config.data.repacked_read_chunk_windows <= 0:
+            raise ValueError("data.repacked_read_chunk_windows must be > 0")
+        if config.data.repacked_shard_load_mode not in {"mmap", "preload"}:
+            raise ValueError("data.repacked_shard_load_mode must be one of: mmap, preload")
+        if config.data.repacked_shard_load_mode == "preload" and config.train.num_workers > 0:
+            raise ValueError("repacked preload mode requires train.num_workers=0 to avoid duplicating large shards")
+        if config.data.repacked_shard_sampling_mode not in {"random", "all_shards"}:
+            raise ValueError("data.repacked_shard_sampling_mode must be one of: random, all_shards")
+        if not isinstance(config.data.repacked_source_sampling_weights, dict):
+            raise ValueError("data.repacked_source_sampling_weights must be a dict[str, float]")
+        if config.data.repacked_source_sampling_weights:
+            raise ValueError(
+                "repacked_source_sampling_weights are not used by hash-shard repacked_windows; "
+                "use --source-loss-weights-json to adjust source contribution."
+            )
+        if not isinstance(config.data.source_loss_weights, dict):
+            raise ValueError("data.source_loss_weights must be a dict[str, float]")
+        if config.data.source_sampling_weights:
+            raise ValueError(
+                "source_sampling_weights are for indexed_fasta sliding_random; "
+                "use --repacked-source-sampling-weights-json for repacked_windows."
+            )
     if config.data.multi_sequence_mode not in {"separate", "concat"}:
         raise ValueError("data.multi_sequence_mode must be one of: separate, concat")
     if not isinstance(config.data.sequence_include_map, dict):
@@ -490,7 +695,34 @@ def _build_parser() -> argparse.ArgumentParser:
     data_group = parser.add_argument_group("data overrides")
     data_group.add_argument("--dataset-dir")
     data_group.add_argument("--species", nargs="+", help="Species list, e.g. --species HoSa YeMi")
-    data_group.add_argument("--sequence-source-mode", choices=["auto", "flat_file", "fasta_dir"])
+    data_group.add_argument(
+        "--sequence-source-mode",
+        choices=["auto", "flat_file", "fasta_dir", "indexed_fasta", "repacked_windows"],
+    )
+    data_group.add_argument("--fasta-index-dir")
+    data_group.add_argument("--source-sampling-weights-json")
+    data_group.add_argument("--indexed-eval-samples", type=int)
+    data_group.add_argument("--indexed-split-seed", type=int)
+    data_group.add_argument(
+        "--indexed-window-mode",
+        choices=["sliding_random", "nonoverlap_random", "nonoverlap_file_stream", "source_batch_file_stream"],
+    )
+    data_group.add_argument("--indexed-train-epoch-mode", choices=["samples", "all_windows"])
+    data_group.add_argument("--indexed-file-stream-windows", type=int)
+    data_group.add_argument("--indexed-file-shuffle-buffer-windows", type=int)
+    data_group.add_argument("--indexed-file-stream-order-seed", type=int)
+    data_group.add_argument("--indexed-source-balance-batches", type=int)
+    data_group.add_argument("--indexed-source-read-block-windows", type=int)
+    data_group.add_argument("--indexed-source-file-order-seed", type=int)
+    data_group.add_argument("--repacked-window-dir")
+    data_group.add_argument("--repacked-schedule-dir")
+    data_group.add_argument("--repacked-eval-samples", type=int)
+    data_group.add_argument("--repacked-train-epoch-mode", choices=["samples", "all_windows"])
+    data_group.add_argument("--repacked-read-chunk-windows", type=int)
+    data_group.add_argument("--repacked-shard-load-mode", choices=["mmap", "preload"])
+    data_group.add_argument("--repacked-shard-sampling-mode", choices=["random", "all_shards"])
+    data_group.add_argument("--repacked-source-sampling-weights-json")
+    data_group.add_argument("--source-loss-weights-json")
     data_group.add_argument("--multi-sequence-mode", choices=["separate", "concat"])
     data_group.add_argument("--clean-cache-enabled", dest="clean_cache_enabled", action="store_true", default=None)
     data_group.add_argument("--no-clean-cache", dest="clean_cache_enabled", action="store_false")
@@ -586,7 +818,7 @@ def main() -> None:
         )
     _apply_overrides(config, args)
     _apply_timestamp_to_output_dir(config, args)
-    _validate_config_for_megabyte(config)
+    _validate_config_for_megabyte(config, mode=args.mode)
     apply_token_merge_to_model_config(config.model, config.data)
 
     if args.print_config or args.dry_run:
