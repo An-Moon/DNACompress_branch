@@ -1,0 +1,12 @@
+[geco2_fasta] 1/9 source=gtdb_v220 level=5 bytes=100008876
+[geco2_fasta] 2/9 source=metagenomes level=5 bytes=103851550
+[geco2_fasta] 3/9 source=mrna level=5 bytes=100000316
+[geco2_fasta] 4/9 source=ncbi_eukaryotic_genomes level=5 bytes=100008968
+[geco2_fasta] 5/9 source=ncrna level=5 bytes=100000282
+[geco2_fasta] 6/9 source=organelles level=5 bytes=100102991
+[geco2_fasta] 7/9 source=plasmids_phage level=5 bytes=100001852
+[geco2_fasta] 8/9 source=promoters level=5 bytes=100000566
+[geco2_fasta] 9/9 source=transcripts level=5 bytes=100002529
+[geco2_fasta] saved metrics to outputs/opengenome2_geco2_fasta_test_subset_100mb_per_source/compression_compare.json
+[geco2_fasta] generated 4 plot/table artifacts
+[geco2_fasta] aggregate: sources=9 bases=884033256 compressed_bytes=182324707 bpb=1.649935
