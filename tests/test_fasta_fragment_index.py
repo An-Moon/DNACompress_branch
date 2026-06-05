@@ -20,6 +20,7 @@ from dna_compress.fasta_fragment_index import (
     build_fasta_fragment_index,
     ensure_fasta_index_runtime_cache,
     load_fasta_index_runtime_cache,
+    prepare_indexed_megabyte_eval_cache,
     split_run_ids,
 )
 from dna_compress.repacked_windows import (
@@ -32,6 +33,7 @@ from scripts.run_megadna_experiment import _build_parser as build_megadna_parser
 from scripts.run_dna_experiment import _apply_overrides as apply_dna_overrides
 from scripts.run_dna_experiment import _build_parser as build_dna_parser
 from scripts.run_dna_experiment import _validate_config_for_megabyte
+from scripts.build_opengenome2_fasta_test_subset import build_opengenome2_fasta_test_subset
 from dna_compress.config import ExperimentConfig
 
 
@@ -547,6 +549,78 @@ class FastaFragmentIndexTests(unittest.TestCase):
             self.assertEqual(starts.count(ord("A")), 24)
             self.assertEqual(starts.count(ord("T")), 8)
             self.assertEqual(dataset.summary()["source_balance_batches"], 4)
+            self.assertEqual(dataset.summary()["source_mix_chunk_batches"], 4)
+
+    def test_indexed_megabyte_source_batch_stream_shuffles_read_chunk_in_memory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fasta_root = Path(tmpdir) / "fasta"
+            index_dir = Path(tmpdir) / "index"
+            (fasta_root / "source_a").mkdir(parents=True)
+            (fasta_root / "source_a" / "a.fasta").write_text(
+                ">a\n"
+                "AAAACCCCGGGGTTTT\n",
+                encoding="utf-8",
+            )
+            build_fasta_fragment_index(
+                fasta_root=fasta_root,
+                index_dir=index_dir,
+                anchor_stride=4,
+                chunk_size=11,
+                batch_rows=2,
+            )
+            common = dict(
+                index_dir=index_dir,
+                split="train",
+                seq_length=4,
+                token_merge_size=1,
+                token_merge_alphabet="ACGTN",
+                samples=4,
+                seed=37,
+                batch_size=1,
+                source_weights={"source_a": 1.0},
+                pad_id=257,
+                source_mix_chunk_batches=4,
+                source_read_chunk_windows=4,
+                train_ratio=1.0,
+                val_ratio=0.0,
+                test_ratio=0.0,
+            )
+
+            sequential = IndexedMegabyteSourceBatchStreamDataset(**common, source_read_chunk_shuffle=False)
+            shuffled = IndexedMegabyteSourceBatchStreamDataset(**common, source_read_chunk_shuffle=True)
+            sequential_starts = [int(batch["input_ids"][0, 0].item()) for batch in sequential]
+            shuffled_starts = [int(batch["input_ids"][0, 0].item()) for batch in shuffled]
+
+            self.assertEqual(sequential_starts, [ord("A"), ord("C"), ord("G"), ord("T")])
+            self.assertCountEqual(shuffled_starts, sequential_starts)
+            self.assertNotEqual(shuffled_starts, sequential_starts)
+
+    def test_indexed_megabyte_source_batch_stream_mixes_sources_at_window_level(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _, index_dir = self._build_source_batch_index(tmpdir)
+            dataset = IndexedMegabyteSourceBatchStreamDataset(
+                index_dir=index_dir,
+                split="train",
+                seq_length=4,
+                token_merge_size=1,
+                token_merge_alphabet="ACGTN",
+                samples=32,
+                seed=41,
+                batch_size=8,
+                source_weights={"source_a": 1.0, "source_b": 1.0},
+                pad_id=257,
+                source_mix_chunk_batches=4,
+                source_read_chunk_windows=2,
+                source_read_chunk_shuffle=False,
+                train_ratio=1.0,
+                val_ratio=0.0,
+                test_ratio=0.0,
+            )
+
+            first_batch = next(iter(dataset))["input_ids"][:, 0].tolist()
+
+            self.assertIn(ord("A"), first_batch)
+            self.assertIn(ord("T"), first_batch)
 
     def test_indexed_megabyte_source_batch_stream_dataloader_workers_emit_batches(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -574,6 +648,40 @@ class FastaFragmentIndexTests(unittest.TestCase):
 
             self.assertEqual(sum(batch["input_ids"].shape[0] for batch in batches), 32)
             self.assertTrue(all(tuple(batch["input_ids"].shape[1:]) == (4,) for batch in batches))
+
+    def test_indexed_megabyte_source_batch_stream_resumes_from_batch_index(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _, index_dir = self._build_source_batch_index(tmpdir)
+            common = dict(
+                index_dir=index_dir,
+                split="train",
+                seq_length=4,
+                token_merge_size=1,
+                token_merge_alphabet="ACGTN",
+                samples=32,
+                seed=31,
+                batch_size=4,
+                source_weights={"source_a": 1.0, "source_b": 1.0},
+                pad_id=257,
+                source_balance_batches=2,
+                source_read_block_windows=2,
+                train_ratio=1.0,
+                val_ratio=0.0,
+                test_ratio=0.0,
+            )
+            full_dataset = IndexedMegabyteSourceBatchStreamDataset(**common)
+            resumed_dataset = IndexedMegabyteSourceBatchStreamDataset(**common, start_batch_index=3)
+
+            full_batches = list(full_dataset)
+            resumed_batches = list(resumed_dataset)
+
+            self.assertEqual([int(batch["_batch_index"].item()) for batch in resumed_batches], [3, 4, 5, 6, 7])
+            torch.testing.assert_close(
+                torch.cat([batch["input_ids"] for batch in resumed_batches], dim=0),
+                torch.cat([batch["input_ids"] for batch in full_batches[3:]], dim=0),
+            )
+            resumed_dataset.set_start_batch_index(0)
+            self.assertEqual(int(next(iter(resumed_dataset))["_batch_index"].item()), 0)
 
     def test_indexed_megabyte_source_batch_stream_strides_small_source_across_workers(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -640,6 +748,106 @@ class FastaFragmentIndexTests(unittest.TestCase):
                     val_ratio=0.0,
                     test_ratio=0.0,
                 )
+
+    def test_indexed_megabyte_eval_cache_reuses_random_source_weighted_windows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _, index_dir = self._build_source_batch_index(tmpdir)
+            cache_root = Path(tmpdir) / "eval_cache"
+
+            dataset = prepare_indexed_megabyte_eval_cache(
+                index_dir=index_dir,
+                cache_root=cache_root,
+                split="val",
+                samples=16,
+                seq_length=4,
+                token_merge_size=1,
+                token_merge_alphabet="ACGTN",
+                pad_id=257,
+                source_weights={"source_a": 3.0, "source_b": 1.0},
+                train_ratio=0.0,
+                val_ratio=1.0,
+                test_ratio=0.0,
+                split_seed=0,
+                eval_seed=13,
+                mode="refresh",
+            )
+
+            summary = dataset.summary()
+            batch = next(iter(DataLoader(dataset, batch_size=4)))
+            self.assertEqual(len(dataset), 16)
+            self.assertEqual(tuple(dataset[0]["input_ids"].shape), (4,))
+            self.assertEqual(tuple(batch["input_ids"].shape), (4, 4))
+            self.assertEqual(summary["source_counts"]["source_a"], 12)
+            self.assertEqual(summary["source_counts"]["source_b"], 4)
+            self.assertTrue(np.any(np.asarray(dataset.run_window_indices) != 0))
+            self.assertFalse(summary["cache_hit"])
+
+            reused = prepare_indexed_megabyte_eval_cache(
+                index_dir=index_dir,
+                cache_root=cache_root,
+                split="val",
+                samples=16,
+                seq_length=4,
+                token_merge_size=1,
+                token_merge_alphabet="ACGTN",
+                pad_id=257,
+                source_weights={"source_a": 3.0, "source_b": 1.0},
+                train_ratio=0.0,
+                val_ratio=1.0,
+                test_ratio=0.0,
+                split_seed=0,
+                eval_seed=13,
+                mode="reuse",
+            )
+
+            self.assertTrue(reused.summary()["cache_hit"])
+            np.testing.assert_array_equal(np.asarray(dataset.input_ids), np.asarray(reused.input_ids))
+
+    def test_real_fasta_test_subset_keeps_original_contiguous_records(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fasta_root = Path(tmpdir) / "fasta"
+            index_dir = Path(tmpdir) / "index"
+            (fasta_root / "source_a").mkdir(parents=True)
+            (fasta_root / "source_b").mkdir(parents=True)
+            (fasta_root / "source_a" / "a.fasta").write_text(
+                ">a0 original\nAAAA\n"
+                ">a1 original\nCCCC\n"
+                ">a2 original\nGGGG\n"
+                ">a3 original\nTTTT\n",
+                encoding="utf-8",
+            )
+            (fasta_root / "source_b" / "b.fasta").write_text(
+                ">b0 keep\nACGTACGT\n",
+                encoding="utf-8",
+            )
+            build_fasta_fragment_index(
+                fasta_root=fasta_root,
+                index_dir=index_dir,
+                anchor_stride=4,
+                chunk_size=11,
+                batch_rows=2,
+            )
+
+            output_dir = Path(tmpdir) / "subset"
+            manifest = build_opengenome2_fasta_test_subset(
+                index_dir=index_dir,
+                output_dir=output_dir,
+                target_bytes_per_source=30,
+                seed=0,
+                batch_rows=2,
+                overwrite=False,
+            )
+
+            source_a = manifest["sources"]["source_a"]
+            source_b = manifest["sources"]["source_b"]
+            self.assertGreaterEqual(source_a["selected_bytes"], 30)
+            self.assertFalse(source_a["include_all"])
+            self.assertTrue(source_b["include_all"])
+            self.assertEqual(source_b["selected_record_count"], 1)
+            self.assertTrue((output_dir / "source_a.fasta").read_text(encoding="utf-8").startswith(">a"))
+            self.assertEqual((output_dir / "source_b.fasta").read_text(encoding="utf-8"), ">b0 keep\nACGTACGT\n")
+            for span in source_a["spans"]:
+                self.assertEqual(span["record_count"], span["end_record_id"] - span["start_record_id"] + 1)
 
     def test_build_repacked_windows_and_iterate_all_windows(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -876,6 +1084,12 @@ class MegabyteIndexedFastaCliTests(unittest.TestCase):
                 '{"gtdb_v220": 0.5, "metagenomes": 0.2}',
                 "--indexed-eval-samples",
                 "17",
+                "--indexed-eval-cache-dir",
+                "/tmp/eval_cache",
+                "--indexed-eval-cache-mode",
+                "refresh",
+                "--indexed-eval-random-seed",
+                "11",
                 "--indexed-split-seed",
                 "9",
                 "--indexed-window-mode",
@@ -888,10 +1102,11 @@ class MegabyteIndexedFastaCliTests(unittest.TestCase):
                 "45",
                 "--indexed-file-stream-order-seed",
                 "6",
-                "--indexed-source-balance-batches",
+                "--indexed-source-mix-chunk-batches",
                 "7",
-                "--indexed-source-read-block-windows",
+                "--indexed-source-read-chunk-windows",
                 "89",
+                "--no-indexed-source-read-chunk-shuffle",
                 "--indexed-source-file-order-seed",
                 "10",
                 "--source-loss-weights-json",
@@ -905,14 +1120,18 @@ class MegabyteIndexedFastaCliTests(unittest.TestCase):
         self.assertEqual(config.data.fasta_index_dir, "/tmp/index")
         self.assertEqual(config.data.source_sampling_weights["metagenomes"], 0.2)
         self.assertEqual(config.data.indexed_eval_samples, 17)
+        self.assertEqual(config.data.indexed_eval_cache_dir, "/tmp/eval_cache")
+        self.assertEqual(config.data.indexed_eval_cache_mode, "refresh")
+        self.assertEqual(config.data.indexed_eval_random_seed, 11)
         self.assertEqual(config.data.indexed_split_seed, 9)
         self.assertEqual(config.data.indexed_window_mode, "nonoverlap_file_stream")
         self.assertEqual(config.data.indexed_train_epoch_mode, "all_windows")
         self.assertEqual(config.data.indexed_file_stream_windows, 123)
         self.assertEqual(config.data.indexed_file_shuffle_buffer_windows, 45)
         self.assertEqual(config.data.indexed_file_stream_order_seed, 6)
-        self.assertEqual(config.data.indexed_source_balance_batches, 7)
-        self.assertEqual(config.data.indexed_source_read_block_windows, 89)
+        self.assertEqual(config.data.indexed_source_mix_chunk_batches, 7)
+        self.assertEqual(config.data.indexed_source_read_chunk_windows, 89)
+        self.assertFalse(config.data.indexed_source_read_chunk_shuffle)
         self.assertEqual(config.data.indexed_source_file_order_seed, 10)
         self.assertEqual(config.data.source_loss_weights["gtdb_v220"], 0.5)
 

@@ -36,6 +36,7 @@ from .fasta_fragment_index import (
     IndexedMegabyteFileStreamDataset,
     IndexedMegabyteSourceBatchStreamDataset,
     IndexedMegabyteWindowDataset,
+    prepare_indexed_megabyte_eval_cache,
     wait_or_build_fasta_index_runtime_cache,
 )
 from .megabyte_loader import build_model, load_megabyte_checkpoint
@@ -188,7 +189,7 @@ def write_training_log_event(handle: TextIO, event: dict[str, object]) -> None:
 
 
 def init_wandb_run(config: ExperimentConfig, output_dir: Path) -> Any | None:
-    enabled = bool(config.output.wandb_enabled or config.output.wandb_project)
+    enabled = bool(config.output.wandb_enabled)
     if not enabled:
         return None
 
@@ -257,6 +258,9 @@ def save_checkpoint(
     step: int,
     best_val_bpb: float,
     scheduler: LambdaLR | None = None,
+    *,
+    epoch: int | None = None,
+    data_state: dict[str, object] | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload: dict[str, object] = {
@@ -265,12 +269,65 @@ def save_checkpoint(
         "step": step,
         "best_val_bpb": best_val_bpb,
     }
+    if epoch is not None:
+        payload["epoch"] = int(epoch)
+    if data_state is not None:
+        payload["data_state"] = data_state
     if scheduler is not None:
         payload["scheduler_state"] = scheduler.state_dict()
     torch.save(
         payload,
         path,
     )
+
+
+def _training_data_state(
+    *,
+    epoch_index: int,
+    batch_index_in_epoch: int,
+    batches_per_epoch: int,
+    global_step: int,
+    dataset_kind: str,
+) -> dict[str, object]:
+    next_batch_index = int(batch_index_in_epoch) + 1
+    next_epoch_index = int(epoch_index)
+    if batches_per_epoch > 0 and next_batch_index >= batches_per_epoch:
+        next_epoch_index += 1
+        next_batch_index = 0
+    return {
+        "schema_version": 1,
+        "train": {
+            "dataset_kind": dataset_kind,
+            "completed_global_steps": int(global_step),
+            "batches_per_epoch": int(batches_per_epoch),
+            "current_epoch_index": int(epoch_index),
+            "current_epoch": int(epoch_index) + 1,
+            "current_batch_index_in_epoch": int(batch_index_in_epoch),
+            "next_epoch_index": int(next_epoch_index),
+            "next_epoch": int(next_epoch_index) + 1,
+            "next_batch_index_in_epoch": int(next_batch_index),
+        },
+    }
+
+
+def _resume_training_position(
+    *,
+    resume_metadata: dict[str, object],
+    batches_per_epoch: int,
+) -> tuple[int, int]:
+    data_state = resume_metadata.get("data_state")
+    if isinstance(data_state, dict):
+        train_state = data_state.get("train")
+        if isinstance(train_state, dict):
+            next_epoch_index = train_state.get("next_epoch_index")
+            next_batch_index = train_state.get("next_batch_index_in_epoch")
+            if isinstance(next_epoch_index, (int, float)) and isinstance(next_batch_index, (int, float)):
+                return max(0, int(next_epoch_index)), max(0, int(next_batch_index))
+
+    step = int(resume_metadata.get("step", 0))
+    if step <= 0 or batches_per_epoch <= 0:
+        return 0, 0
+    return step // batches_per_epoch, step % batches_per_epoch
 
 
 def _resolve_initial_checkpoint_path(config: ExperimentConfig, mode: str, output_dir: Path) -> Path | None:
@@ -652,8 +709,9 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                     "source_weights": config.data.source_sampling_weights or None,
                     "source_loss_weights": config.data.source_loss_weights or None,
                     "pad_id": config.model.pad_id,
-                    "source_balance_batches": config.data.indexed_source_balance_batches,
-                    "source_read_block_windows": config.data.indexed_source_read_block_windows,
+                    "source_mix_chunk_batches": config.data.indexed_source_mix_chunk_batches,
+                    "source_read_chunk_windows": config.data.indexed_source_read_chunk_windows,
+                    "source_read_chunk_shuffle": config.data.indexed_source_read_chunk_shuffle,
                     "source_file_order_seed": config.data.indexed_source_file_order_seed,
                     "train_ratio": config.data.train_ratio,
                     "val_ratio": config.data.val_ratio,
@@ -669,20 +727,64 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                     batch_size=config.train.batch_size,
                     **common_source_batch_kwargs,
                 )
-                val_dataset = IndexedMegabyteSourceBatchStreamDataset(
-                    split="val",
-                    samples=config.data.indexed_eval_samples,
-                    seed=config.train.seed + 1_000_000,
-                    batch_size=config.train.eval_batch_size,
-                    **common_source_batch_kwargs,
-                )
-                test_dataset = IndexedMegabyteSourceBatchStreamDataset(
-                    split="test",
-                    samples=config.data.indexed_eval_samples,
-                    seed=config.train.seed + 2_000_000,
-                    batch_size=config.train.eval_batch_size,
-                    **common_source_batch_kwargs,
-                )
+                if config.data.indexed_eval_cache_mode == "off":
+                    val_dataset = IndexedMegabyteSourceBatchStreamDataset(
+                        split="val",
+                        samples=config.data.indexed_eval_samples,
+                        seed=config.train.seed + 1_000_000,
+                        batch_size=config.train.eval_batch_size,
+                        **common_source_batch_kwargs,
+                    )
+                    test_dataset = IndexedMegabyteSourceBatchStreamDataset(
+                        split="test",
+                        samples=config.data.indexed_eval_samples,
+                        seed=config.train.seed + 2_000_000,
+                        batch_size=config.train.eval_batch_size,
+                        **common_source_batch_kwargs,
+                    )
+                else:
+                    val_dataset = prepare_indexed_megabyte_eval_cache(
+                        index_dir=config.data.fasta_index_dir or "",
+                        cache_root=config.data.indexed_eval_cache_dir,
+                        split="val",
+                        samples=config.data.indexed_eval_samples,
+                        seq_length=config.model.seq_length,
+                        token_merge_size=config.data.token_merge_size,
+                        token_merge_alphabet=config.data.token_merge_alphabet,
+                        pad_id=config.model.pad_id,
+                        source_weights=config.data.source_sampling_weights or None,
+                        source_loss_weights=config.data.source_loss_weights or None,
+                        train_ratio=config.data.train_ratio,
+                        val_ratio=config.data.val_ratio,
+                        test_ratio=config.data.test_ratio,
+                        split_seed=config.data.indexed_split_seed,
+                        eval_seed=config.data.indexed_eval_random_seed + 1_000_000,
+                        mode=config.data.indexed_eval_cache_mode,
+                        is_main_process=ddp.is_main_process,
+                    )
+                    if ddp.is_distributed:
+                        dist.barrier()
+                    test_dataset = prepare_indexed_megabyte_eval_cache(
+                        index_dir=config.data.fasta_index_dir or "",
+                        cache_root=config.data.indexed_eval_cache_dir,
+                        split="test",
+                        samples=config.data.indexed_eval_samples,
+                        seq_length=config.model.seq_length,
+                        token_merge_size=config.data.token_merge_size,
+                        token_merge_alphabet=config.data.token_merge_alphabet,
+                        pad_id=config.model.pad_id,
+                        source_weights=config.data.source_sampling_weights or None,
+                        source_loss_weights=config.data.source_loss_weights or None,
+                        train_ratio=config.data.train_ratio,
+                        val_ratio=config.data.val_ratio,
+                        test_ratio=config.data.test_ratio,
+                        split_seed=config.data.indexed_split_seed,
+                        eval_seed=config.data.indexed_eval_random_seed + 2_000_000,
+                        mode=config.data.indexed_eval_cache_mode,
+                        is_main_process=ddp.is_main_process,
+                    )
+                    if ddp.is_distributed:
+                        dist.barrier()
             elif indexed_file_stream_mode:
                 common_stream_kwargs = {
                     "index_dir": config.data.fasta_index_dir or "",
@@ -969,8 +1071,20 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
             )
             or repacked_windows_mode
         )
-        iterable_dataset_mode = indexed_file_stream_mode or indexed_source_batch_stream_mode or repacked_windows_mode
-        batch_producing_dataset_mode = indexed_source_batch_stream_mode
+        train_iterable_dataset_mode = indexed_file_stream_mode or indexed_source_batch_stream_mode or repacked_windows_mode
+        source_batch_eval_cache_enabled = (
+            indexed_source_batch_stream_mode and config.data.indexed_eval_cache_mode != "off"
+        )
+        val_iterable_dataset_mode = (
+            indexed_file_stream_mode
+            or repacked_windows_mode
+            or (indexed_source_batch_stream_mode and not source_batch_eval_cache_enabled)
+        )
+        test_iterable_dataset_mode = val_iterable_dataset_mode
+        train_batch_producing_dataset_mode = indexed_source_batch_stream_mode
+        eval_batch_producing_dataset_mode = (
+            indexed_source_batch_stream_mode and not source_batch_eval_cache_enabled
+        )
         train_sampler = (
             DistributedSampler(
                 train_dataset,
@@ -978,17 +1092,17 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                 rank=ddp.rank,
                 shuffle=not dataset_provides_random_order,
             )
-            if ddp.is_distributed and not iterable_dataset_mode
+            if ddp.is_distributed and not train_iterable_dataset_mode
             else None
         )
         val_sampler = (
             DistributedSampler(val_dataset, num_replicas=ddp.world_size, rank=ddp.rank, shuffle=False)
-            if ddp.is_distributed and not iterable_dataset_mode
+            if ddp.is_distributed and not val_iterable_dataset_mode
             else None
         )
         test_sampler = (
             DistributedSampler(test_dataset, num_replicas=ddp.world_size, rank=ddp.rank, shuffle=False)
-            if ddp.is_distributed and not iterable_dataset_mode
+            if ddp.is_distributed and not test_iterable_dataset_mode
             else None
         )
 
@@ -1004,21 +1118,21 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
 
         train_loader = DataLoader(
             train_dataset,
-            batch_size=None if batch_producing_dataset_mode else config.train.batch_size,
+            batch_size=None if train_batch_producing_dataset_mode else config.train.batch_size,
             shuffle=train_sampler is None and not dataset_provides_random_order,
             sampler=train_sampler,
             **dataloader_common_kwargs,
         )
         val_loader = DataLoader(
             val_dataset,
-            batch_size=None if batch_producing_dataset_mode else config.train.eval_batch_size,
+            batch_size=None if eval_batch_producing_dataset_mode else config.train.eval_batch_size,
             shuffle=False,
             sampler=val_sampler,
             **dataloader_common_kwargs,
         )
         test_loader = DataLoader(
             test_dataset,
-            batch_size=None if batch_producing_dataset_mode else config.train.eval_batch_size,
+            batch_size=None if eval_batch_producing_dataset_mode else config.train.eval_batch_size,
             shuffle=False,
             sampler=test_sampler,
             **dataloader_common_kwargs,
@@ -1099,12 +1213,49 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
         else:
             best_val_bpb = float("inf")
             global_step = 0
+        full_train_batches_per_epoch = len(train_loader)
+        if config.train.init_from == "resume":
+            resume_epoch_index, resume_batch_index_in_epoch = _resume_training_position(
+                resume_metadata=resume_metadata,
+                batches_per_epoch=full_train_batches_per_epoch,
+            )
+            if full_train_batches_per_epoch > 0 and resume_batch_index_in_epoch >= full_train_batches_per_epoch:
+                resume_epoch_index += resume_batch_index_in_epoch // full_train_batches_per_epoch
+                resume_batch_index_in_epoch %= full_train_batches_per_epoch
+        else:
+            resume_epoch_index = 0
+            resume_batch_index_in_epoch = 0
+        train_dataset_kind = (
+            "indexed_source_batch_stream"
+            if indexed_source_batch_stream_mode
+            else "indexed_file_stream"
+            if indexed_file_stream_mode
+            else "repacked_windows"
+            if repacked_windows_mode
+            else "map_style"
+        )
+        current_data_state: dict[str, object] | None = (
+            resume_metadata.get("data_state") if isinstance(resume_metadata.get("data_state"), dict) else None
+        )
+        current_checkpoint_epoch = max(1, resume_epoch_index + 1)
+        if (
+            config.train.init_from == "resume"
+            and resume_batch_index_in_epoch > 0
+            and train_batch_producing_dataset_mode
+            and dataloader_persistent_workers
+        ):
+            raise ValueError(
+                "Resuming source_batch_file_stream from the middle of an epoch requires "
+                "persistent DataLoader workers to be disabled. Use --no-persistent-workers."
+            )
 
         if ddp.is_main_process and checkpoint_path is not None:
             print(
                 f"[startup] loaded checkpoint={checkpoint_path} init_from={config.train.init_from} "
                 f"optimizer_restored={optimizer_state_restored} "
-                f"scheduler_restored={scheduler_state_restored}",
+                f"scheduler_restored={scheduler_state_restored} "
+                f"resume_epoch={resume_epoch_index + 1} "
+                f"resume_batch_index={resume_batch_index_in_epoch}",
                 flush=True,
             )
             if config.train.init_from == "pretrained" and (missing_keys or unexpected_keys):
@@ -1124,11 +1275,26 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
             accumulated_data_time = 0.0
             accumulated_step_time = 0.0
             accumulated_train_steps = 0
-            for epoch in range(config.train.epochs):
+            for epoch in range(resume_epoch_index, config.train.epochs):
+                epoch_start_batch_index = resume_batch_index_in_epoch if epoch == resume_epoch_index else 0
+                if hasattr(train_dataset, "set_start_batch_index"):
+                    train_dataset.set_start_batch_index(epoch_start_batch_index)
                 if train_sampler is not None:
                     train_sampler.set_epoch(epoch)
 
-                for batch in train_loader:
+                for enumerated_batch_index, batch in enumerate(train_loader):
+                    # Note: Physical skip logic removed. Non-batch-producing datasets now
+                    # support efficient skip via set_start_batch_index() method (RandomWindowDataset,
+                    # SequentialWindowDataset). Batch-producing datasets (source_batch_file_stream)
+                    # handle skip internally. This improves resume performance significantly.
+                    raw_batch_index = batch.pop("_batch_index", None) if isinstance(batch, dict) else None
+                    if raw_batch_index is not None:
+                        if isinstance(raw_batch_index, torch.Tensor):
+                            batch_index_in_epoch = int(raw_batch_index.reshape(-1)[0].item())
+                        else:
+                            batch_index_in_epoch = int(raw_batch_index)
+                    else:
+                        batch_index_in_epoch = int(enumerated_batch_index)
                     batch_ready = time.time()
                     data_time = batch_ready - last_step_finished
                     accumulated_data_time += data_time
@@ -1150,6 +1316,14 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                     step_time = step_finished - batch_ready
                     accumulated_step_time += step_time
                     last_step_finished = step_finished
+                    current_checkpoint_epoch = epoch + 1
+                    current_data_state = _training_data_state(
+                        epoch_index=epoch,
+                        batch_index_in_epoch=batch_index_in_epoch,
+                        batches_per_epoch=full_train_batches_per_epoch,
+                        global_step=global_step,
+                        dataset_kind=train_dataset_kind,
+                    )
 
                     if global_step % config.train.log_interval == 0 and ddp.is_main_process:
                         interval_elapsed = max(time.time() - started, 1e-6)
@@ -1172,6 +1346,7 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                                     "event": "train",
                                     "step": global_step,
                                     "epoch": epoch + 1,
+                                    "batch_index_in_epoch": int(batch_index_in_epoch),
                                     "loss_nats_per_token": float(loss.item()),
                                     "bits_per_base": float(bits_per_base),
                                     "grad_norm": float(grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm),
@@ -1227,6 +1402,7 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                                         "split": "val",
                                         "step": global_step,
                                         "epoch": epoch + 1,
+                                        "batch_index_in_epoch": int(batch_index_in_epoch),
                                         "loss_nats_per_token": float(val_metrics["loss_nats_per_token"]),
                                         "bits_per_base": float(val_metrics["bits_per_base"]),
                                         "tokens": int(val_metrics["tokens"]),
@@ -1258,7 +1434,19 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                                     global_step,
                                     best_val_bpb,
                                     scheduler,
+                                    epoch=epoch + 1,
+                                    data_state=current_data_state,
                                 )
+                            save_checkpoint(
+                                output_dir / "last.pt",
+                                unwrap_model(model),
+                                optimizer,
+                                global_step,
+                                best_val_bpb,
+                                scheduler,
+                                epoch=epoch + 1,
+                                data_state=current_data_state,
+                            )
                         model.train()
                         last_step_finished = time.time()
                         started = last_step_finished
@@ -1285,6 +1473,8 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                         global_step,
                         best_val_bpb,
                         scheduler,
+                        epoch=current_checkpoint_epoch,
+                        data_state=current_data_state,
                     )
 
             if ddp.is_main_process:
@@ -1295,6 +1485,8 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                     global_step,
                     best_val_bpb,
                     scheduler,
+                    epoch=current_checkpoint_epoch,
+                    data_state=current_data_state,
                 )
                 run_summary["best_val_bits_per_base"] = best_val_bpb
 

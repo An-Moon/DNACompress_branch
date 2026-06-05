@@ -5,9 +5,11 @@ from pathlib import Path
 import unittest
 
 import torch
+from torch.optim import AdamW
 
 from dna_compress.config import DataConfig, ExperimentConfig
 from dna_compress.data import RandomWindowDataset, SequentialWindowDataset, load_splits
+from dna_compress.experiment import save_checkpoint
 from scripts.run_dna_compression import _apply_overrides as apply_compression_overrides
 from scripts.run_dna_compression import _build_parser as build_compression_parser
 from scripts.run_dna_experiment import _apply_overrides as apply_experiment_overrides
@@ -15,6 +17,35 @@ from scripts.run_dna_experiment import _build_parser as build_experiment_parser
 
 
 class DataLoadingTests(unittest.TestCase):
+    def test_checkpoint_saves_epoch_and_data_state(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            model = torch.nn.Linear(2, 2)
+            optimizer = AdamW(model.parameters(), lr=1e-3)
+            data_state = {
+                "schema_version": 1,
+                "train": {
+                    "next_epoch_index": 1,
+                    "next_batch_index_in_epoch": 7,
+                    "batches_per_epoch": 10,
+                },
+            }
+            checkpoint_path = Path(tmpdir) / "last.pt"
+
+            save_checkpoint(
+                checkpoint_path,
+                model,
+                optimizer,
+                step=17,
+                best_val_bpb=1.23,
+                epoch=2,
+                data_state=data_state,
+            )
+            checkpoint = torch.load(checkpoint_path, map_location="cpu")
+
+            self.assertEqual(checkpoint["step"], 17)
+            self.assertEqual(checkpoint["epoch"], 2)
+            self.assertEqual(checkpoint["data_state"], data_state)
+
     def test_flat_file_mode_keeps_legacy_split_behavior(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             species_path = Path(tmpdir) / "Legacy"

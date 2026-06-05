@@ -85,14 +85,20 @@ class DataConfig:
     fasta_index_dir: str | None = None
     source_sampling_weights: dict[str, float] = field(default_factory=dict)
     indexed_eval_samples: int = 1024
+    indexed_eval_cache_dir: str = "/data/students/Liang_junnan/opengenome2_subset/eval_cache"
+    indexed_eval_cache_mode: str = "reuse"
+    indexed_eval_random_seed: int = 0
     indexed_split_seed: int = 0
     indexed_window_mode: str = "sliding_random"
     indexed_train_epoch_mode: str = "samples"
     indexed_file_stream_windows: int = 8192
     indexed_file_shuffle_buffer_windows: int = 8192
     indexed_file_stream_order_seed: int = 0
-    indexed_source_balance_batches: int = 8
-    indexed_source_read_block_windows: int = 8192
+    indexed_source_mix_chunk_batches: int = 64
+    indexed_source_read_chunk_windows: int = 8192
+    indexed_source_read_chunk_shuffle: bool = True
+    indexed_source_balance_batches: int | None = None
+    indexed_source_read_block_windows: int | None = None
     indexed_source_file_order_seed: int = 0
     repacked_window_dir: str | None = None
     repacked_schedule_dir: str | None = None
@@ -191,9 +197,15 @@ def _merge_dataclass(cls, values: dict[str, Any] | None):
 def load_experiment_config(path: str | Path) -> ExperimentConfig:
     config_path = Path(path)
     raw = json.loads(config_path.read_text(encoding="utf-8"))
+    raw_data = raw.get("data") or {}
+    data_config = _merge_dataclass(DataConfig, raw_data)
+    if "indexed_source_mix_chunk_batches" not in raw_data and "indexed_source_balance_batches" in raw_data:
+        data_config.indexed_source_mix_chunk_batches = int(raw_data["indexed_source_balance_batches"])
+    if "indexed_source_read_chunk_windows" not in raw_data and "indexed_source_read_block_windows" in raw_data:
+        data_config.indexed_source_read_chunk_windows = int(raw_data["indexed_source_read_block_windows"])
     return ExperimentConfig(
         model=_merge_dataclass(ModelConfig, raw.get("model")),
-        data=_merge_dataclass(DataConfig, raw.get("data")),
+        data=data_config,
         train=_merge_dataclass(TrainConfig, raw.get("train")),
         output=_merge_dataclass(OutputConfig, raw.get("output")),
         arithmetic=_merge_dataclass(ArithmeticCodingConfig, raw.get("arithmetic")),

@@ -43,31 +43,32 @@ Complete example (train + eval + compression, with common overrides):
         --species homo_sapiens mus_musculus bos_taurus danio_rerio \
                   drosophila_melanogaster caenorhabditis_elegans \
                   saccharomyces_cerevisiae arabidopsis_thaliana \
-        --wandb-project dna-compress \
-        --wandb-name dna_megabyte_huge_ensembl_all \
-        --gpu-ids 0 3 \
         --init-from pretrained \
-        --pretrained-weight-path outputs/dna_megabyte_huge_b128_ensembl_all/best.pt \
-        --input-causal-conv-kernel-size 7
+        --pretrained-weight-path outputs/dna_megabyte_huge_b128_ensembl_all/best.pt 
 
 OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skipped):
   
     CUDA_VISIBLE_DEVICES=3 python scripts/run_dna_experiment.py \
         --config configs/dna_megabyte_large.json \
         --mode all \
-        --init-from scratch \
+        --init-from resume \
+        --pretrained-weight-path outputs/dna_megabyte_large_opengenome2_1/last.pt\
         --seed 42 \
         --sequence-source-mode indexed_fasta \
         --fasta-index-dir /data/students/Liang_junnan/opengenome2_subset/index \
         --indexed-eval-samples 1024 \
+        --indexed-eval-cache-dir /data/students/Liang_junnan/opengenome2_subset/eval_cache \
+        --indexed-eval-cache-mode reuse \
+        --indexed-eval-random-seed 0 \
         --indexed-split-seed 0 \
         --indexed-window-mode source_batch_file_stream \
         --indexed-train-epoch-mode all_windows \
         --indexed-file-stream-windows 8192 \
         --indexed-file-shuffle-buffer-windows 8192 \
         --indexed-file-stream-order-seed 0 \
-        --indexed-source-balance-batches 8 \
-        --indexed-source-read-block-windows 8192 \
+        --indexed-source-mix-chunk-batches 64 \
+        --indexed-source-read-chunk-windows 8192 \
+        --indexed-source-read-chunk-shuffle \
         --indexed-source-file-order-seed 0 \
         --source-sampling-weights-json '{"gtdb_v220":0.35,"metagenomes":0.3,"ncbi_eukaryotic_genomes":0.25,"plasmids_phage":0.1}' \
         --dtype bfloat16 \
@@ -89,8 +90,9 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --lr-min-ratio 0.1 \
         --grad-clip-norm 1.0 \
         --num-workers 1 \
+        --no-persistent-workers \
         --wandb-project dna-compress \
-        --wandb-name dna_megabyte_large_opengenome2 
+        --wandb-name dna_megabyte_large_opengenome2_2 
 
 OpenGenome2 repacked window variant (train + eval; compression is recorded as skipped):
   
@@ -126,7 +128,7 @@ OpenGenome2 repacked window variant (train + eval; compression is recorded as sk
         --lr-warmup-steps 1024 \
         --lr-min-ratio 0.1 \
         --grad-clip-norm 1.0 \
-        --num-workers 4 \
+        --num-workers 4 
         
         --wandb-project dna-compress \
         --wandb-name dna_megabyte_large_opengenome2 \
@@ -359,14 +361,28 @@ def _apply_overrides(config: Any, args: argparse.Namespace) -> None:
     _apply_if_not_none(config, "data.sequence_source_mode", args.sequence_source_mode)
     _apply_if_not_none(config, "data.fasta_index_dir", args.fasta_index_dir)
     _apply_if_not_none(config, "data.indexed_eval_samples", args.indexed_eval_samples)
+    _apply_if_not_none(config, "data.indexed_eval_cache_dir", args.indexed_eval_cache_dir)
+    _apply_if_not_none(config, "data.indexed_eval_cache_mode", args.indexed_eval_cache_mode)
+    _apply_if_not_none(config, "data.indexed_eval_random_seed", args.indexed_eval_random_seed)
     _apply_if_not_none(config, "data.indexed_split_seed", args.indexed_split_seed)
     _apply_if_not_none(config, "data.indexed_window_mode", args.indexed_window_mode)
     _apply_if_not_none(config, "data.indexed_train_epoch_mode", args.indexed_train_epoch_mode)
     _apply_if_not_none(config, "data.indexed_file_stream_windows", args.indexed_file_stream_windows)
     _apply_if_not_none(config, "data.indexed_file_shuffle_buffer_windows", args.indexed_file_shuffle_buffer_windows)
     _apply_if_not_none(config, "data.indexed_file_stream_order_seed", args.indexed_file_stream_order_seed)
+    _apply_if_not_none(config, "data.indexed_source_mix_chunk_batches", args.indexed_source_mix_chunk_batches)
+    _apply_if_not_none(config, "data.indexed_source_read_chunk_windows", args.indexed_source_read_chunk_windows)
+    _apply_if_not_none(config, "data.indexed_source_read_chunk_shuffle", args.indexed_source_read_chunk_shuffle)
     _apply_if_not_none(config, "data.indexed_source_balance_batches", args.indexed_source_balance_batches)
     _apply_if_not_none(config, "data.indexed_source_read_block_windows", args.indexed_source_read_block_windows)
+    if args.indexed_source_mix_chunk_batches is None and args.indexed_source_balance_batches is not None:
+        config.data.indexed_source_mix_chunk_batches = int(args.indexed_source_balance_batches)
+    elif args.indexed_source_mix_chunk_batches is not None:
+        config.data.indexed_source_balance_batches = None
+    if args.indexed_source_read_chunk_windows is None and args.indexed_source_read_block_windows is not None:
+        config.data.indexed_source_read_chunk_windows = int(args.indexed_source_read_block_windows)
+    elif args.indexed_source_read_chunk_windows is not None:
+        config.data.indexed_source_read_block_windows = None
     _apply_if_not_none(config, "data.indexed_source_file_order_seed", args.indexed_source_file_order_seed)
     _apply_if_not_none(config, "data.repacked_window_dir", args.repacked_window_dir)
     _apply_if_not_none(config, "data.repacked_schedule_dir", args.repacked_schedule_dir)
@@ -502,12 +518,22 @@ def _validate_config_for_megabyte(config: Any, mode: str = "all") -> None:
             "data.sequence_source_mode must be one of: auto, flat_file, fasta_dir, indexed_fasta, repacked_windows"
         )
     if config.data.sequence_source_mode == "indexed_fasta":
+        if config.data.indexed_source_balance_batches is not None:
+            config.data.indexed_source_mix_chunk_batches = int(config.data.indexed_source_balance_batches)
+        if config.data.indexed_source_read_block_windows is not None:
+            config.data.indexed_source_read_chunk_windows = int(config.data.indexed_source_read_block_windows)
         if mode == "compress":
             raise ValueError("indexed_fasta mode does not support --mode compress; use train, eval, or all.")
         if not config.data.fasta_index_dir:
             raise ValueError("data.fasta_index_dir is required when sequence_source_mode is indexed_fasta")
         if config.data.indexed_eval_samples <= 0:
             raise ValueError("data.indexed_eval_samples must be > 0")
+        if config.data.indexed_eval_cache_mode not in {"reuse", "refresh", "off"}:
+            raise ValueError("data.indexed_eval_cache_mode must be one of: reuse, refresh, off")
+        if config.data.indexed_eval_cache_mode != "off" and not config.data.indexed_eval_cache_dir:
+            raise ValueError("data.indexed_eval_cache_dir is required unless indexed_eval_cache_mode='off'")
+        if not isinstance(config.data.indexed_eval_random_seed, int):
+            raise ValueError("data.indexed_eval_random_seed must be an integer")
         if not isinstance(config.data.indexed_split_seed, int):
             raise ValueError("data.indexed_split_seed must be an integer")
         if config.data.indexed_window_mode not in {
@@ -537,10 +563,10 @@ def _validate_config_for_megabyte(config: Any, mode: str = "all") -> None:
             raise ValueError("data.indexed_file_shuffle_buffer_windows must be >= 0")
         if not isinstance(config.data.indexed_file_stream_order_seed, int):
             raise ValueError("data.indexed_file_stream_order_seed must be an integer")
-        if config.data.indexed_source_balance_batches <= 0:
-            raise ValueError("data.indexed_source_balance_batches must be > 0")
-        if config.data.indexed_source_read_block_windows <= 0:
-            raise ValueError("data.indexed_source_read_block_windows must be > 0")
+        if config.data.indexed_source_mix_chunk_batches <= 0:
+            raise ValueError("data.indexed_source_mix_chunk_batches must be > 0")
+        if config.data.indexed_source_read_chunk_windows <= 0:
+            raise ValueError("data.indexed_source_read_chunk_windows must be > 0")
         if not isinstance(config.data.indexed_source_file_order_seed, int):
             raise ValueError("data.indexed_source_file_order_seed must be an integer")
         if not isinstance(config.data.source_sampling_weights, dict):
@@ -702,6 +728,9 @@ def _build_parser() -> argparse.ArgumentParser:
     data_group.add_argument("--fasta-index-dir")
     data_group.add_argument("--source-sampling-weights-json")
     data_group.add_argument("--indexed-eval-samples", type=int)
+    data_group.add_argument("--indexed-eval-cache-dir")
+    data_group.add_argument("--indexed-eval-cache-mode", choices=["reuse", "refresh", "off"])
+    data_group.add_argument("--indexed-eval-random-seed", type=int)
     data_group.add_argument("--indexed-split-seed", type=int)
     data_group.add_argument(
         "--indexed-window-mode",
@@ -711,8 +740,16 @@ def _build_parser() -> argparse.ArgumentParser:
     data_group.add_argument("--indexed-file-stream-windows", type=int)
     data_group.add_argument("--indexed-file-shuffle-buffer-windows", type=int)
     data_group.add_argument("--indexed-file-stream-order-seed", type=int)
-    data_group.add_argument("--indexed-source-balance-batches", type=int)
-    data_group.add_argument("--indexed-source-read-block-windows", type=int)
+    data_group.add_argument("--indexed-source-mix-chunk-batches", type=int)
+    data_group.add_argument("--indexed-source-read-chunk-windows", type=int)
+    data_group.add_argument(
+        "--indexed-source-read-chunk-shuffle",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Shuffle each per-source read chunk in memory after sequential disk read.",
+    )
+    data_group.add_argument("--indexed-source-balance-batches", type=int, help="Legacy alias for --indexed-source-mix-chunk-batches.")
+    data_group.add_argument("--indexed-source-read-block-windows", type=int, help="Legacy alias for --indexed-source-read-chunk-windows.")
     data_group.add_argument("--indexed-source-file-order-seed", type=int)
     data_group.add_argument("--repacked-window-dir")
     data_group.add_argument("--repacked-schedule-dir")

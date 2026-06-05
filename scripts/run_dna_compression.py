@@ -30,36 +30,34 @@ Modes:
   - windows_overlap: contiguous overlapping windows with patch-aligned stride;
     exact cache reuse is not enabled in this evaluator
 
-Complete examples:
+DNACorpus compression with the OpenGenome2-finetuned checkpoint, matching the
+existing GeCo2 paper-mode baseline source order, 0.6/0.2/0.2 split, and
+full-split sample setup:
 
     python scripts/run_dna_compression.py \
-      --run-dir outputs/dna_megabyte_huge_ensembl_all \
-      --output-json outputs/dna_megabyte_huge_ensembl_all/statistics_test/compression_compare.json \
+      --run-dir outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537 \
       --checkpoint-tag best \
+      --output-json outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537/statistics_dnacorpus/compression_compare.json \
+      --export-out-dir outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537/statistics_dnacorpus \
       --dataset-dir datasets/DNACorpus \
       --sequence-source-mode auto \
       --multi-sequence-mode separate \
       --split train val test \
-      --eval-batch-size 10 \
       --compression-modes windows_nonoverlap \
-      --compression-sample-bytes 60000 \
-      --species OrSa HoSa DaRe ScPo EsCo YeMi BuEb AgPh GaGa DrMe EnIn PlFa HePy AeCa HaHi AnCa WaMe \
-      --arithmetic-coding-mode model_symbol \
-      --arithmetic-merge-size 3 \
-      --device cuda:1 \
-      --export-position-bits-curves 
-        
-      --export-position-bits-curves \
-      --device cuda:2 \
-      --species homo_sapiens mus_musculus bos_taurus danio_rerio \
-                drosophila_melanogaster caenorhabditis_elegans \
-                saccharomyces_cerevisiae arabidopsis_thaliana \
+      --compression-sample-bytes 0 \
       --species OrSa HoSa DaRe ScPo EsCo YeMi BuEb AgPh GaGa DrMe EnIn PlFa HePy AeCa HaHi AnCa WaMe \
       --train-ratio 0.6 \
       --val-ratio 0.2 \
       --test-ratio 0.2 \
-      --parallel-window-arithmetic \
-      --arithmetic-workers 0
+      --arithmetic-coding-mode model_symbol \
+      --arithmetic-merge-size 3 \
+      --eval-batch-size 32 \
+      --device cuda:3 \
+      --skip-codec-baselines
+
+    python scripts/plot_compression_curves.py \
+      --root-dir outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537/statistics_dnacorpus \
+      --baseline-compression-json outputs/dna_geco2_paper_modes_0p6_0p2_0p2_fullsplit/compression_compare.json
 
     python scripts/run_dna_compression.py \
       --run-dir outputs\\dna_megabyte_quick_l1024_p3 \
