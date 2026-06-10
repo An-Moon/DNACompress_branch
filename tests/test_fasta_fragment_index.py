@@ -519,7 +519,7 @@ class FastaFragmentIndexTests(unittest.TestCase):
 
             self.assertEqual(first_windows, second_windows)
 
-    def test_indexed_megabyte_source_batch_stream_balances_sources_by_window(self) -> None:
+    def test_indexed_megabyte_source_batch_stream_samples_sources_by_probability(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             _, index_dir = self._build_source_batch_index(tmpdir)
             dataset = IndexedMegabyteSourceBatchStreamDataset(
@@ -528,9 +528,9 @@ class FastaFragmentIndexTests(unittest.TestCase):
                 seq_length=4,
                 token_merge_size=1,
                 token_merge_alphabet="ACGTN",
-                samples=32,
+                samples=4096,
                 seed=17,
-                batch_size=8,
+                batch_size=32,
                 source_weights={"source_a": 3.0, "source_b": 1.0},
                 pad_id=257,
                 source_balance_batches=4,
@@ -543,13 +543,88 @@ class FastaFragmentIndexTests(unittest.TestCase):
             batches = list(dataset)
             windows = torch.cat([batch["input_ids"] for batch in batches], dim=0)
             starts = windows[:, 0].tolist()
+            a_count = starts.count(ord("A"))
+            observed_a_fraction = a_count / len(starts)
 
-            self.assertEqual(tuple(batches[0]["input_ids"].shape), (8, 4))
-            self.assertEqual(len(starts), 32)
-            self.assertEqual(starts.count(ord("A")), 24)
-            self.assertEqual(starts.count(ord("T")), 8)
+            self.assertEqual(tuple(batches[0]["input_ids"].shape), (32, 4))
+            self.assertEqual(len(starts), 4096)
+            self.assertGreater(observed_a_fraction, 0.70)
+            self.assertLess(observed_a_fraction, 0.80)
             self.assertEqual(dataset.summary()["source_balance_batches"], 4)
             self.assertEqual(dataset.summary()["source_mix_chunk_batches"], 4)
+            self.assertTrue(dataset.summary()["deprecated_source_mix_chunk_batches_ignored"])
+            self.assertEqual(dataset.summary()["source_sampling_strategy"], "per_sample_probability")
+
+    def test_indexed_megabyte_source_batch_stream_all_windows_uses_expected_slowest_source_epoch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _, index_dir = self._build_source_batch_index(tmpdir)
+
+            natural = IndexedMegabyteSourceBatchStreamDataset(
+                index_dir=index_dir,
+                split="train",
+                seq_length=4,
+                token_merge_size=1,
+                token_merge_alphabet="ACGTN",
+                samples=None,
+                seed=17,
+                batch_size=8,
+                source_weights=None,
+                pad_id=257,
+                train_ratio=1.0,
+                val_ratio=0.0,
+                test_ratio=0.0,
+            )
+            weighted = IndexedMegabyteSourceBatchStreamDataset(
+                index_dir=index_dir,
+                split="train",
+                seq_length=4,
+                token_merge_size=1,
+                token_merge_alphabet="ACGTN",
+                samples=None,
+                seed=17,
+                batch_size=8,
+                source_weights={"source_a": 3.0, "source_b": 1.0},
+                pad_id=257,
+                train_ratio=1.0,
+                val_ratio=0.0,
+                test_ratio=0.0,
+            )
+
+            self.assertEqual(natural.samples, natural.total_candidate_windows)
+            self.assertEqual(weighted.samples, 80)
+            self.assertEqual(weighted.summary()["epoch_sample_count_mode"], "expected_slowest_source_coverage")
+
+    def test_indexed_megabyte_source_batch_stream_epoch_controls_random_stream(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _, index_dir = self._build_source_batch_index(tmpdir)
+            common = dict(
+                index_dir=index_dir,
+                split="train",
+                seq_length=4,
+                token_merge_size=1,
+                token_merge_alphabet="ACGTN",
+                samples=64,
+                seed=43,
+                batch_size=8,
+                source_weights={"source_a": 1.0, "source_b": 1.0},
+                pad_id=257,
+                source_read_chunk_windows=2,
+                train_ratio=1.0,
+                val_ratio=0.0,
+                test_ratio=0.0,
+            )
+
+            first = IndexedMegabyteSourceBatchStreamDataset(**common)
+            second = IndexedMegabyteSourceBatchStreamDataset(**common)
+            next_epoch = IndexedMegabyteSourceBatchStreamDataset(**common)
+            next_epoch.set_epoch(1)
+
+            first_starts = torch.cat([batch["input_ids"] for batch in first], dim=0)[:, 0].tolist()
+            second_starts = torch.cat([batch["input_ids"] for batch in second], dim=0)[:, 0].tolist()
+            next_epoch_starts = torch.cat([batch["input_ids"] for batch in next_epoch], dim=0)[:, 0].tolist()
+
+            self.assertEqual(first_starts, second_starts)
+            self.assertNotEqual(first_starts, next_epoch_starts)
 
     def test_indexed_megabyte_source_batch_stream_shuffles_read_chunk_in_memory(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -617,10 +692,10 @@ class FastaFragmentIndexTests(unittest.TestCase):
                 test_ratio=0.0,
             )
 
-            first_batch = next(iter(dataset))["input_ids"][:, 0].tolist()
+            starts = torch.cat([batch["input_ids"] for batch in dataset], dim=0)[:, 0].tolist()
 
-            self.assertIn(ord("A"), first_batch)
-            self.assertIn(ord("T"), first_batch)
+            self.assertIn(ord("A"), starts)
+            self.assertIn(ord("T"), starts)
 
     def test_indexed_megabyte_source_batch_stream_dataloader_workers_emit_batches(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -725,8 +800,8 @@ class FastaFragmentIndexTests(unittest.TestCase):
             starts = windows[:, 0].tolist()
 
             self.assertEqual(len(starts), 32)
-            self.assertEqual(starts.count(ord("A")), 16)
-            self.assertEqual(starts.count(ord("T")), 16)
+            self.assertIn(ord("A"), starts)
+            self.assertIn(ord("T"), starts)
 
     def test_indexed_megabyte_source_batch_stream_validates_unknown_source(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

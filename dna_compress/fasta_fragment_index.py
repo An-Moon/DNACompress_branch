@@ -2516,6 +2516,165 @@ class _SourceSequentialReader:
         return bool(self.buffer)
 
 
+class _SourceRandomChunkReader:
+    def __init__(
+        self,
+        dataset: "IndexedMegabyteSourceBatchStreamDataset",
+        *,
+        source_id: int,
+        consumer_id: int,
+        total_consumers: int,
+    ) -> None:
+        self.dataset = dataset
+        self.source_id = int(source_id)
+        self.consumer_id = int(consumer_id)
+        self.total_consumers = int(total_consumers)
+        self.local_positions = dataset.source_local_positions.get(self.source_id)
+        self.chunk_prefix = dataset.source_chunk_prefixes.get(self.source_id)
+        self.window_prefix = dataset.source_window_prefixes.get(self.source_id)
+        self.total_chunks = 0 if self.chunk_prefix is None else int(self.chunk_prefix[-1])
+        self.total_source_windows = int(dataset.source_window_counts[self.source_id])
+        self.buffer: list[dict[str, torch.Tensor]] = []
+        self.cycle = 0
+        self.chunk_order_pos = 0
+        self.chunk_order_offset = 0
+        self.chunk_order_step = 1
+        self.read_chunk_index = 0
+        self._reset_cycle()
+
+    def has_data(self) -> bool:
+        return self.total_source_windows > self.consumer_id and self.total_chunks > 0
+
+    def _reset_cycle(self) -> None:
+        if self.total_chunks <= 0:
+            return
+        rng = random.Random(
+            self.dataset.seed
+            + self.dataset.source_file_order_seed
+            + self.dataset.epoch_index * 1_000_000_007
+            + self.source_id * 1_000_003
+            + self.cycle * 97_003
+        )
+        self.chunk_order_offset = rng.randrange(self.total_chunks)
+        if self.total_chunks <= 1:
+            self.chunk_order_step = 1
+        else:
+            step = rng.randrange(1, self.total_chunks)
+            while math.gcd(step, self.total_chunks) != 1:
+                step = rng.randrange(1, self.total_chunks)
+            self.chunk_order_step = int(step)
+        self.chunk_order_pos = 0
+        self.read_chunk_index = 0
+
+    def _assigned_count_in_span(self, start: int, length: int) -> int:
+        if length <= 0:
+            return 0
+        first_offset = (self.consumer_id - int(start)) % self.total_consumers
+        if first_offset >= length:
+            return 0
+        return 1 + (int(length) - 1 - first_offset) // self.total_consumers
+
+    def _chunk_for_order_position(self, order_position: int) -> tuple[int, int, int, int]:
+        if self.local_positions is None or self.chunk_prefix is None or self.window_prefix is None:
+            raise ValueError("source random chunk reader was not initialized")
+        chunk_ordinal = (self.chunk_order_offset + int(order_position) * self.chunk_order_step) % self.total_chunks
+        run_array_index = int(np.searchsorted(self.chunk_prefix, chunk_ordinal, side="right")) - 1
+        if run_array_index < 0:
+            run_array_index = 0
+        local_position = int(self.local_positions[run_array_index])
+        chunk_in_run = int(chunk_ordinal - int(self.chunk_prefix[run_array_index]))
+        start_window = chunk_in_run * self.dataset.source_read_chunk_windows
+        available = int(self.dataset.available[local_position])
+        window_count = min(self.dataset.source_read_chunk_windows, available - start_window)
+        source_window_start = int(self.window_prefix[run_array_index]) + start_window
+        return local_position, int(start_window), int(window_count), int(source_window_start)
+
+    def _fill_buffer(self) -> bool:
+        while not self.buffer:
+            if self.total_chunks <= 0:
+                return False
+            if self.chunk_order_pos >= self.total_chunks:
+                self.cycle += 1
+                self._reset_cycle()
+                continue
+
+            local_position, start_window, window_count, source_window_start = self._chunk_for_order_position(
+                self.chunk_order_pos
+            )
+            self.chunk_order_pos += 1
+            items = self.dataset._read_run_windows(
+                local_position=local_position,
+                start_window=start_window,
+                window_count=window_count,
+            )
+            for offset, item in enumerate(items):
+                source_window_ordinal = source_window_start + offset
+                if source_window_ordinal % self.total_consumers == self.consumer_id:
+                    self.buffer.append(item)
+            if self.buffer and self.dataset.source_read_chunk_shuffle:
+                rng = random.Random(
+                    self.dataset.seed
+                    + self.dataset.source_file_order_seed
+                    + self.dataset.epoch_index * 1_000_000_007
+                    + self.source_id * 1_000_003
+                    + self.cycle * 97_003
+                    + self.read_chunk_index * 65_537
+                    + int(source_window_start)
+                )
+                rng.shuffle(self.buffer)
+            if items:
+                self.read_chunk_index += 1
+        return True
+
+    def next_item(self) -> dict[str, torch.Tensor] | None:
+        if not self.has_data():
+            return None
+        while not self.buffer:
+            if self._fill_buffer():
+                break
+        if not self.buffer:
+            return None
+        return self.buffer.pop(0)
+
+    def skip_items(self, count: int) -> bool:
+        remaining = int(count)
+        if remaining <= 0:
+            return True
+        if not self.has_data():
+            return False
+        if self.buffer:
+            drop = min(remaining, len(self.buffer))
+            del self.buffer[:drop]
+            remaining -= drop
+
+        while remaining > 0:
+            if self.total_chunks <= 0:
+                return False
+            if self.chunk_order_pos >= self.total_chunks:
+                self.cycle += 1
+                self._reset_cycle()
+                continue
+
+            _, _, window_count, source_window_start = self._chunk_for_order_position(self.chunk_order_pos)
+            assigned = self._assigned_count_in_span(source_window_start, window_count)
+            if assigned <= 0:
+                self.chunk_order_pos += 1
+                continue
+            if remaining >= assigned:
+                self.chunk_order_pos += 1
+                self.read_chunk_index += 1
+                remaining -= assigned
+                continue
+
+            filled = self._fill_buffer()
+            if not filled:
+                return False
+            drop = min(remaining, len(self.buffer))
+            del self.buffer[:drop]
+            remaining -= drop
+        return True
+
+
 class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
     def __init__(
         self,
@@ -2559,7 +2718,8 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
         if source_balance_batches is not None:
             import warnings
             warnings.warn(
-                "Parameter 'source_balance_batches' is deprecated, use 'source_mix_chunk_batches' instead.",
+                "Parameter 'source_balance_batches' is deprecated and ignored by source_batch_file_stream "
+                "probability sampling.",
                 DeprecationWarning,
                 stacklevel=2
             )
@@ -2573,7 +2733,7 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
             )
             source_read_chunk_windows = int(source_read_block_windows)
         if source_mix_chunk_batches <= 0:
-            raise ValueError("source_mix_chunk_batches must be > 0")
+            raise ValueError("source_mix_chunk_batches must be > 0 for backward-compatible configuration")
         if source_read_chunk_windows <= 0:
             raise ValueError("source_read_chunk_windows must be > 0")
         if ddp_rank < 0 or ddp_world_size <= 0 or ddp_rank >= ddp_world_size:
@@ -2606,7 +2766,9 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
         self.ddp_rank = int(ddp_rank)
         self.ddp_world_size = int(ddp_world_size)
         self.start_batch_index = int(start_batch_index)
+        self.epoch_index = 0
         self.epoch_mode = "samples" if samples is not None else "all_windows"
+        self.epoch_sample_count_mode = "configured_samples" if samples is not None else "expected_slowest_source_coverage"
         self._handles: dict[int, Any] = {}
         self.source_weights_config = dict(source_weights or {})
         self.source_loss_weights_config = dict(source_loss_weights or {})
@@ -2630,10 +2792,6 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
         self.total_candidate_windows = int(self.available.sum())
         if self.total_candidate_windows <= 0:
             raise ValueError(f"no indexed FASTA windows are eligible for split={split!r} and seq_length={seq_length}")
-        self.samples = self.total_candidate_windows if samples is None else int(samples)
-        self.batch_count = int(math.ceil(self.samples / self.batch_size))
-        if self.start_batch_index > self.batch_count:
-            raise ValueError("start_batch_index cannot exceed the dataset batch count")
         self.nonoverlap_padded_windows = int(np.count_nonzero(self.run_full_tokens % self.seq_length))
         self.source_ids = np.asarray(self.cache.run_source_ids)[self.positions].astype(np.int32, copy=False)
         self.file_ids = np.asarray(self.cache.run_file_ids)[self.positions].astype(np.int64, copy=False)
@@ -2641,9 +2799,14 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
             np.int64,
             copy=False,
         )
-        self._build_source_file_groups()
+        self.source_file_groups: dict[int, list[np.ndarray]] = {}
         self._configure_sampling(source_weights)
+        self._build_source_window_chunks()
         self._configure_loss_weights(source_loss_weights)
+        self.samples = self._expected_slowest_source_samples() if samples is None else int(samples)
+        self.batch_count = int(math.ceil(self.samples / self.batch_size))
+        if self.start_batch_index > self.batch_count:
+            raise ValueError("start_batch_index cannot exceed the dataset batch count")
 
         if self.token_merge_size > 1:
             self._digit_lookup = np.full(256, -1, dtype=np.int16)
@@ -2660,7 +2823,7 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
 
     def _build_source_file_groups(self) -> None:
         self.source_file_groups: dict[int, list[np.ndarray]] = {}
-        for source_id in sorted(set(int(value) for value in self.source_ids.tolist())):
+        for source_id in np.unique(self.source_ids).astype(np.int32, copy=False).tolist():
             local_positions = np.flatnonzero(self.source_ids == source_id).astype(np.int64, copy=False)
             if local_positions.size == 0:
                 continue
@@ -2675,12 +2838,36 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
                 groups.append(local_positions[start:end])
             self.source_file_groups[source_id] = groups
 
+    def _build_source_window_chunks(self) -> None:
+        self.source_local_positions: dict[int, np.ndarray] = {}
+        self.source_chunk_prefixes: dict[int, np.ndarray] = {}
+        self.source_window_prefixes: dict[int, np.ndarray] = {}
+        for source_id in self.active_source_ids.tolist():
+            local_positions = np.flatnonzero(self.source_ids == source_id).astype(np.int64, copy=False)
+            if local_positions.size == 0:
+                continue
+            available = self.available[local_positions].astype(np.int64, copy=False)
+            chunk_counts = ((available + self.source_read_chunk_windows - 1) // self.source_read_chunk_windows).astype(
+                np.int64,
+                copy=False,
+            )
+            chunk_prefix = np.empty((chunk_counts.shape[0] + 1,), dtype=np.int64)
+            chunk_prefix[0] = 0
+            np.cumsum(chunk_counts, out=chunk_prefix[1:])
+            window_prefix = np.empty((available.shape[0] + 1,), dtype=np.int64)
+            window_prefix[0] = 0
+            np.cumsum(available, out=window_prefix[1:])
+            self.source_local_positions[source_id] = local_positions
+            self.source_chunk_prefixes[source_id] = chunk_prefix
+            self.source_window_prefixes[source_id] = window_prefix
+
     def _configure_sampling(self, source_weights: dict[str, float] | None) -> None:
         source_window_counts = np.bincount(
             self.source_ids,
             weights=self.available.astype(np.float64),
             minlength=len(self.cache.source_names),
         )
+        self.source_window_counts = source_window_counts.astype(np.int64, copy=False)
         source_to_id = {source: idx for idx, source in enumerate(self.cache.source_names)}
         if source_weights:
             unknown = sorted(set(source_weights) - set(source_to_id))
@@ -2710,7 +2897,20 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
         self.active_source_ids = np.asarray(active_ids, dtype=np.int32)
         self.source_probabilities = np.asarray(weights, dtype=np.float64)
         self.source_probabilities /= self.source_probabilities.sum()
+        self.source_cdf = np.cumsum(self.source_probabilities)
+        self.source_cdf[-1] = 1.0
         self.source_names = [self.cache.source_names[int(source_id)] for source_id in self.active_source_ids.tolist()]
+
+    def _expected_slowest_source_samples(self) -> int:
+        candidates: list[float] = []
+        for source_id, probability in zip(self.active_source_ids.tolist(), self.source_probabilities.tolist()):
+            if probability <= 0:
+                continue
+            windows = int(self.source_window_counts[int(source_id)])
+            candidates.append(float(windows) / float(probability))
+        if not candidates:
+            raise ValueError("cannot compute indexed FASTA epoch length without active sources")
+        return int(math.ceil(max(candidates)))
 
     def _configure_loss_weights(self, source_loss_weights: dict[str, float] | None) -> None:
         self.loss_weights_by_source_id = np.ones((len(self.cache.source_names),), dtype=np.float32)
@@ -2769,10 +2969,16 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
             raise ValueError("start_batch_index cannot exceed the dataset batch count")
         self.start_batch_index = int(start_batch_index)
 
+    def set_epoch(self, epoch_index: int) -> None:
+        if epoch_index < 0:
+            raise ValueError("epoch_index must be >= 0")
+        self.epoch_index = int(epoch_index)
+
     def summary(self) -> dict[str, Any]:
         eligible_by_source: dict[str, int] = {}
         windows_by_source: dict[str, int] = {}
         file_groups_by_source: dict[str, int] = {}
+        read_chunks_by_source: dict[str, int] = {}
         for source_id, source_name in enumerate(self.cache.source_names):
             local = np.flatnonzero(self.source_ids == source_id)
             if local.size == 0:
@@ -2780,6 +2986,8 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
             eligible_by_source[source_name] = int(local.size)
             windows_by_source[source_name] = int(self.available[local].sum())
             file_groups_by_source[source_name] = int(len(self.source_file_groups.get(source_id, [])))
+            chunk_prefix = self.source_chunk_prefixes.get(source_id)
+            read_chunks_by_source[source_name] = 0 if chunk_prefix is None else int(chunk_prefix[-1])
         return {
             "source_mode": "indexed_fasta",
             "index_dir": str(self.cache.index_dir),
@@ -2788,6 +2996,9 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
             "split_seed": self.split_seed,
             "window_mode": "source_batch_file_stream",
             "epoch_mode": self.epoch_mode,
+            "epoch_index": self.epoch_index,
+            "epoch_sample_count_mode": self.epoch_sample_count_mode,
+            "source_sampling_strategy": "per_sample_probability",
             "seq_length": self.seq_length,
             "token_merge_size": self.token_merge_size,
             "base_length": self.base_length,
@@ -2800,6 +3011,8 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
             "candidate_window_count": self.total_candidate_windows,
             "padded_window_count": self.nonoverlap_padded_windows,
             "source_mix_chunk_batches": self.source_mix_chunk_batches,
+            "source_balance_batches": self.source_mix_chunk_batches,
+            "deprecated_source_mix_chunk_batches_ignored": True,
             "source_read_chunk_windows": self.source_read_chunk_windows,
             "source_read_chunk_shuffle": self.source_read_chunk_shuffle,
             "source_file_order_seed": self.source_file_order_seed,
@@ -2810,61 +3023,57 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
             "eligible_runs_by_source": eligible_by_source,
             "eligible_windows_by_source": windows_by_source,
             "file_groups_by_source": file_groups_by_source,
+            "read_chunks_by_source": read_chunks_by_source,
             "source_loss_weights": dict(self.loss_weight_summary),
         }
 
-    def _source_slots_for_window(self, balance_window: int) -> list[int]:
-        slot_count = self.source_mix_chunk_batches * self.batch_size
-        raw = self.source_probabilities * float(slot_count)
-        counts = np.floor(raw).astype(np.int64)
-        remainder = int(slot_count - counts.sum())
-        if remainder > 0:
-            order = np.argsort(-(raw - counts))
-            counts[order[:remainder]] += 1
-        slots: list[int] = []
-        for source_id, count in zip(self.active_source_ids.tolist(), counts.tolist()):
-            slots.extend([int(source_id)] * int(count))
-        rng = random.Random(self.seed + self.source_file_order_seed + int(balance_window) * 1_000_003)
-        rng.shuffle(slots)
-        if len(slots) < slot_count:
-            slots.extend([int(self.active_source_ids[0])] * (slot_count - len(slots)))
-        return slots[:slot_count]
+    def _source_random_values(self, global_sample_indices: np.ndarray) -> np.ndarray:
+        values = global_sample_indices.astype(np.uint64, copy=False)
+        values = values + np.uint64(self.seed) + np.uint64(self.source_file_order_seed) * np.uint64(0x9E3779B97F4A7C15)
+        values = values + np.uint64(self.epoch_index) * np.uint64(0xBF58476D1CE4E5B9)
+        values ^= values >> np.uint64(30)
+        values *= np.uint64(0xBF58476D1CE4E5B9)
+        values ^= values >> np.uint64(27)
+        values *= np.uint64(0x94D049BB133111EB)
+        values ^= values >> np.uint64(31)
+        return ((values >> np.uint64(11)).astype(np.float64)) * (1.0 / float(1 << 53))
+
+    def _source_ids_for_samples(self, global_sample_indices: np.ndarray) -> np.ndarray:
+        random_values = self._source_random_values(global_sample_indices)
+        indices = np.searchsorted(self.source_cdf, random_values, side="right")
+        indices = np.minimum(indices, self.active_source_ids.shape[0] - 1)
+        return self.active_source_ids[indices].astype(np.int32, copy=False)
+
+    def _source_ids_for_batch(self, batch_index: int) -> np.ndarray:
+        start_sample = int(batch_index) * self.batch_size
+        current_batch_size = min(self.batch_size, self.samples - start_sample)
+        if current_batch_size <= 0:
+            return np.asarray([], dtype=np.int32)
+        sample_indices = np.arange(start_sample, start_sample + current_batch_size, dtype=np.uint64)
+        return self._source_ids_for_samples(sample_indices)
 
     def _source_skip_counts_before_batch(self, start_batch_index: int, consumer_id: int, total_consumers: int) -> dict[int, int]:
-        """Calculate how many items to skip per source to reach the target batch index.
-
-        This method deterministically replays the batch assignment algorithm to compute
-        the exact number of items each source reader must skip to resume from a checkpoint.
-
-        Args:
-            start_batch_index: Target batch index to resume from
-            consumer_id: This consumer's ID (rank * num_workers + worker_id)
-            total_consumers: Total number of consumers (world_size * num_workers)
-
-        Returns:
-            Dictionary mapping source_id to skip count
-
-        Note:
-            This calculation assumes deterministic source slot assignment (same seeds produce
-            same slots). The skip counts are then passed to each _SourceSequentialReader's
-            skip_items() method to advance file read positions.
-        """
         counts = {int(source_id): 0 for source_id in self.active_source_ids.tolist()}
         target_batch = min(int(start_batch_index), self.batch_count)
-        balance_window = 0
-        while balance_window * self.source_mix_chunk_batches < target_batch:
-            window_batch_start = balance_window * self.source_mix_chunk_batches
-            window_batch_end = min(window_batch_start + self.source_mix_chunk_batches, target_batch)
-            slots = self._source_slots_for_window(balance_window)
-            for batch_index in range(window_batch_start, window_batch_end):
-                if batch_index % total_consumers != consumer_id:
-                    continue
-                start_sample = batch_index * self.batch_size
-                current_batch_size = min(self.batch_size, self.samples - start_sample)
-                slot_offset = (batch_index % self.source_mix_chunk_batches) * self.batch_size
-                for source_id in slots[slot_offset : slot_offset + current_batch_size]:
-                    counts[int(source_id)] = counts.get(int(source_id), 0) + 1
-            balance_window += 1
+        if target_batch <= 0:
+            return counts
+
+        chunk_batches = 8192
+        for batch_start in range(0, target_batch, chunk_batches):
+            batch_end = min(target_batch, batch_start + chunk_batches)
+            batch_indices = np.arange(batch_start, batch_end, dtype=np.int64)
+            assigned_batches = batch_indices[batch_indices % int(total_consumers) == int(consumer_id)]
+            if assigned_batches.size == 0:
+                continue
+            sample_offsets = np.arange(self.batch_size, dtype=np.int64)
+            sample_indices = (assigned_batches[:, None] * self.batch_size + sample_offsets[None, :]).reshape(-1)
+            sample_indices = sample_indices[sample_indices < self.samples].astype(np.uint64, copy=False)
+            if sample_indices.size == 0:
+                continue
+            source_ids = self._source_ids_for_samples(sample_indices)
+            bincount = np.bincount(source_ids, minlength=len(self.cache.source_names))
+            for source_id in self.active_source_ids.tolist():
+                counts[int(source_id)] += int(bincount[int(source_id)])
         return counts
 
     def __iter__(self):
@@ -2874,7 +3083,7 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
         consumer_id = self.ddp_rank * num_workers + worker_id
         total_consumers = self.ddp_world_size * num_workers
         readers = {
-            int(source_id): _SourceSequentialReader(
+            int(source_id): _SourceRandomChunkReader(
                 self,
                 source_id=int(source_id),
                 consumer_id=consumer_id,
@@ -2897,14 +3106,10 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
         for batch_index in range(self.start_batch_index, self.batch_count):
             if batch_index % total_consumers != consumer_id:
                 continue
-            start_sample = batch_index * self.batch_size
-            current_batch_size = min(self.batch_size, self.samples - start_sample)
-            balance_window = batch_index // self.source_mix_chunk_batches
-            slot_offset = (batch_index % self.source_mix_chunk_batches) * self.batch_size
-            slots = self._source_slots_for_window(balance_window)[slot_offset : slot_offset + current_batch_size]
+            source_ids = self._source_ids_for_batch(batch_index)
             items: list[dict[str, torch.Tensor]] = []
             missing_source = False
-            for source_id in slots:
+            for source_id in source_ids.tolist():
                 item = readers[int(source_id)].next_item()
                 if item is None:
                     missing_source = True

@@ -1277,6 +1277,8 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
             accumulated_train_steps = 0
             for epoch in range(resume_epoch_index, config.train.epochs):
                 epoch_start_batch_index = resume_batch_index_in_epoch if epoch == resume_epoch_index else 0
+                if hasattr(train_dataset, "set_epoch"):
+                    train_dataset.set_epoch(epoch)
                 if hasattr(train_dataset, "set_start_batch_index"):
                     train_dataset.set_start_batch_index(epoch_start_batch_index)
                 if train_sampler is not None:

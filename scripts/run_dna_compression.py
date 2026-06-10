@@ -35,10 +35,10 @@ existing GeCo2 paper-mode baseline source order, 0.6/0.2/0.2 split, and
 full-split sample setup:
 
     python scripts/run_dna_compression.py \
-      --run-dir outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537 \
+      --run-dir outputs/dna_megabyte_large_opengenome2_3 \
       --checkpoint-tag best \
-      --output-json outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537/statistics_dnacorpus/compression_compare.json \
-      --export-out-dir outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537/statistics_dnacorpus \
+      --output-json outputs/dna_megabyte_large_opengenome2_3/statistics_dnacorpus/compression_compare.json \
+      --export-out-dir outputs/dna_megabyte_large_opengenome2_3/statistics_dnacorpus \
       --dataset-dir datasets/DNACorpus \
       --sequence-source-mode auto \
       --multi-sequence-mode separate \
@@ -51,12 +51,12 @@ full-split sample setup:
       --test-ratio 0.2 \
       --arithmetic-coding-mode model_symbol \
       --arithmetic-merge-size 3 \
-      --eval-batch-size 32 \
+      --eval-batch-size 64 \
       --device cuda:3 \
       --skip-codec-baselines
 
     python scripts/plot_compression_curves.py \
-      --root-dir outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537/statistics_dnacorpus \
+      --root-dir outputs/dna_megabyte_large_opengenome2_3/statistics_dnacorpus \
       --baseline-compression-json outputs/dna_geco2_paper_modes_0p6_0p2_0p2_fullsplit/compression_compare.json
 
     python scripts/run_dna_compression.py \

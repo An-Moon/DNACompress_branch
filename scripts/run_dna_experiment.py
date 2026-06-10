@@ -38,8 +38,7 @@ Complete example (train + eval + compression, with common overrides):
             
         --wandb-project dna-compress \
         --wandb-name dna_megabyte_huge_ensembl_all_resume \
-        --gpu-ids 2 3 
-        
+        --gpu-ids 2 3 \
         --species homo_sapiens mus_musculus bos_taurus danio_rerio \
                   drosophila_melanogaster caenorhabditis_elegans \
                   saccharomyces_cerevisiae arabidopsis_thaliana \
@@ -52,7 +51,7 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --config configs/dna_megabyte_large.json \
         --mode all \
         --init-from resume \
-        --pretrained-weight-path outputs/dna_megabyte_large_opengenome2_1/last.pt\
+        --pretrained-weight-path outputs/dna_megabyte_large_20260603_214338_20260604_224641_20260604_233537_20260606_141155_20260609_225330/best.pt \
         --seed 42 \
         --sequence-source-mode indexed_fasta \
         --fasta-index-dir /data/students/Liang_junnan/opengenome2_subset/index \
@@ -63,10 +62,7 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --indexed-split-seed 0 \
         --indexed-window-mode source_batch_file_stream \
         --indexed-train-epoch-mode all_windows \
-        --indexed-file-stream-windows 8192 \
-        --indexed-file-shuffle-buffer-windows 8192 \
         --indexed-file-stream-order-seed 0 \
-        --indexed-source-mix-chunk-batches 64 \
         --indexed-source-read-chunk-windows 8192 \
         --indexed-source-read-chunk-shuffle \
         --indexed-source-file-order-seed 0 \
@@ -89,10 +85,10 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --lr-warmup-steps 1024 \
         --lr-min-ratio 0.1 \
         --grad-clip-norm 1.0 \
-        --num-workers 1 \
+        --num-workers 2 \
         --no-persistent-workers \
         --wandb-project dna-compress \
-        --wandb-name dna_megabyte_large_opengenome2_2 
+        --wandb-name dna_megabyte_large_opengenome2_4
 
 OpenGenome2 repacked window variant (train + eval; compression is recorded as skipped):
   
@@ -740,7 +736,11 @@ def _build_parser() -> argparse.ArgumentParser:
     data_group.add_argument("--indexed-file-stream-windows", type=int)
     data_group.add_argument("--indexed-file-shuffle-buffer-windows", type=int)
     data_group.add_argument("--indexed-file-stream-order-seed", type=int)
-    data_group.add_argument("--indexed-source-mix-chunk-batches", type=int)
+    data_group.add_argument(
+        "--indexed-source-mix-chunk-batches",
+        type=int,
+        help="Deprecated compatibility option; source_batch_file_stream now samples sources per sample by probability.",
+    )
     data_group.add_argument("--indexed-source-read-chunk-windows", type=int)
     data_group.add_argument(
         "--indexed-source-read-chunk-shuffle",
