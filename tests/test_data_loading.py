@@ -12,8 +12,8 @@ from dna_compress.data import RandomWindowDataset, SequentialWindowDataset, load
 from dna_compress.experiment import save_checkpoint
 from scripts.run_dna_compression import _apply_overrides as apply_compression_overrides
 from scripts.run_dna_compression import _build_parser as build_compression_parser
-from scripts.run_dna_experiment import _apply_overrides as apply_experiment_overrides
-from scripts.run_dna_experiment import _build_parser as build_experiment_parser
+from DNACompress.scripts.run_dna_training import _apply_overrides as apply_experiment_overrides
+from DNACompress.scripts.run_dna_training import _build_parser as build_experiment_parser
 
 
 class DataLoadingTests(unittest.TestCase):

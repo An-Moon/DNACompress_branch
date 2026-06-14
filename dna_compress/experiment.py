@@ -363,6 +363,53 @@ def _resolve_initial_checkpoint_path(config: ExperimentConfig, mode: str, output
     raise ValueError(f"Unsupported train.init_from value: {init_from}")
 
 
+def _source_names_from_dataloader(dataloader: DataLoader) -> list[str] | None:
+    dataset = getattr(dataloader, "dataset", None)
+    if dataset is None:
+        return None
+    cache = getattr(dataset, "cache", None)
+    if cache is not None and hasattr(cache, "source_names"):
+        return [str(name) for name in getattr(cache, "source_names")]
+    names = getattr(dataset, "source_names", None)
+    if names is None:
+        return None
+    return [str(name) for name in names]
+
+
+def _source_name(source_id: int, source_names: list[str] | None) -> str:
+    if source_names is not None and 0 <= source_id < len(source_names):
+        return source_names[source_id]
+    return str(source_id)
+
+
+def _per_source_bpb_payload(metrics: dict[str, Any], prefix: str) -> dict[str, float]:
+    per_source = metrics.get("per_source")
+    if not isinstance(per_source, dict):
+        return {}
+    payload: dict[str, float] = {}
+    for source_name, values in per_source.items():
+        if not isinstance(values, dict) or "bits_per_base" not in values:
+            continue
+        payload[f"{prefix}/{source_name}"] = float(values["bits_per_base"])
+    return payload
+
+
+def _format_per_source_bpb(metrics: dict[str, Any], limit: int = 8) -> str:
+    per_source = metrics.get("per_source")
+    if not isinstance(per_source, dict) or not per_source:
+        return ""
+    parts = [
+        f"{source_name}={float(values['bits_per_base']):.4f}"
+        for source_name, values in sorted(per_source.items())
+        if isinstance(values, dict) and "bits_per_base" in values
+    ]
+    if not parts:
+        return ""
+    if len(parts) > limit:
+        parts = parts[:limit] + [f"...(+{len(per_source) - limit})"]
+    return " sources[" + " ".join(parts) + "]"
+
+
 def evaluate_loss(
     model: torch.nn.Module,
     dataloader: DataLoader,
@@ -371,21 +418,33 @@ def evaluate_loss(
     pad_id: int,
     token_merge_size: int,
     is_distributed: bool,
-) -> dict[str, float]:
+) -> dict[str, Any]:
     model.eval()
     total_nats = 0.0
     total_tokens = 0
     total_weighted_tokens = 0.0
+    source_names = _source_names_from_dataloader(dataloader)
+    source_nats: dict[int, float] = {}
+    source_tokens: dict[int, float] = {}
     start_time = time.time()
 
     with torch.no_grad():
         for batch in dataloader:
             ids = batch["input_ids"].to(device, non_blocking=True)
             with autocast_context(device, dtype_name):
-                loss, valid_tokens, weighted_tokens = compute_language_model_loss(model, ids, batch, pad_id)
+                loss, valid_tokens, weighted_tokens, batch_source_stats = compute_language_model_loss(
+                    model,
+                    ids,
+                    batch,
+                    pad_id,
+                    return_source_stats=True,
+                )
             total_nats += float(loss.item()) * weighted_tokens
             total_tokens += valid_tokens
             total_weighted_tokens += weighted_tokens
+            for source_id, stats in batch_source_stats.items():
+                source_nats[source_id] = source_nats.get(source_id, 0.0) + float(stats["nats"])
+                source_tokens[source_id] = source_tokens.get(source_id, 0.0) + float(stats["tokens"])
 
     if is_distributed:
         reduced = torch.tensor([total_nats, float(total_tokens), total_weighted_tokens], dtype=torch.float64, device=device)
@@ -393,6 +452,32 @@ def evaluate_loss(
         total_nats = float(reduced[0].item())
         total_tokens = int(reduced[1].item())
         total_weighted_tokens = float(reduced[2].item())
+        local_max_source_id = max(source_nats.keys(), default=-1)
+        max_source_id_tensor = torch.tensor([local_max_source_id], dtype=torch.long, device=device)
+        dist.all_reduce(max_source_id_tensor, op=dist.ReduceOp.MAX)
+        max_source_id = int(max_source_id_tensor.item())
+        source_count = max_source_id + 1
+        if source_names is not None:
+            source_count = max(source_count, len(source_names))
+        if source_count > 0:
+            source_nats_tensor = torch.zeros((source_count,), dtype=torch.float64, device=device)
+            source_tokens_tensor = torch.zeros((source_count,), dtype=torch.float64, device=device)
+            for source_id, nats in source_nats.items():
+                if 0 <= source_id < source_count:
+                    source_nats_tensor[source_id] = float(nats)
+                    source_tokens_tensor[source_id] = float(source_tokens.get(source_id, 0.0))
+            dist.all_reduce(source_nats_tensor, op=dist.ReduceOp.SUM)
+            dist.all_reduce(source_tokens_tensor, op=dist.ReduceOp.SUM)
+            source_nats = {
+                source_id: float(value)
+                for source_id, value in enumerate(source_nats_tensor.cpu().tolist())
+                if source_tokens_tensor[source_id].item() > 0
+            }
+            source_tokens = {
+                source_id: float(value)
+                for source_id, value in enumerate(source_tokens_tensor.cpu().tolist())
+                if value > 0
+            }
 
     denominator_tokens = total_weighted_tokens if total_weighted_tokens > 0 else float(total_tokens)
     weighted_bases = denominator_tokens * token_merge_size
@@ -401,7 +486,7 @@ def evaluate_loss(
     average_nats_per_base = total_nats / max(weighted_bases, 1.0)
     bits_per_token = average_nats_per_token / math.log(2)
     bits_per_base = average_nats_per_base / math.log(2)
-    return {
+    result: dict[str, Any] = {
         "loss_nats_per_token": average_nats_per_token,
         "loss_nats_per_base": average_nats_per_base,
         "bits_per_token": bits_per_token,
@@ -411,6 +496,23 @@ def evaluate_loss(
         "bases": total_bases,
         "elapsed_seconds": time.time() - start_time,
     }
+    if source_tokens:
+        per_source: dict[str, dict[str, float | int]] = {}
+        for source_id in sorted(source_tokens):
+            tokens = float(source_tokens[source_id])
+            if tokens <= 0:
+                continue
+            nats = float(source_nats.get(source_id, 0.0))
+            bases = tokens * token_merge_size
+            per_source[_source_name(source_id, source_names)] = {
+                "loss_nats_per_token": nats / max(tokens, 1.0),
+                "bits_per_base": (nats / max(bases, 1.0)) / math.log(2),
+                "tokens": int(tokens),
+                "bases": int(bases),
+            }
+        if per_source:
+            result["per_source"] = per_source
+    return result
 
 
 def compute_language_model_loss(
@@ -418,12 +520,35 @@ def compute_language_model_loss(
     ids: torch.Tensor,
     batch: dict[str, torch.Tensor],
     pad_id: int,
-) -> tuple[torch.Tensor, int, float]:
+    *,
+    return_source_stats: bool = False,
+) -> tuple[torch.Tensor, int, float] | tuple[torch.Tensor, int, float, dict[int, dict[str, float]]]:
+    return _compute_language_model_loss(
+        model,
+        ids,
+        batch,
+        pad_id,
+        return_source_stats=return_source_stats,
+    )
+
+
+def _compute_language_model_loss(
+    model: torch.nn.Module,
+    ids: torch.Tensor,
+    batch: dict[str, torch.Tensor],
+    pad_id: int,
+    *,
+    return_source_stats: bool = False,
+) -> tuple[torch.Tensor, int, float] | tuple[torch.Tensor, int, float, dict[int, dict[str, float]]]:
     valid_mask = ids != pad_id
     valid_tokens = int(valid_mask.sum().item())
     loss_weights = batch.get("loss_weight")
-    if loss_weights is None:
+    source_ids = batch.get("source_id")
+    needs_unreduced_loss = loss_weights is not None or (return_source_stats and source_ids is not None)
+    if not needs_unreduced_loss:
         output = model(ids, return_loss=True)
+        if return_source_stats:
+            return output.loss, valid_tokens, float(valid_tokens), {}
         return output.loss, valid_tokens, float(valid_tokens)
 
     output = model(ids, return_loss=False)
@@ -434,11 +559,33 @@ def compute_language_model_loss(
         ignore_index=pad_id,
         reduction="none",
     ).reshape_as(ids)
-    sample_weights = loss_weights.to(ids.device, non_blocking=True).float().view(-1, 1)
-    token_weights = valid_mask.float() * sample_weights
+    valid_float = valid_mask.float()
+    if loss_weights is None:
+        token_weights = valid_float
+    else:
+        sample_weights = loss_weights.to(ids.device, non_blocking=True).float().view(-1, 1)
+        token_weights = valid_float * sample_weights
     weighted_tokens = token_weights.sum()
     loss = (per_token * token_weights).sum() / weighted_tokens.clamp_min(1.0)
-    return loss, valid_tokens, float(weighted_tokens.detach().item())
+    weighted_token_count = float(weighted_tokens.detach().item())
+    if not return_source_stats or source_ids is None:
+        return loss, valid_tokens, weighted_token_count
+
+    batch_size = ids.shape[0]
+    per_sample_nats = (per_token * valid_float).reshape(batch_size, -1).sum(dim=1)
+    per_sample_tokens = valid_float.reshape(batch_size, -1).sum(dim=1)
+    source_ids_tensor = source_ids.to(ids.device, non_blocking=True).long().view(-1)
+    source_stats: dict[int, dict[str, float]] = {}
+    for source_id in torch.unique(source_ids_tensor).tolist():
+        mask = source_ids_tensor == int(source_id)
+        tokens = float(per_sample_tokens[mask].sum().detach().item())
+        if tokens <= 0:
+            continue
+        source_stats[int(source_id)] = {
+            "nats": float(per_sample_nats[mask].sum().detach().item()),
+            "tokens": tokens,
+        }
+    return loss, valid_tokens, weighted_token_count, source_stats
 
 
 def evaluate_compression(
@@ -1397,34 +1544,40 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
                         )
                         if ddp.is_main_process:
                             if train_log_handle is not None:
+                                eval_event: dict[str, object] = {
+                                    "event": "eval",
+                                    "split": "val",
+                                    "step": global_step,
+                                    "epoch": epoch + 1,
+                                    "batch_index_in_epoch": int(batch_index_in_epoch),
+                                    "loss_nats_per_token": float(val_metrics["loss_nats_per_token"]),
+                                    "bits_per_base": float(val_metrics["bits_per_base"]),
+                                    "tokens": int(val_metrics["tokens"]),
+                                    "bases": int(val_metrics["bases"]),
+                                }
+                                if "per_source" in val_metrics:
+                                    eval_event["per_source"] = val_metrics["per_source"]
                                 write_training_log_event(
                                     train_log_handle,
-                                    {
-                                        "event": "eval",
-                                        "split": "val",
-                                        "step": global_step,
-                                        "epoch": epoch + 1,
-                                        "batch_index_in_epoch": int(batch_index_in_epoch),
-                                        "loss_nats_per_token": float(val_metrics["loss_nats_per_token"]),
-                                        "bits_per_base": float(val_metrics["bits_per_base"]),
-                                        "tokens": int(val_metrics["tokens"]),
-                                        "bases": int(val_metrics["bases"]),
-                                    },
+                                    eval_event,
                                 )
+                            eval_payload: dict[str, object] = {
+                                "epoch": epoch + 1,
+                                "eval/loss": float(val_metrics["loss_nats_per_token"]),
+                                "eval/bpb": float(val_metrics["bits_per_base"]),
+                                "val/loss": float(val_metrics["loss_nats_per_token"]),
+                                "val/bpb": float(val_metrics["bits_per_base"]),
+                            }
+                            eval_payload.update(_per_source_bpb_payload(val_metrics, "val/source_bpb"))
                             log_wandb_metrics(
                                 wandb_run,
-                                {
-                                    "epoch": epoch + 1,
-                                    "eval/loss": float(val_metrics["loss_nats_per_token"]),
-                                    "eval/bpb": float(val_metrics["bits_per_base"]),
-                                    "val/loss": float(val_metrics["loss_nats_per_token"]),
-                                    "val/bpb": float(val_metrics["bits_per_base"]),
-                                },
+                                eval_payload,
                                 step=global_step,
                             )
                             print(
                                 f"[eval] step={global_step} val_loss/token={val_metrics['loss_nats_per_token']:.4f} "
-                                f"val_bits/base={val_metrics['bits_per_base']:.4f}",
+                                f"val_bits/base={val_metrics['bits_per_base']:.4f}"
+                                f"{_format_per_source_bpb(val_metrics)}",
                                 flush=True,
                             )
                             if val_metrics["bits_per_base"] < best_val_bpb:
@@ -1526,46 +1679,65 @@ def run_experiment(config: ExperimentConfig, mode: str = "all") -> dict[str, obj
 
             if ddp.is_main_process:
                 if train_log_handle is not None:
+                    val_event: dict[str, object] = {
+                        "event": "eval",
+                        "split": "val",
+                        "step": global_step,
+                        "epoch": config.train.epochs,
+                        "loss_nats_per_token": float(val_metrics["loss_nats_per_token"]),
+                        "bits_per_base": float(val_metrics["bits_per_base"]),
+                        "tokens": int(val_metrics["tokens"]),
+                        "bases": int(val_metrics["bases"]),
+                        "is_final": True,
+                    }
+                    if "per_source" in val_metrics:
+                        val_event["per_source"] = val_metrics["per_source"]
+                    test_event: dict[str, object] = {
+                        "event": "eval",
+                        "split": "test",
+                        "step": global_step,
+                        "epoch": config.train.epochs,
+                        "loss_nats_per_token": float(test_metrics["loss_nats_per_token"]),
+                        "bits_per_base": float(test_metrics["bits_per_base"]),
+                        "tokens": int(test_metrics["tokens"]),
+                        "bases": int(test_metrics["bases"]),
+                        "is_final": True,
+                    }
+                    if "per_source" in test_metrics:
+                        test_event["per_source"] = test_metrics["per_source"]
                     write_training_log_event(
                         train_log_handle,
-                        {
-                            "event": "eval",
-                            "split": "val",
-                            "step": global_step,
-                            "epoch": config.train.epochs,
-                            "loss_nats_per_token": float(val_metrics["loss_nats_per_token"]),
-                            "bits_per_base": float(val_metrics["bits_per_base"]),
-                            "tokens": int(val_metrics["tokens"]),
-                            "bases": int(val_metrics["bases"]),
-                            "is_final": True,
-                        },
+                        val_event,
                     )
                     write_training_log_event(
                         train_log_handle,
-                        {
-                            "event": "eval",
-                            "split": "test",
-                            "step": global_step,
-                            "epoch": config.train.epochs,
-                            "loss_nats_per_token": float(test_metrics["loss_nats_per_token"]),
-                            "bits_per_base": float(test_metrics["bits_per_base"]),
-                            "tokens": int(test_metrics["tokens"]),
-                            "bases": int(test_metrics["bases"]),
-                            "is_final": True,
-                        },
+                        test_event,
                     )
+                final_payload: dict[str, object] = {
+                    "epoch": config.train.epochs,
+                    "eval/final_loss": float(val_metrics["loss_nats_per_token"]),
+                    "eval/final_bpb": float(val_metrics["bits_per_base"]),
+                    "val/final_loss": float(val_metrics["loss_nats_per_token"]),
+                    "val/final_bpb": float(val_metrics["bits_per_base"]),
+                    "test/loss": float(test_metrics["loss_nats_per_token"]),
+                    "test/bpb": float(test_metrics["bits_per_base"]),
+                }
+                final_payload.update(_per_source_bpb_payload(val_metrics, "val/final_source_bpb"))
+                final_payload.update(_per_source_bpb_payload(test_metrics, "test/source_bpb"))
                 log_wandb_metrics(
                     wandb_run,
-                    {
-                        "epoch": config.train.epochs,
-                        "eval/final_loss": float(val_metrics["loss_nats_per_token"]),
-                        "eval/final_bpb": float(val_metrics["bits_per_base"]),
-                        "val/final_loss": float(val_metrics["loss_nats_per_token"]),
-                        "val/final_bpb": float(val_metrics["bits_per_base"]),
-                        "test/loss": float(test_metrics["loss_nats_per_token"]),
-                        "test/bpb": float(test_metrics["bits_per_base"]),
-                    },
+                    final_payload,
                     step=global_step,
+                )
+                print(
+                    f"[eval] final val_bits/base={val_metrics['bits_per_base']:.4f}"
+                    f"{_format_per_source_bpb(val_metrics)}",
+                    flush=True,
+                )
+                print(
+                    f"[eval] final test_bits/base={test_metrics['bits_per_base']:.4f}"
+                    f"{_format_per_source_bpb(test_metrics)}",
+                    flush=True,
                 )
                 if compression_skipped is not None:
                     compression_metrics = compression_skipped

@@ -8,6 +8,8 @@ Outputs:
 - summary_metrics.csv
 - dataset_splits.csv
 - compression_per_source_legacy.csv
+- compression_ratio_summary.csv
+- compression_speed_summary.csv
 - compression_aggregate_by_split_mode.csv
 - compression_per_source_by_split_mode.csv
 
@@ -53,6 +55,7 @@ def _dataset_summary_from_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
         total_train = 0
         total_val = 0
         total_test = 0
+        total_full = 0
         for row in species_rows:
             if not isinstance(row, dict):
                 continue
@@ -60,10 +63,13 @@ def _dataset_summary_from_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
             total_train += int(row.get("train_bytes", 0) or 0)
             total_val += int(row.get("val_bytes", 0) or 0)
             total_test += int(row.get("test_bytes", 0) or 0)
+            total_full += int(row.get("full_bytes", 0) or 0)
         result["dataset.total_size_bytes"] = total_size
         result["dataset.total_train_bytes"] = total_train
         result["dataset.total_val_bytes"] = total_val
         result["dataset.total_test_bytes"] = total_test
+        if total_full:
+            result["dataset.total_full_bytes"] = total_full
 
     alphabet_bytes = dataset.get("alphabet_bytes")
     if isinstance(alphabet_bytes, list):
@@ -131,6 +137,7 @@ def _build_dataset_table_rows(dataset: dict[str, Any] | None) -> list[dict[str, 
                 "sequence_keys": "|".join(row.get("sequence_keys", [])) if isinstance(row.get("sequence_keys"), list) else row.get("sequence_keys"),
                 "sequence_files": "|".join(row.get("sequence_files", [])) if isinstance(row.get("sequence_files"), list) else row.get("sequence_files"),
                 "total_size": row.get("total_size"),
+                "full_bytes": row.get("full_bytes"),
                 "train_bytes": row.get("train_bytes"),
                 "val_bytes": row.get("val_bytes"),
                 "test_bytes": row.get("test_bytes"),
@@ -143,6 +150,322 @@ def _safe_div(numerator: float, denominator: float) -> float | None:
     if denominator == 0:
         return None
     return numerator / denominator
+
+
+def _number(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _int_number(value: Any) -> int | None:
+    numeric = _number(value)
+    if numeric is None:
+        return None
+    return int(numeric)
+
+
+def _row_value(row: dict[str, Any], row_type: str, source_key: str, aggregate_key: str | None = None) -> Any:
+    if row_type == "aggregate":
+        return row.get(aggregate_key or f"total_{source_key}")
+    return row.get(source_key)
+
+
+def _ratio_row(
+    *,
+    split_name: str,
+    mode_name: str,
+    row_type: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    sample_bytes = _number(_row_value(payload, row_type, "sample_bytes"))
+    sample_bases = _number(_row_value(payload, row_type, "sample_bases"))
+    theoretical_bits = _number(_row_value(payload, row_type, "theoretical_bits"))
+    theoretical_bpb = _number(_row_value(payload, row_type, "theoretical_bits_per_base"))
+    arithmetic_bytes = _number(_row_value(payload, row_type, "arithmetic_coded_bytes"))
+    arithmetic_bpb = _number(_row_value(payload, row_type, "arithmetic_bits_per_base"))
+    ascii_bytes = _number(_row_value(payload, row_type, "ascii_bytes"))
+    two_bit_pack_bytes = _number(_row_value(payload, row_type, "two_bit_pack_bytes"))
+    gzip_bytes = _number(_row_value(payload, row_type, "gzip_bytes"))
+    bz2_bytes = _number(_row_value(payload, row_type, "bz2_bytes"))
+    lzma_bytes = _number(_row_value(payload, row_type, "lzma_bytes"))
+
+    if theoretical_bpb is None and theoretical_bits is not None and sample_bases:
+        theoretical_bpb = theoretical_bits / sample_bases
+    if arithmetic_bpb is None and arithmetic_bytes is not None and sample_bases:
+        arithmetic_bpb = arithmetic_bytes * 8.0 / sample_bases
+
+    row = {
+        "split": split_name,
+        "mode": mode_name,
+        "row_type": row_type,
+        "species": payload.get("species") if row_type == "source" else None,
+        "source_name": payload.get("source_name") if row_type == "source" else "ALL",
+        "source_count": payload.get("source_count") if row_type == "aggregate" else None,
+        "sample_bytes": _int_number(sample_bytes),
+        "sample_bases": _int_number(sample_bases),
+        "sample_symbols_with_eos": _row_value(
+            payload,
+            row_type,
+            "sample_symbols_with_eos",
+            "total_emitted_arithmetic_symbol_count",
+        ),
+        "theoretical_bits": theoretical_bits,
+        "theoretical_bits_per_base": theoretical_bpb,
+        "arithmetic_coded_bytes": _int_number(arithmetic_bytes),
+        "arithmetic_bits_per_base": arithmetic_bpb,
+        "arithmetic_vs_2bit_percent": arithmetic_bpb / 2.0 * 100.0 if arithmetic_bpb is not None else None,
+        "arithmetic_bytes_ratio_vs_ascii": _safe_div(arithmetic_bytes, ascii_bytes)
+        if arithmetic_bytes is not None and ascii_bytes is not None
+        else None,
+        "arithmetic_size_reduction_vs_ascii_percent": (1.0 - arithmetic_bytes / ascii_bytes) * 100.0
+        if arithmetic_bytes is not None and ascii_bytes
+        else None,
+        "arithmetic_vs_two_bit_pack_ratio": _safe_div(arithmetic_bytes, two_bit_pack_bytes)
+        if arithmetic_bytes is not None and two_bit_pack_bytes is not None
+        else None,
+        "arithmetic_vs_gzip_ratio": _safe_div(arithmetic_bytes, gzip_bytes)
+        if arithmetic_bytes is not None and gzip_bytes is not None
+        else None,
+        "arithmetic_vs_bz2_ratio": _safe_div(arithmetic_bytes, bz2_bytes)
+        if arithmetic_bytes is not None and bz2_bytes is not None
+        else None,
+        "arithmetic_vs_lzma_ratio": _safe_div(arithmetic_bytes, lzma_bytes)
+        if arithmetic_bytes is not None and lzma_bytes is not None
+        else None,
+        "ascii_bytes": _int_number(ascii_bytes),
+        "two_bit_pack_bytes": _int_number(two_bit_pack_bytes),
+        "gzip_bytes": _int_number(gzip_bytes),
+        "bz2_bytes": _int_number(bz2_bytes),
+        "lzma_bytes": _int_number(lzma_bytes),
+        "arithmetic_coding_mode": payload.get("arithmetic_coding_mode"),
+        "arithmetic_merge_size": payload.get("arithmetic_merge_size"),
+        "arithmetic_backend": payload.get("arithmetic_backend"),
+        "arithmetic_frequency_total": payload.get("arithmetic_frequency_total"),
+        "arithmetic_vocab_size": payload.get("arithmetic_vocab_size"),
+        "arithmetic_target_uniform_mass": payload.get("arithmetic_target_uniform_mass"),
+        "arithmetic_effective_uniform_mass": payload.get("arithmetic_effective_uniform_mass"),
+    }
+    for key in (
+        "total_bits_per_base",
+        "core_model_theoretical_bits",
+        "tail_base_count",
+        "tail_side_info_bits",
+        "side_info_bytes",
+        "nugget_code_bytes",
+        "nugget_hidden_bytes",
+        "nugget_metadata_bytes",
+        "nugget_score_bytes",
+        "window_policy",
+        "window_stride",
+        "cache_reuse",
+    ):
+        if key in payload:
+            row[key] = payload.get(key)
+    return row
+
+
+def _speed_row(
+    *,
+    split_name: str,
+    mode_name: str,
+    row_type: str,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    sample_bytes = _number(_row_value(payload, row_type, "sample_bytes"))
+    sample_bases = _number(_row_value(payload, row_type, "sample_bases"))
+    emitted_symbols = _number(
+        _row_value(payload, row_type, "emitted_arithmetic_symbol_count", "total_emitted_arithmetic_symbol_count")
+    )
+    model_forward_seconds = _number(_row_value(payload, row_type, "model_forward_seconds"))
+    softmax_seconds = _number(_row_value(payload, row_type, "softmax_seconds"))
+    model_forward_softmax_seconds = (
+        model_forward_seconds + softmax_seconds
+        if model_forward_seconds is not None and softmax_seconds is not None
+        else _number(_row_value(payload, row_type, "model_forward_softmax_seconds"))
+    )
+    data_transfer_seconds = _number(_row_value(payload, row_type, "data_transfer_seconds"))
+    gpu_prefix_aggregate_seconds = _number(_row_value(payload, row_type, "gpu_prefix_aggregate_seconds"))
+    quantize_seconds = _number(
+        _row_value(payload, row_type, "arithmetic_quantize_seconds", "total_arithmetic_quantize_seconds")
+    )
+    if quantize_seconds is None:
+        quantize_seconds = _number(
+            _row_value(
+                payload,
+                row_type,
+                "cpu_small_alphabet_quantize_seconds",
+                "total_cpu_small_alphabet_quantize_seconds",
+            )
+        )
+    range_seconds = _number(_row_value(payload, row_type, "arithmetic_range_seconds"))
+    arithmetic_encode_seconds = _number(_row_value(payload, row_type, "arithmetic_encode_seconds"))
+    compression_process_seconds = _number(_row_value(payload, row_type, "compression_process_seconds"))
+    if compression_process_seconds is None:
+        parts = [
+            model_forward_seconds,
+            softmax_seconds,
+            gpu_prefix_aggregate_seconds,
+            data_transfer_seconds,
+            arithmetic_encode_seconds,
+        ]
+        if all(value is not None for value in parts):
+            compression_process_seconds = sum(float(value) for value in parts if value is not None)
+
+    wall_seconds = _number(payload.get("compression_wall_seconds"))
+    wall_seconds_source = "compression_wall_seconds" if wall_seconds is not None else None
+    if wall_seconds is None:
+        wall_seconds = _number(payload.get("wall_seconds_including_fasta_read"))
+        wall_seconds_source = "wall_seconds_including_fasta_read" if wall_seconds is not None else None
+    if wall_seconds is None and row_type == "aggregate":
+        wall_seconds = _number(payload.get("total_wall_seconds"))
+        wall_seconds_source = "total_wall_seconds" if wall_seconds is not None else None
+
+    unaccounted_wall_seconds = (
+        wall_seconds - compression_process_seconds
+        if wall_seconds is not None and compression_process_seconds is not None
+        else None
+    )
+
+    row = {
+        "split": split_name,
+        "mode": mode_name,
+        "row_type": row_type,
+        "species": payload.get("species") if row_type == "source" else None,
+        "source_name": payload.get("source_name") if row_type == "source" else "ALL",
+        "source_count": payload.get("source_count") if row_type == "aggregate" else None,
+        "sample_bytes": _int_number(sample_bytes),
+        "sample_bases": _int_number(sample_bases),
+        "emitted_arithmetic_symbol_count": _int_number(emitted_symbols),
+        "model_forward_seconds": model_forward_seconds,
+        "softmax_seconds": softmax_seconds,
+        "model_forward_softmax_seconds": model_forward_softmax_seconds,
+        "data_transfer_seconds": data_transfer_seconds,
+        "gpu_prefix_aggregate_seconds": gpu_prefix_aggregate_seconds,
+        "arithmetic_quantize_seconds": quantize_seconds,
+        "cpu_small_alphabet_quantize_seconds": quantize_seconds,
+        "arithmetic_range_seconds": range_seconds,
+        "arithmetic_encode_seconds": arithmetic_encode_seconds,
+        "compression_process_seconds": compression_process_seconds,
+        "recorded_wall_seconds": wall_seconds,
+        "recorded_wall_seconds_source": wall_seconds_source,
+        "wall_unaccounted_seconds": unaccounted_wall_seconds,
+        "fasta_read_seconds": payload.get("fasta_read_seconds"),
+        "compression_bytes_per_second": _safe_div(sample_bytes, compression_process_seconds)
+        if sample_bytes is not None and compression_process_seconds is not None
+        else None,
+        "compression_bases_per_second": _safe_div(sample_bases, compression_process_seconds)
+        if sample_bases is not None and compression_process_seconds is not None
+        else None,
+        "compression_symbols_per_second": _safe_div(emitted_symbols, compression_process_seconds)
+        if emitted_symbols is not None and compression_process_seconds is not None
+        else None,
+        "wall_bytes_per_second": _safe_div(sample_bytes, wall_seconds)
+        if sample_bytes is not None and wall_seconds is not None
+        else None,
+        "wall_bases_per_second": _safe_div(sample_bases, wall_seconds)
+        if sample_bases is not None and wall_seconds is not None
+        else None,
+        "model_forward_process_fraction": _safe_div(model_forward_seconds, compression_process_seconds)
+        if model_forward_seconds is not None and compression_process_seconds is not None
+        else None,
+        "data_transfer_process_fraction": _safe_div(data_transfer_seconds, compression_process_seconds)
+        if data_transfer_seconds is not None and compression_process_seconds is not None
+        else None,
+        "arithmetic_quantize_process_fraction": _safe_div(quantize_seconds, compression_process_seconds)
+        if quantize_seconds is not None and compression_process_seconds is not None
+        else None,
+        "arithmetic_range_process_fraction": _safe_div(range_seconds, compression_process_seconds)
+        if range_seconds is not None and compression_process_seconds is not None
+        else None,
+        "arithmetic_encode_process_fraction": _safe_div(arithmetic_encode_seconds, compression_process_seconds)
+        if arithmetic_encode_seconds is not None and compression_process_seconds is not None
+        else None,
+        "wall_unaccounted_fraction": _safe_div(unaccounted_wall_seconds, wall_seconds)
+        if unaccounted_wall_seconds is not None and wall_seconds is not None
+        else None,
+        "arithmetic_backend": payload.get("arithmetic_backend"),
+        "arithmetic_coding_mode": payload.get("arithmetic_coding_mode"),
+        "arithmetic_merge_size": payload.get("arithmetic_merge_size"),
+    }
+    return row
+
+
+def build_compression_report_tables(
+    compression_compare: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    ratio_rows: list[dict[str, Any]] = []
+    speed_rows: list[dict[str, Any]] = []
+    if not isinstance(compression_compare, dict):
+        return ratio_rows, speed_rows
+
+    results = compression_compare.get("results")
+    if not isinstance(results, dict):
+        return ratio_rows, speed_rows
+
+    for split_name, split_payload in results.items():
+        if not isinstance(split_payload, dict):
+            continue
+        for mode_name, mode_payload in split_payload.items():
+            if not isinstance(mode_payload, dict):
+                continue
+
+            per_source = [row for row in mode_payload.get("per_source", []) if isinstance(row, dict)]
+            aggregate = mode_payload.get("aggregate")
+            if isinstance(aggregate, dict):
+                aggregate_payload = dict(aggregate)
+                wall_values = [_number(row.get("compression_wall_seconds")) for row in per_source]
+                if not any(value is not None for value in wall_values):
+                    wall_values = [_number(row.get("wall_seconds_including_fasta_read")) for row in per_source]
+                if any(value is not None for value in wall_values):
+                    aggregate_payload["total_wall_seconds"] = sum(float(value) for value in wall_values if value is not None)
+                ratio_rows.append(
+                    _ratio_row(
+                        split_name=str(split_name),
+                        mode_name=str(mode_name),
+                        row_type="aggregate",
+                        payload=aggregate_payload,
+                    )
+                )
+                speed_rows.append(
+                    _speed_row(
+                        split_name=str(split_name),
+                        mode_name=str(mode_name),
+                        row_type="aggregate",
+                        payload=aggregate_payload,
+                    )
+                )
+
+            for source_row in per_source:
+                ratio_rows.append(
+                    _ratio_row(
+                        split_name=str(split_name),
+                        mode_name=str(mode_name),
+                        row_type="source",
+                        payload=source_row,
+                    )
+                )
+                speed_rows.append(
+                    _speed_row(
+                        split_name=str(split_name),
+                        mode_name=str(mode_name),
+                        row_type="source",
+                        payload=source_row,
+                    )
+                )
+
+    return ratio_rows, speed_rows
+
+
+def write_compression_report_tables(out_dir: Path, compression_compare: dict[str, Any] | None) -> tuple[Path, Path]:
+    ratio_rows, speed_rows = build_compression_report_tables(compression_compare)
+    ratio_path = out_dir / "compression_ratio_summary.csv"
+    speed_path = out_dir / "compression_speed_summary.csv"
+    _write_csv(ratio_path, ratio_rows)
+    _write_csv(speed_path, speed_rows)
+    return ratio_path, speed_path
 
 
 def _build_compression_tables(compression_compare: dict[str, Any] | None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -368,7 +691,10 @@ def main() -> None:
         summary_metrics.update(flat_config)
     _write_summary_csv(out_dir / "summary_metrics.csv", summary_metrics)
 
-    dataset_rows = _build_dataset_table_rows(metrics.get("dataset") if isinstance(metrics, dict) else None)
+    dataset_payload = metrics.get("dataset") if isinstance(metrics, dict) else None
+    if dataset_payload is None and isinstance(compression_compare, dict):
+        dataset_payload = compression_compare.get("dataset")
+    dataset_rows = _build_dataset_table_rows(dataset_payload)
     _write_csv(out_dir / "dataset_splits.csv", dataset_rows)
 
     legacy_rows = _build_legacy_compression_rows(metrics if isinstance(metrics, dict) else None)
@@ -377,6 +703,7 @@ def main() -> None:
     aggregate_rows, per_source_rows = _build_compression_tables(compression_compare)
     _write_csv(out_dir / "compression_aggregate_by_split_mode.csv", aggregate_rows)
     _write_csv(out_dir / "compression_per_source_by_split_mode.csv", per_source_rows)
+    write_compression_report_tables(out_dir, compression_compare)
 
     print(f"Exported payload files to: {out_dir}")
 

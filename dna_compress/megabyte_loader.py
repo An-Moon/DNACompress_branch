@@ -46,6 +46,8 @@ def build_model(model_config: ModelConfig):
         pad_id=model_config.pad_id,
         eos_id=model_config.eos_id,
     )
+    if model_config.implementation == "megabyte_in_action":
+        config_kwargs["flash_attn"] = model_config.flash_attn
     if use_input_causal_conv:
         config_kwargs["input_causal_conv_kernel_size"] = model_config.input_causal_conv_kernel_size
     native_config = MegabyteConfig(**config_kwargs)

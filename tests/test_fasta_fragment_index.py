@@ -11,7 +11,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from dna_compress.experiment import compute_language_model_loss
+from dna_compress.experiment import compute_language_model_loss, evaluate_loss
 from dna_compress.fasta_fragment_index import (
     IndexedFastaFragmentSampler,
     IndexedMegabyteFileStreamDataset,
@@ -28,11 +28,11 @@ from dna_compress.repacked_windows import (
     build_repacked_megabyte_windows,
     build_repacked_split_schedule,
 )
-from scripts.run_megadna_experiment import _apply_overrides as apply_megadna_overrides
-from scripts.run_megadna_experiment import _build_parser as build_megadna_parser
-from scripts.run_dna_experiment import _apply_overrides as apply_dna_overrides
-from scripts.run_dna_experiment import _build_parser as build_dna_parser
-from scripts.run_dna_experiment import _validate_config_for_megabyte
+from DNACompress.scripts.run_megadna_training import _apply_overrides as apply_megadna_overrides
+from DNACompress.scripts.run_megadna_training import _build_parser as build_megadna_parser
+from DNACompress.scripts.run_dna_training import _apply_overrides as apply_dna_overrides
+from DNACompress.scripts.run_dna_training import _build_parser as build_dna_parser
+from DNACompress.scripts.run_dna_training import _validate_config_for_megabyte
 from scripts.build_opengenome2_fasta_test_subset import build_opengenome2_fasta_test_subset
 from dna_compress.config import ExperimentConfig
 
@@ -542,14 +542,20 @@ class FastaFragmentIndexTests(unittest.TestCase):
 
             batches = list(dataset)
             windows = torch.cat([batch["input_ids"] for batch in batches], dim=0)
+            source_ids = torch.cat([batch["source_id"] for batch in batches], dim=0)
             starts = windows[:, 0].tolist()
             a_count = starts.count(ord("A"))
             observed_a_fraction = a_count / len(starts)
+            source_a_id = dataset.cache.source_names.index("source_a")
+            observed_source_a_fraction = float((source_ids == source_a_id).float().mean().item())
 
             self.assertEqual(tuple(batches[0]["input_ids"].shape), (32, 4))
+            self.assertEqual(tuple(batches[0]["source_id"].shape), (32,))
             self.assertEqual(len(starts), 4096)
             self.assertGreater(observed_a_fraction, 0.70)
             self.assertLess(observed_a_fraction, 0.80)
+            self.assertGreater(observed_source_a_fraction, 0.70)
+            self.assertLess(observed_source_a_fraction, 0.80)
             self.assertEqual(dataset.summary()["source_balance_batches"], 4)
             self.assertEqual(dataset.summary()["source_mix_chunk_batches"], 4)
             self.assertTrue(dataset.summary()["deprecated_source_mix_chunk_batches_ignored"])
@@ -833,7 +839,7 @@ class FastaFragmentIndexTests(unittest.TestCase):
                 index_dir=index_dir,
                 cache_root=cache_root,
                 split="val",
-                samples=16,
+                samples=256,
                 seq_length=4,
                 token_merge_size=1,
                 token_merge_alphabet="ACGTN",
@@ -849,11 +855,19 @@ class FastaFragmentIndexTests(unittest.TestCase):
 
             summary = dataset.summary()
             batch = next(iter(DataLoader(dataset, batch_size=4)))
-            self.assertEqual(len(dataset), 16)
+            self.assertEqual(len(dataset), 256)
             self.assertEqual(tuple(dataset[0]["input_ids"].shape), (4,))
+            self.assertIn("source_id", dataset[0])
             self.assertEqual(tuple(batch["input_ids"].shape), (4, 4))
-            self.assertEqual(summary["source_counts"]["source_a"], 12)
-            self.assertEqual(summary["source_counts"]["source_b"], 4)
+            self.assertEqual(tuple(batch["source_id"].shape), (4,))
+            source_a_count = summary["source_counts"]["source_a"]
+            source_b_count = summary["source_counts"]["source_b"]
+            self.assertEqual(source_a_count + source_b_count, 256)
+            self.assertGreater(source_a_count / 256, 0.65)
+            self.assertLess(source_a_count / 256, 0.85)
+            self.assertEqual(summary["source_sampling_strategy"], "per_sample_probability")
+            self.assertEqual(summary["sample_counts_by_source"]["source_a"], source_a_count)
+            self.assertEqual(summary["sample_counts_by_source"]["source_b"], source_b_count)
             self.assertTrue(np.any(np.asarray(dataset.run_window_indices) != 0))
             self.assertFalse(summary["cache_hit"])
 
@@ -861,7 +875,7 @@ class FastaFragmentIndexTests(unittest.TestCase):
                 index_dir=index_dir,
                 cache_root=cache_root,
                 split="val",
-                samples=16,
+                samples=256,
                 seq_length=4,
                 token_merge_size=1,
                 token_merge_alphabet="ACGTN",
@@ -1016,7 +1030,9 @@ class FastaFragmentIndexTests(unittest.TestCase):
 
             self.assertEqual(len(observed), 4)
             self.assertTrue(all("loss_weight" in item for item in observed))
+            self.assertTrue(all("source_id" in item for item in observed))
             self.assertTrue(all(tuple(item["input_ids"].shape) == (4,) for item in observed))
+            self.assertTrue(all(tuple(item["source_id"].shape) == () for item in observed))
 
     def test_repacked_dataloader_workers_cover_all_windows(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1118,6 +1134,64 @@ class FastaFragmentIndexTests(unittest.TestCase):
         self.assertEqual(valid_tokens, 4)
         self.assertEqual(weighted_tokens, 2.0)
         self.assertLess(float(loss.item()), 1.0)
+
+    def test_evaluate_loss_reports_per_source_bpb_for_mixed_batch(self) -> None:
+        class FakeModel(torch.nn.Module):
+            def forward(self, ids, return_loss=False):
+                logits = torch.zeros((*ids.shape, 300), dtype=torch.float32)
+                logits[0, :, ord("A")] = 10.0
+                logits[1, :, ord("T")] = 10.0
+                if return_loss:
+                    loss = F.cross_entropy(
+                        logits.reshape(-1, logits.shape[-1]),
+                        ids.reshape(-1),
+                        ignore_index=257,
+                    )
+                else:
+                    loss = None
+                return SimpleNamespace(lm_logits=logits, loss=loss)
+
+        class SourceDataset(torch.utils.data.Dataset):
+            source_names = ["source_a", "source_b"]
+
+            def __init__(self) -> None:
+                self.ids = torch.tensor(
+                    [
+                        [ord("A"), ord("A"), 257],
+                        [ord("A"), ord("A"), 257],
+                    ],
+                    dtype=torch.long,
+                )
+                self.source_ids = torch.tensor([0, 1], dtype=torch.long)
+                self.loss_weights = torch.tensor([1.0, 0.0], dtype=torch.float32)
+
+            def __len__(self) -> int:
+                return 2
+
+            def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+                return {
+                    "input_ids": self.ids[index],
+                    "source_id": self.source_ids[index],
+                    "loss_weight": self.loss_weights[index],
+                }
+
+        metrics = evaluate_loss(
+            FakeModel(),
+            DataLoader(SourceDataset(), batch_size=2),
+            torch.device("cpu"),
+            "float32",
+            pad_id=257,
+            token_merge_size=1,
+            is_distributed=False,
+        )
+
+        self.assertEqual(metrics["tokens"], 4)
+        self.assertEqual(metrics["weighted_tokens"], 2.0)
+        self.assertIn("per_source", metrics)
+        self.assertEqual(metrics["per_source"]["source_a"]["tokens"], 2)
+        self.assertEqual(metrics["per_source"]["source_b"]["tokens"], 2)
+        self.assertLess(metrics["per_source"]["source_a"]["bits_per_base"], 0.1)
+        self.assertGreater(metrics["per_source"]["source_b"]["bits_per_base"], 10.0)
 
 
 class MegaDNAIndexedFastaCliTests(unittest.TestCase):

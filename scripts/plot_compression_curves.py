@@ -25,7 +25,20 @@ from pathlib import Path
 from typing import Any
 
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 GECO2_EXPERIMENT_MODE_NAME = "geco2_paper_modes"
+GECO2_BASELINE_ALIASES: dict[str, Path] = {
+    "dnacorpus": Path("outputs/dna_geco2_dnacorpus_0p6_0p2_0p2/compression_compare.json"),
+    "dnacorpus_0p6_0p2_0p2": Path("outputs/dna_geco2_dnacorpus_0p6_0p2_0p2/compression_compare.json"),
+    "dnacorpus_split": Path("outputs/dna_geco2_dnacorpus_0p6_0p2_0p2/compression_compare.json"),
+    "dnacorpus_full": Path("outputs/dna_geco2_dnacorpus_fullsplit/compression_compare.json"),
+    "dnacorpus_fullsplit": Path("outputs/dna_geco2_dnacorpus_fullsplit/compression_compare.json"),
+    "opengenome2": Path("outputs/dna_geco2_opengenome2_subset_100mb_per_source/compression_compare.json"),
+    "opengenome2_100mb": Path("outputs/dna_geco2_opengenome2_subset_100mb_per_source/compression_compare.json"),
+    "opengenome2_subset_100mb_per_source": Path(
+        "outputs/dna_geco2_opengenome2_subset_100mb_per_source/compression_compare.json"
+    ),
+}
 
 DNACORPUS_SOURCE_ORDER = {
     source_name: index
@@ -73,6 +86,26 @@ GECO2_PAPER_BASELINE_BY_SOURCE: dict[str, dict[str, int]] = {
 
 def _read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def resolve_geco2_baseline_path(selector: str | None) -> Path | None:
+    if selector is None:
+        return None
+    normalized = selector.strip()
+    if not normalized or normalized.lower() in {"none", "off", "false", "no"}:
+        return None
+
+    alias_path = GECO2_BASELINE_ALIASES.get(normalized)
+    if alias_path is not None:
+        return REPO_ROOT / alias_path
+
+    if normalized.startswith("dna_geco2"):
+        return REPO_ROOT / "outputs" / normalized / "compression_compare.json"
+
+    path = Path(normalized).expanduser()
+    if path.is_dir() or path.suffix != ".json":
+        return path / "compression_compare.json"
+    return path
 
 
 def _load_matplotlib_pyplot():
@@ -206,8 +239,8 @@ def _experiment_baseline_rows(compression_compare: dict[str, Any]) -> list[dict[
     for split_name, split_payload in results.items():
         if not isinstance(split_payload, dict):
             continue
-        mode_payload = split_payload.get(GECO2_EXPERIMENT_MODE_NAME)
-        if not isinstance(mode_payload, dict):
+        mode_name, mode_payload = _select_geco2_mode_payload(split_payload)
+        if mode_payload is None:
             continue
         per_source = mode_payload.get("per_source")
         if not isinstance(per_source, list):
@@ -226,12 +259,22 @@ def _experiment_baseline_rows(compression_compare: dict[str, Any]) -> list[dict[
                 "sample_bytes": row.get("sample_bytes"),
                 "sample_bases": row.get("sample_bases"),
                 "experiment_baseline_compressed_bytes": int(compressed_bytes) if compressed_bytes is not None else None,
-                "experiment_baseline_geco2_mode": row.get("geco2_level"),
+                "experiment_baseline_geco2_mode": row.get("geco2_level") or mode_name,
                 "experiment_baseline_bpb": bpb,
                 "experiment_baseline_percent": bpb / 2.0 * 100.0 if bpb is not None else None,
             }
             rows.append(payload)
     return rows
+
+
+def _select_geco2_mode_payload(split_payload: dict[str, Any]) -> tuple[str | None, dict[str, Any] | None]:
+    preferred = split_payload.get(GECO2_EXPERIMENT_MODE_NAME)
+    if isinstance(preferred, dict):
+        return GECO2_EXPERIMENT_MODE_NAME, preferred
+    for mode_name, mode_payload in split_payload.items():
+        if str(mode_name).lower().startswith("geco2") and isinstance(mode_payload, dict):
+            return str(mode_name), mode_payload
+    return None, None
 
 
 def _experiment_baseline_map(compression_compare: dict[str, Any], split_name: str) -> dict[str, dict[str, Any]]:
@@ -287,6 +330,11 @@ def _baseline_rows(compression_compare: dict[str, Any]) -> tuple[list[dict[str, 
     return paper_rows, _experiment_baseline_rows(compression_compare)
 
 
+def _paper_baseline_rows(compression_compare: dict[str, Any]) -> list[dict[str, Any]]:
+    paper_rows, _ = _baseline_rows(compression_compare)
+    return paper_rows
+
+
 def _resolve_run_name(stats_dir: Path, compression_compare: dict[str, Any]) -> str:
     run_metadata_path = stats_dir / "run_metadata.json"
     if run_metadata_path.exists():
@@ -311,6 +359,7 @@ def _resolve_run_name(stats_dir: Path, compression_compare: dict[str, Any]) -> s
 def _build_split_mode_rows(
     *,
     compression_compare: dict[str, Any],
+    experiment_baseline_compare: dict[str, Any] | None = None,
     split_name: str,
     mode_name: str,
 ) -> list[dict[str, Any]]:
@@ -332,7 +381,11 @@ def _build_split_mode_rows(
 
     order_map = _source_order_map(compression_compare)
     metadata_map = _source_metadata_map(compression_compare)
-    experiment_map = _experiment_baseline_map(compression_compare, split_name)
+    experiment_map = (
+        _experiment_baseline_map(experiment_baseline_compare, split_name)
+        if experiment_baseline_compare is not None
+        else {}
+    )
     rows: list[dict[str, Any]] = []
     for item in per_source:
         if not isinstance(item, dict):
@@ -503,6 +556,7 @@ def _write_plot_png(
 
     figure_width = max(12.0, min(28.0, len(rows) * 0.8))
     figure, axes = plt.subplots(3, 1, figsize=(figure_width, 13.0), sharex=True)
+    series_label = "GeCo2" if mode_name == GECO2_EXPERIMENT_MODE_NAME else "Model"
     _plot_series(
         axes[0],
         x_values,
@@ -510,7 +564,7 @@ def _write_plot_png(
         ylabel="Arithmetic BPB",
         title=f"{run_name} | {split_name} | {mode_name} | Compression Ratio (BPB)",
         color="#1f77b4",
-        label="Model",
+        label=series_label,
     )
     arithmetic_has_baseline = _plot_baseline(
         axes[0],
@@ -533,7 +587,7 @@ def _write_plot_png(
         ylabel="% of 2-bit",
         title="Compression Ratio Relative to 2-bit Encoding",
         color="#ff7f0e",
-        label="Model",
+        label=series_label,
     )
     percent_has_baseline = _plot_baseline(
         axes[1],
@@ -556,7 +610,7 @@ def _write_plot_png(
         ylabel="Speed (Mbases/s)",
         title="Compression Speed",
         color="#2ca02c",
-        label="Model",
+        label=series_label,
     )
     if arithmetic_has_baseline or arithmetic_has_experiment_baseline:
         axes[0].legend(loc="best")
@@ -575,8 +629,17 @@ def _write_plot_png(
     plt.close(figure)
 
 
-def _write_baseline_tables(output_dir: Path, compression_compare: dict[str, Any]) -> list[Path]:
-    paper_rows, experiment_rows = _baseline_rows(compression_compare)
+def _write_baseline_tables(
+    output_dir: Path,
+    compression_compare: dict[str, Any],
+    experiment_baseline_compare: dict[str, Any] | None = None,
+) -> list[Path]:
+    paper_rows = _paper_baseline_rows(compression_compare)
+    experiment_rows = (
+        _experiment_baseline_rows(experiment_baseline_compare)
+        if experiment_baseline_compare is not None
+        else _experiment_baseline_rows(compression_compare)
+    )
     baseline_dir = output_dir / "baselines"
     paper_path = baseline_dir / "paper_baseline.csv"
     experiment_path = baseline_dir / "geco2_experiment_baseline.csv"
@@ -608,13 +671,12 @@ def generate_artifacts_for_compression_compare(
     *,
     out_dir_name: str = "compression_curves",
     baseline_compression_compare_path: Path | None = None,
+    include_geco2_modes: bool = False,
 ) -> list[Path]:
     compression_compare = _read_json(compression_compare_path)
-    if baseline_compression_compare_path is not None:
-        _inject_experiment_baseline(
-            compression_compare=compression_compare,
-            baseline_compression_compare=_read_json(baseline_compression_compare_path),
-        )
+    experiment_baseline_compare = (
+        _read_json(baseline_compression_compare_path) if baseline_compression_compare_path is not None else None
+    )
     stats_dir = compression_compare_path.parent
     results = compression_compare.get("results")
     if not isinstance(results, dict):
@@ -622,14 +684,21 @@ def generate_artifacts_for_compression_compare(
 
     run_name = _resolve_run_name(stats_dir, compression_compare)
     output_dir = stats_dir / out_dir_name
-    generated_paths: list[Path] = _write_baseline_tables(output_dir, compression_compare)
+    generated_paths: list[Path] = _write_baseline_tables(
+        output_dir,
+        compression_compare,
+        experiment_baseline_compare=experiment_baseline_compare,
+    )
 
     for split_name, split_payload in results.items():
         if not isinstance(split_payload, dict):
             continue
         for mode_name in split_payload.keys():
+            if str(mode_name) == GECO2_EXPERIMENT_MODE_NAME and not include_geco2_modes:
+                continue
             rows = _build_split_mode_rows(
                 compression_compare=compression_compare,
+                experiment_baseline_compare=experiment_baseline_compare,
                 split_name=str(split_name),
                 mode_name=str(mode_name),
             )
@@ -652,31 +721,12 @@ def generate_artifacts_for_compression_compare(
     return generated_paths
 
 
-def _inject_experiment_baseline(
-    *,
-    compression_compare: dict[str, Any],
-    baseline_compression_compare: dict[str, Any],
-) -> None:
-    source_results = baseline_compression_compare.get("results")
-    target_results = compression_compare.setdefault("results", {})
-    if not isinstance(source_results, dict) or not isinstance(target_results, dict):
-        return
-    for split_name, split_payload in source_results.items():
-        if not isinstance(split_payload, dict):
-            continue
-        baseline_payload = split_payload.get(GECO2_EXPERIMENT_MODE_NAME)
-        if not isinstance(baseline_payload, dict):
-            continue
-        target_split = target_results.setdefault(split_name, {})
-        if isinstance(target_split, dict) and GECO2_EXPERIMENT_MODE_NAME not in target_split:
-            target_split[GECO2_EXPERIMENT_MODE_NAME] = baseline_payload
-
-
 def generate_curves_for_root(
     root_dir: Path,
     *,
     out_dir_name: str = "compression_curves",
     baseline_compression_compare_path: Path | None = None,
+    include_geco2_modes: bool = False,
 ) -> list[Path]:
     generated_paths: list[Path] = []
     for compression_compare_path in sorted(root_dir.rglob("compression_compare.json")):
@@ -685,6 +735,7 @@ def generate_curves_for_root(
                 compression_compare_path,
                 out_dir_name=out_dir_name,
                 baseline_compression_compare_path=baseline_compression_compare_path,
+                include_geco2_modes=include_geco2_modes,
             )
         )
     return generated_paths
@@ -702,7 +753,21 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--baseline-compression-json",
-        help="Optional compression_compare.json containing geco2_paper_modes baseline results to overlay.",
+        help="Optional compression_compare.json containing reusable GeCo2 baseline results to overlay.",
+    )
+    parser.add_argument(
+        "--geco2-baseline",
+        help=(
+            "Reusable GeCo2 baseline selector to overlay. Known aliases: "
+            + ", ".join(sorted(GECO2_BASELINE_ALIASES))
+            + ". A dna_geco2_* directory name, directory path, or JSON path also works. "
+            "--baseline-compression-json takes precedence."
+        ),
+    )
+    parser.add_argument(
+        "--include-geco2-modes",
+        action="store_true",
+        help="Also generate plots for geco2_paper_modes entries found in the input JSON.",
     )
     return parser
 
@@ -716,9 +781,12 @@ def main() -> None:
     generated_paths = generate_curves_for_root(
         root_dir,
         out_dir_name=args.out_dir_name,
-        baseline_compression_compare_path=Path(args.baseline_compression_json)
-        if args.baseline_compression_json
-        else None,
+        baseline_compression_compare_path=(
+            Path(args.baseline_compression_json)
+            if args.baseline_compression_json
+            else resolve_geco2_baseline_path(args.geco2_baseline)
+        ),
+        include_geco2_modes=args.include_geco2_modes,
     )
     if not generated_paths:
         print(f"[done] no compression_compare.json files found under {root_dir}")

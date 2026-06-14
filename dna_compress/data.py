@@ -19,6 +19,7 @@ class LoadedSplits:
     val_sources: list[bytes]
     test_sources: list[bytes]
     summary: dict[str, object]
+    full_sources: list[bytes] | None = None
 
 
 @dataclass
@@ -362,6 +363,74 @@ def load_splits(config: DataConfig, seq_length: int | None = None) -> LoadedSpli
             "species": species_summary,
             "alphabet_bytes": sorted(all_observed),
             "clean_cache": clean_cache_summary,
+        },
+    )
+
+
+def load_full_sources(config: DataConfig, seq_length: int | None = None) -> LoadedSplits:
+    _validate_data_config(config)
+    full_sources: list[bytes] = []
+    species_summary: list[dict[str, int | str]] = []
+    all_observed: set[int] = set()
+    clean_cache_summary = {
+        "enabled": config.clean_cache_enabled,
+        "cache_dir": None,
+        "applicable_sources": 0,
+        "hits": 0,
+        "created": 0,
+        "rebuilt": 0,
+        "disabled": 0,
+    }
+    if config.clean_cache_enabled:
+        clean_cache_summary["cache_dir"] = str(resolve_clean_cache_root(Path(config.dataset_dir), config.clean_cache_dir))
+    cache_summary_key_map = {
+        "hit": "hits",
+        "created": "created",
+        "rebuilt": "rebuilt",
+        "disabled": "disabled",
+    }
+
+    for species in config.species:
+        for record in _load_source_records_for_species(config, species, seq_length):
+            total_size = len(record.raw_bytes)
+            if total_size < 2:
+                raise ValueError(f"{record.source_name} does not have enough bytes for compression")
+            full_sources.append(record.raw_bytes)
+            all_observed.update(record.observed_bytes)
+            if record.source_mode != "flat_file":
+                record_applicable = sum(record.cache_counts.values()) if record.cache_counts else 1
+                clean_cache_summary["applicable_sources"] += record_applicable
+                for cache_status, count in record.cache_counts.items():
+                    summary_key = cache_summary_key_map.get(cache_status)
+                    if summary_key is not None:
+                        clean_cache_summary[summary_key] += count
+            species_summary.append(
+                {
+                    "species": record.species,
+                    "source_name": record.source_name,
+                    "source_mode": record.source_mode,
+                    "source_path": record.source_path,
+                    "sequence_keys": list(record.sequence_keys),
+                    "sequence_files": list(record.sequence_files),
+                    "selected_sequence_count": len(record.sequence_keys),
+                    "total_size": total_size,
+                    "full_start": 0,
+                    "full_bytes": total_size,
+                    "clean_cache_status": record.cache_status,
+                    "clean_cache_path": record.cache_path,
+                }
+            )
+
+    return LoadedSplits(
+        train_sources=[],
+        val_sources=[],
+        test_sources=[],
+        full_sources=full_sources,
+        summary={
+            "species": species_summary,
+            "alphabet_bytes": sorted(all_observed),
+            "clean_cache": clean_cache_summary,
+            "split_mode": "full",
         },
     )
 

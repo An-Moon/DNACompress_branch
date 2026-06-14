@@ -2,28 +2,6 @@ from __future__ import annotations
 
 """Compare Megabyte compression procedures on selected DNA splits.
 
-| Species | Train bytes | `train_samples_per_epoch` for 1x coverage |
-| --- | ---: | ---: |
-| OrSa | 38,936,271 | 38,024 |
-| HoSa | 170,777,400 | 166,775 |
-| DaRe | 56,308,518 | 54,989 |
-| ScPo | 9,586,940 | 9,363 |
-| EsCo | 4,177,487 | 4,080 |
-| YeMi | 66,320 | 65 |
-| BuEb | 17,046 | 17 |
-| AgPh | 39,573 | 39 |
-| Total (through AgPh) | 273,352,572 | 273,352 |
-| GaGa | 133,679,065 | 130,546 |
-| DrMe | 28,963,286 | 28,285 |
-| EnIn | 23,762,778 | 23,206 |
-| PlFa | 8,088,041 | 7,899 |
-| HePy | 1,501,042 | 1,466 |
-| AeCa | 1,431,944 | 1,399 |
-| HaHi | 3,501,004 | 3,419 |
-| AnCa | 127,970,708 | 124,972 |
-| WaMe | 8,229,989 | 8,038 |
-| Total (all local datasets) | 617,044,512 | 602,582 |
-
 Modes:
   - sliding_token: original per-token right-aligned sliding window evaluation
   - windows_nonoverlap: contiguous non-overlapping windows, matching training-style inputs
@@ -34,11 +12,11 @@ DNACorpus compression with the OpenGenome2-finetuned checkpoint, matching the
 existing GeCo2 paper-mode baseline source order, 0.6/0.2/0.2 split, and
 full-split sample setup:
 
-    python scripts/run_dna_compression.py \
-      --run-dir outputs/dna_megabyte_large_opengenome2_3 \
+    CUDA_VISIBLE_DEVICES=2 python scripts/run_dna_compression.py \
+      --run-dir outputs/dna_megabyte_large_opengenome2_2 \
       --checkpoint-tag best \
-      --output-json outputs/dna_megabyte_large_opengenome2_3/statistics_dnacorpus/compression_compare.json \
-      --export-out-dir outputs/dna_megabyte_large_opengenome2_3/statistics_dnacorpus \
+      --output-json outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus/compression_compare.json \
+      --export-out-dir outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus \
       --dataset-dir datasets/DNACorpus \
       --sequence-source-mode auto \
       --multi-sequence-mode separate \
@@ -51,34 +29,30 @@ full-split sample setup:
       --test-ratio 0.2 \
       --arithmetic-coding-mode model_symbol \
       --arithmetic-merge-size 3 \
-      --eval-batch-size 64 \
-      --device cuda:3 \
+      --eval-batch-size 128 \
+      --geco2-baseline dnacorpus_0p6_0p2_0p2 \
       --skip-codec-baselines
 
-    python scripts/plot_compression_curves.py \
-      --root-dir outputs/dna_megabyte_large_opengenome2_3/statistics_dnacorpus \
-      --baseline-compression-json outputs/dna_geco2_paper_modes_0p6_0p2_0p2_fullsplit/compression_compare.json
+No-split compression over each full source:
 
-    python scripts/run_dna_compression.py \
-      --run-dir outputs\\dna_megabyte_quick_l1024_p3 \
-      --dataset-dir datasets/ensembl_raw \
+    CUDA_VISIBLE_DEVICES=1 python scripts/run_dna_compression.py \
+      --run-dir outputs/dna_megabyte_large_opengenome2_2 \
+      --checkpoint-tag best \
+      --output-json outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus_full/compression_compare.json \
+      --export-out-dir outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus_full \
+      --dataset-dir datasets/DNACorpus \
       --sequence-source-mode auto \
       --multi-sequence-mode separate \
-      --split train val test \
-      --compression-modes windows_overlap \
-      --overlap-patches 128 \
-      --species homo_sapiens mus_musculus bos_taurus danio_rerio \
-                drosophila_melanogaster caenorhabditis_elegans \
-                saccharomyces_cerevisiae arabidopsis_thaliana \
-      --output-json outputs/dna_megabyte_quick_l1024_p3/statistics/compression_compare.json \
-      --export-out-dir outputs/dna_megabyte_quick_l1024_p3/statistics
+      --split full \
+      --compression-modes windows_nonoverlap \
+      --compression-sample-bytes 0 \
+      --species OrSa HoSa DaRe ScPo EsCo YeMi BuEb AgPh GaGa DrMe EnIn PlFa HePy AeCa HaHi AnCa WaMe \
+      --arithmetic-coding-mode model_symbol \
+      --arithmetic-merge-size 3 \
+      --eval-batch-size 128 \
+      --geco2-baseline dnacorpus_fullsplit \
+      --skip-codec-baselines
 
-Compatibility (explicit paths still supported):
-
-        python scripts/run_dna_compression.py \
-            --config outputs\\dna_megabyte_quick_l1024_p3\\resolved_config.json \
-            --checkpoint outputs\\dna_megabyte_quick_l1024_p3\\best.pt \
-            --split test
 """
  
 import argparse
@@ -112,11 +86,12 @@ from dna_compress.compression_eval import (
     summarize_per_source,
 )
 from dna_compress.config import ExperimentConfig
-from dna_compress.data import load_splits
+from dna_compress.data import load_full_sources, load_splits
 from dna_compress.fast_arithmetic import ARITHMETIC_BACKENDS
 from dna_compress.fixed_token_factorization import build_fixed_token_arithmetic_factorizer
 from dna_compress.megabyte_loader import build_model
 from dna_compress.tokenization import apply_token_merge_to_model_config, normalize_alphabet
+from scripts.plot_compression_curves import generate_artifacts_for_compression_compare, resolve_geco2_baseline_path
 
 
 def _parse_scalar(value: str) -> Any:
@@ -192,6 +167,7 @@ def _apply_overrides(config: ExperimentConfig, args: argparse.Namespace) -> None
 
     _apply_if_not_none(config, "model.implementation", args.implementation)
     _apply_if_not_none(config, "model.seq_length", args.seq_length)
+    _apply_if_not_none(config, "model.flash_attn", args.flash_attn)
     _apply_if_not_none(config, "model.input_causal_conv_kernel_size", args.input_causal_conv_kernel_size)
     _apply_if_not_none(config, "data.dataset_dir", args.dataset_dir)
     _apply_if_not_none(config, "data.sequence_source_mode", args.sequence_source_mode)
@@ -225,6 +201,8 @@ def _apply_overrides(config: ExperimentConfig, args: argparse.Namespace) -> None
 
 
 def _normalize_splits(raw_splits: list[str]) -> list[str]:
+    if "full" in raw_splits and len(raw_splits) > 1:
+        raise ValueError("--split full cannot be combined with train/val/test/all")
     if "all" in raw_splits:
         return ["train", "val", "test"]
     return raw_splits
@@ -256,6 +234,11 @@ def _load_model(config: ExperimentConfig, checkpoint_path: Path, device: torch.d
 
 
 def _sources_for_split(splits, split_name: str) -> list[bytes]:
+    if split_name == "full":
+        full_sources = getattr(splits, "full_sources", None)
+        if full_sources is None:
+            raise ValueError("Loaded data does not include full sources")
+        return full_sources
     if split_name == "train":
         return splits.train_sources
     if split_name == "val":
@@ -686,6 +669,15 @@ def _resolve_position_bits_out_dir(
     return base_dir / "position_bits_curves"
 
 
+def _resolve_geco2_baseline_for_plots(args: argparse.Namespace, requested_splits: list[str]) -> Path | None:
+    if args.baseline_compression_json:
+        return Path(args.baseline_compression_json)
+    selector = args.geco2_baseline
+    if selector == "auto":
+        selector = "dnacorpus_fullsplit" if requested_splits == ["full"] else "dnacorpus_0p6_0p2_0p2"
+    return resolve_geco2_baseline_path(selector)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run standalone DNA compression comparisons with a trained Megabyte checkpoint.",
@@ -701,8 +693,8 @@ def _build_parser() -> argparse.ArgumentParser:
         "--split",
         nargs="+",
         default=["test"],
-        choices=["train", "val", "test", "all"],
-        help="Which data splits to compress.",
+        choices=["train", "val", "test", "all", "full"],
+        help="Which data splits to compress. Use 'full' to compress each source without train/val/test splitting.",
     )
     parser.add_argument(
         "--compression-modes",
@@ -750,6 +742,32 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Optional output directory for position-bits CSV/PNG artifacts. Defaults to <export-out-dir>/position_bits_curves.",
     )
+    parser.add_argument(
+        "--baseline-compression-json",
+        default=None,
+        help=(
+            "Optional explicit reusable GeCo2 compression_compare.json to overlay in generated compression curves. "
+            "Takes precedence over --geco2-baseline."
+        ),
+    )
+    parser.add_argument(
+        "--geco2-baseline",
+        default="auto",
+        help=(
+            "Reusable GeCo2 baseline selector for plot overlays. Use auto, none, dnacorpus_0p6_0p2_0p2, "
+            "dnacorpus_fullsplit, a dna_geco2_* directory name, a directory path, or a JSON path."
+        ),
+    )
+    parser.add_argument(
+        "--compression-curves-out-dir-name",
+        default="compression_curves",
+        help="Artifact subdirectory name for generated compression curve CSV/PNG files.",
+    )
+    parser.add_argument(
+        "--no-plots",
+        action="store_true",
+        help="Disable automatic generation of compression curve CSV/PNG artifacts.",
+    )
     parser.add_argument("--export-project", default="", help="Optional project metadata for exported run_metadata.json.")
     parser.add_argument("--export-entity", default="", help="Optional entity metadata for exported run_metadata.json.")
     parser.add_argument("--export-name", default=None, help="Optional run name for exported run_metadata.json.")
@@ -761,6 +779,12 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["megabyte", "megabyte_in_action", "megabyte_in_action_causal_conv", "megabyte_relative"],
     )
     model_group.add_argument("--seq-length", type=int)
+    model_group.add_argument(
+        "--flash-attn",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Enable flash-attn package kernels for Megabyte-in-Action attention. Default follows the config.",
+    )
     model_group.add_argument("--input-causal-conv-kernel-size", type=int)
     model_group.add_argument("--dataset-dir")
     model_group.add_argument("--species", nargs="+")
@@ -798,6 +822,7 @@ def _build_parser() -> argparse.ArgumentParser:
     runtime_group.add_argument(
         "--arithmetic-backend",
         choices=list(ARITHMETIC_BACKENDS),
+        default="auto",
         help="Arithmetic encoder implementation backend.",
     )
 
@@ -831,13 +856,20 @@ def main() -> None:
             arithmetic_merge_size=config.arithmetic.merge_size,
             alphabet=normalize_alphabet(config.data.token_merge_alphabet),
         ).to(device)
-    print("[compress] loading data splits...", flush=True)
+    requested_splits = _normalize_splits(args.split)
+    loading_full_sources = requested_splits == ["full"]
+    print("[compress] loading full sources..." if loading_full_sources else "[compress] loading data splits...", flush=True)
     split_started = time.time()
-    splits = load_splits(config.data, seq_length=config.model.seq_length)
+    splits = (
+        load_full_sources(config.data, seq_length=config.model.seq_length)
+        if loading_full_sources
+        else load_splits(config.data, seq_length=config.model.seq_length)
+    )
     split_entries = splits.summary["species"]
     clean_cache_summary = splits.summary.get("clean_cache", {})
     print(
-        f"[compress] data splits loaded: sources={len(split_entries)} elapsed={time.time() - split_started:.1f}s",
+        f"[compress] {'full sources' if loading_full_sources else 'data splits'} loaded: "
+        f"sources={len(split_entries)} elapsed={time.time() - split_started:.1f}s",
         flush=True,
     )
     if isinstance(clean_cache_summary, dict) and int(clean_cache_summary.get("applicable_sources", 0)) > 0:
@@ -851,7 +883,6 @@ def main() -> None:
             f"disabled={int(clean_cache_summary.get('disabled', 0))}",
             flush=True,
         )
-    requested_splits = _normalize_splits(args.split)
     overlap_stride = _resolve_overlap_stride(config, args)
     output_json, export_out_dir = _resolve_output_paths(args, config)
     position_bits_out_dir = _resolve_position_bits_out_dir(
@@ -922,6 +953,18 @@ def main() -> None:
             export_entity=args.export_entity,
             export_name=args.export_name,
         )
+
+    if not args.no_plots:
+        baseline_path = _resolve_geco2_baseline_for_plots(args, requested_splits)
+        if baseline_path is not None and not baseline_path.exists():
+            print(f"[plots] skip baseline overlay: not found {baseline_path}", flush=True)
+            baseline_path = None
+        generated_paths = generate_artifacts_for_compression_compare(
+            output_json,
+            out_dir_name=args.compression_curves_out_dir_name,
+            baseline_compression_compare_path=baseline_path,
+        )
+        print(f"[plots] generated {len(generated_paths)} compression curve artifacts", flush=True)
 
 
 if __name__ == "__main__":

@@ -40,6 +40,7 @@ DEFAULT_IN_MEMORY_THRESHOLD = 128 * 1024 * 1024
 RUNTIME_CACHE_SCHEMA_VERSION = 2
 RUNTIME_CACHE_DIR_NAME = "runtime_cache_v2"
 EVAL_CACHE_SCHEMA_VERSION = 1
+EVAL_CACHE_SOURCE_SAMPLING_STRATEGY = "per_sample_probability"
 
 try:
     pa.set_cpu_count(max(1, int(os.environ.get("ARROW_NUM_THREADS", "1"))))
@@ -1343,9 +1344,12 @@ class IndexedMegabyteWindowDataset(Dataset):
         file_id = int(self.cache.run_file_ids[run_position])
         base_start = int(token_offset) * self.token_merge_size
         bases = self._read_bases(run_id=run_id, file_id=file_id, base_start=base_start, target_bases=target_bases)
-        item: dict[str, torch.Tensor] = {"input_ids": self._tokenize_bases(bases, pad_to_seq_length=pad_to_seq_length)}
+        source_id = int(self.source_ids[local_position])
+        item: dict[str, torch.Tensor] = {
+            "input_ids": self._tokenize_bases(bases, pad_to_seq_length=pad_to_seq_length),
+            "source_id": torch.tensor(source_id, dtype=torch.long),
+        }
         if self.source_loss_weights_config:
-            source_id = int(self.source_ids[local_position])
             item["loss_weight"] = torch.tensor(float(self.loss_weights_by_source_id[source_id]), dtype=torch.float32)
         return item
 
@@ -1431,7 +1435,8 @@ class CachedIndexedMegabyteEvalDataset(Dataset):
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         source_id = int(self.source_ids[index])
         item: dict[str, torch.Tensor] = {
-            "input_ids": torch.as_tensor(np.asarray(self.input_ids[index], dtype=np.int64).copy(), dtype=torch.long)
+            "input_ids": torch.as_tensor(np.asarray(self.input_ids[index], dtype=np.int64).copy(), dtype=torch.long),
+            "source_id": torch.tensor(source_id, dtype=torch.long),
         }
         if self.source_loss_weights_config:
             item["loss_weight"] = torch.tensor(float(self.loss_weights_by_source_id[source_id]), dtype=torch.float32)
@@ -1465,21 +1470,6 @@ class CachedIndexedMegabyteEvalDataset(Dataset):
         }
 
 
-def _allocate_counts_from_probabilities(
-    *,
-    names: list[str],
-    probabilities: np.ndarray,
-    samples: int,
-) -> dict[str, int]:
-    raw = probabilities.astype(np.float64, copy=False) * float(samples)
-    counts = np.floor(raw).astype(np.int64)
-    remainder = int(samples - counts.sum())
-    if remainder > 0:
-        order = np.argsort(-(raw - counts))
-        counts[order[:remainder]] += 1
-    return {name: int(count) for name, count in zip(names, counts.tolist()) if int(count) > 0}
-
-
 def _eval_cache_key_payload(
     *,
     index_dir: str | Path,
@@ -1509,6 +1499,7 @@ def _eval_cache_key_payload(
         "token_merge_alphabet": normalize_alphabet(token_merge_alphabet),
         "pad_id": int(pad_id),
         "source_weights": {str(k): float(v) for k, v in sorted(dict(source_weights or {}).items())},
+        "source_sampling_strategy": EVAL_CACHE_SOURCE_SAMPLING_STRATEGY,
         "train_ratio": float(train_ratio),
         "val_ratio": float(val_ratio),
         "test_ratio": float(test_ratio),
@@ -1643,6 +1634,7 @@ def _build_indexed_megabyte_eval_cache(
             if unknown:
                 raise ValueError(f"source weights include unknown sources: {', '.join(unknown)}")
             active_names: list[str] = []
+            active_ids: list[int] = []
             raw_probs: list[float] = []
             for source, raw_weight in sorted(source_weights.items()):
                 weight = float(raw_weight)
@@ -1654,6 +1646,7 @@ def _build_indexed_megabyte_eval_cache(
                 if available_by_source[source_id] <= 0:
                     raise ValueError(f"source {source!r} has no eligible eval windows for split={key_payload['split']!r}")
                 active_names.append(source)
+                active_ids.append(source_id)
                 raw_probs.append(weight)
             if not raw_probs or sum(raw_probs) <= 0:
                 raise ValueError("source sampling weights must sum to > 0")
@@ -1664,75 +1657,66 @@ def _build_indexed_megabyte_eval_cache(
             if active_ids.size == 0:
                 raise ValueError(f"no eligible eval windows for split={key_payload['split']!r}")
             active_names = [source_names[int(source_id)] for source_id in active_ids.tolist()]
+            active_ids = [int(source_id) for source_id in active_ids.tolist()]
             probabilities = available_by_source[active_ids].astype(np.float64, copy=False)
             probabilities /= probabilities.sum()
 
         samples = int(key_payload["samples"])
-        counts_by_source = _allocate_counts_from_probabilities(
-            names=active_names,
-            probabilities=probabilities,
-            samples=samples,
-        )
         rng = np.random.default_rng(int(key_payload["eval_seed"]))
         input_ids = np.empty((samples, int(key_payload["seq_length"])), dtype=np.int64)
         valid_tokens = np.empty((samples,), dtype=np.int32)
         source_ids = np.empty((samples,), dtype=np.int32)
         run_ids = np.empty((samples,), dtype=np.int64)
         run_window_indices = np.empty((samples,), dtype=np.int64)
-        sample_index = 0
-        repeat_count = 0
-        source_counts: dict[str, int] = {}
+        selected_source_indices = rng.choice(len(active_ids), size=samples, replace=True, p=probabilities)
+        source_counts = {source: 0 for source in active_names}
         source_total_windows: dict[str, int] = {}
-        for source in active_names:
-            count = counts_by_source.get(source, 0)
-            if count <= 0:
-                continue
-            source_id = source_to_id[source]
+        source_candidates: dict[int, tuple[np.ndarray, np.ndarray, int]] = {}
+        for source, source_id in zip(active_names, active_ids):
             local_positions = np.flatnonzero(reader.source_ids == source_id).astype(np.int64, copy=False)
             cumsum = np.cumsum(reader.available[local_positions], dtype=np.int64)
             total_windows = int(cumsum[-1])
             source_total_windows[source] = total_windows
-            replace = count > total_windows
-            if replace:
-                repeat_count += count - total_windows
-            tickets = rng.choice(total_windows, size=count, replace=replace)
-            for ticket in tickets.tolist():
-                offset = int(np.searchsorted(cumsum, int(ticket) + 1, side="left"))
-                previous = int(cumsum[offset - 1]) if offset > 0 else 0
-                local_position = int(local_positions[offset])
-                window_index = int(ticket) - previous
-                start_token = window_index * reader.seq_length
-                full_tokens = int(reader.run_full_tokens[local_position])
-                tokens_to_read = min(reader.seq_length, full_tokens - start_token)
-                if tokens_to_read <= 0:
-                    raise ValueError("internal error: selected empty indexed FASTA eval window")
-                run_position = int(reader.positions[local_position])
-                run_id = int(reader.cache.run_ids[run_position])
-                file_id = int(reader.cache.run_file_ids[run_position])
-                base_start = start_token * reader.token_merge_size
-                target_bases = tokens_to_read * reader.token_merge_size
-                bases = reader._read_bases(
-                    run_id=run_id,
-                    file_id=file_id,
-                    base_start=base_start,
-                    target_bases=target_bases,
-                    run_start_file_offset=int(reader.cache.run_start_file_offsets[run_position]),
-                )
-                input_ids[sample_index] = reader._tokenize_bases(bases, pad_to_seq_length=True).numpy()
-                valid_tokens[sample_index] = tokens_to_read
-                source_ids[sample_index] = source_id
-                run_ids[sample_index] = run_id
-                run_window_indices[sample_index] = window_index
-                sample_index += 1
-            source_counts[source] = count
-        if sample_index != samples:
-            raise ValueError(f"internal error: built {sample_index} eval samples, expected {samples}")
-        order = rng.permutation(samples)
-        input_ids = input_ids[order]
-        valid_tokens = valid_tokens[order]
-        source_ids = source_ids[order]
-        run_ids = run_ids[order]
-        run_window_indices = run_window_indices[order]
+            source_candidates[source_id] = (local_positions, cumsum, total_windows)
+        seen_windows: set[tuple[int, int, int]] = set()
+        repeat_count = 0
+        for sample_index, source_index in enumerate(selected_source_indices.tolist()):
+            source_id = int(active_ids[int(source_index)])
+            source_name = source_names[source_id]
+            local_positions, cumsum, total_windows = source_candidates[source_id]
+            ticket = int(rng.integers(total_windows))
+            offset = int(np.searchsorted(cumsum, ticket + 1, side="left"))
+            previous = int(cumsum[offset - 1]) if offset > 0 else 0
+            local_position = int(local_positions[offset])
+            window_index = ticket - previous
+            start_token = window_index * reader.seq_length
+            full_tokens = int(reader.run_full_tokens[local_position])
+            tokens_to_read = min(reader.seq_length, full_tokens - start_token)
+            if tokens_to_read <= 0:
+                raise ValueError("internal error: selected empty indexed FASTA eval window")
+            run_position = int(reader.positions[local_position])
+            run_id = int(reader.cache.run_ids[run_position])
+            file_id = int(reader.cache.run_file_ids[run_position])
+            window_key = (source_id, run_id, window_index)
+            if window_key in seen_windows:
+                repeat_count += 1
+            else:
+                seen_windows.add(window_key)
+            base_start = start_token * reader.token_merge_size
+            target_bases = tokens_to_read * reader.token_merge_size
+            bases = reader._read_bases(
+                run_id=run_id,
+                file_id=file_id,
+                base_start=base_start,
+                target_bases=target_bases,
+                run_start_file_offset=int(reader.cache.run_start_file_offsets[run_position]),
+            )
+            input_ids[sample_index] = reader._tokenize_bases(bases, pad_to_seq_length=True).numpy()
+            valid_tokens[sample_index] = tokens_to_read
+            source_ids[sample_index] = source_id
+            run_ids[sample_index] = run_id
+            run_window_indices[sample_index] = window_index
+            source_counts[source_name] += 1
 
         _save_npy_atomic(tmp_dir / "input_ids.npy", input_ids)
         _save_npy_atomic(tmp_dir / "valid_tokens.npy", valid_tokens)
@@ -1747,6 +1731,7 @@ def _build_indexed_megabyte_eval_cache(
             "sample_counts_by_source": source_counts,
             "eligible_windows_by_source": source_total_windows,
             "repeat_count": int(repeat_count),
+            "source_sampling_strategy": EVAL_CACHE_SOURCE_SAMPLING_STRATEGY,
             "cache_layout": "token_windows_v1",
         }
         _write_json_atomic(tmp_dir / "metadata.json", metadata)
@@ -2126,7 +2111,10 @@ class IndexedMegabyteFileStreamDataset(IterableDataset):
                 item_tokens = padded
             else:
                 item_tokens = item_tokens.clone()
-            item: dict[str, torch.Tensor] = {"input_ids": item_tokens}
+            item: dict[str, torch.Tensor] = {
+                "input_ids": item_tokens,
+                "source_id": torch.tensor(source_id, dtype=torch.long),
+            }
             if self.source_loss_weights_config:
                 item["loss_weight"] = torch.tensor(float(self.loss_weights_by_source_id[source_id]), dtype=torch.float32)
             yield item
@@ -3119,7 +3107,10 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
                 continue
             if not items:
                 continue
-            batch: dict[str, torch.Tensor] = {"input_ids": torch.stack([item["input_ids"] for item in items], dim=0)}
+            batch: dict[str, torch.Tensor] = {
+                "input_ids": torch.stack([item["input_ids"] for item in items], dim=0),
+                "source_id": torch.stack([item["source_id"] for item in items], dim=0),
+            }
             if self.source_loss_weights_config:
                 batch["loss_weight"] = torch.stack([item["loss_weight"] for item in items], dim=0)
             batch["_batch_index"] = torch.tensor(int(batch_index), dtype=torch.long)
@@ -3157,7 +3148,10 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
                 item_tokens = padded
             else:
                 item_tokens = item_tokens.clone()
-            item: dict[str, torch.Tensor] = {"input_ids": item_tokens}
+            item: dict[str, torch.Tensor] = {
+                "input_ids": item_tokens,
+                "source_id": torch.tensor(source_id, dtype=torch.long),
+            }
             if self.source_loss_weights_config:
                 item["loss_weight"] = torch.tensor(float(self.loss_weights_by_source_id[source_id]), dtype=torch.float32)
             items.append(item)

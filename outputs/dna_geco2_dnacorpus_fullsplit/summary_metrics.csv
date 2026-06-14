@@ -1,0 +1,17 @@
+metric,value
+geco2_baseline.baseline_only,True
+geco2_baseline.binary,/home/Liang_junnan/miniconda3/bin/GeCo2
+geco2_baseline.compression_sample_bytes,0
+geco2_baseline.fallback_level,5
+geco2_baseline.include_codec_baselines,False
+geco2_baseline.level,paper_modes
+geco2_baseline.mode,geco2_paper_modes
+geco2_baseline.splits,"[""full""]"
+compression_compare.full.geco2_paper_modes.total_theoretical_bits_per_base,1.685460325822487
+compression_compare.full.geco2_paper_modes.total_arithmetic_bits_per_base,1.685460325822487
+compression_compare.full.geco2_paper_modes.total_sample_bases,685597124
+compression_compare.full.geco2_paper_modes.total_arithmetic_coded_bytes,144443344
+compression_compare.full.geco2_paper_modes.total_compression_process_seconds,605.9654550433625
+compression_compare.full.geco2_paper_modes.total_compression_bytes_per_second,1131412.8854935125
+compression_compare.full.geco2_paper_modes.total_compression_bases_per_second,1131412.8854935125
+compression_compare.full.geco2_paper_modes.total_compression_symbols_per_second,1131412.8854935125

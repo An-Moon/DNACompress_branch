@@ -1161,7 +1161,10 @@ class RepackedMegabyteWindowDataset(IterableDataset):
     def _item_for(self, *, shard_pos: int, window_index: int) -> dict[str, torch.Tensor]:
         source_id = int(self._source_ids_for_shard(shard_pos)[window_index])
         token_row = np.asarray(self._tokens_for_shard(shard_pos)[window_index], dtype=np.uint8)
-        item: dict[str, torch.Tensor] = {"input_ids": torch.as_tensor(token_row.astype(np.int64, copy=True))}
+        item: dict[str, torch.Tensor] = {
+            "input_ids": torch.as_tensor(token_row.astype(np.int64, copy=True)),
+            "source_id": torch.tensor(source_id, dtype=torch.long),
+        }
         if self.source_loss_weights_config:
             item["loss_weight"] = torch.tensor(float(self.loss_weights_by_source_id[source_id]), dtype=torch.float32)
         return item

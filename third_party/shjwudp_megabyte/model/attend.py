@@ -1,8 +1,6 @@
 # MIT License
 # Copyright (c) 2023 Phil Wang
 
-from collections import namedtuple
-from functools import wraps
 from packaging import version
 
 import torch
@@ -11,27 +9,15 @@ import torch.nn.functional as F
 
 from einops import rearrange
 
-# constants
-
-EfficientAttentionConfig = namedtuple('EfficientAttentionConfig', ['enable_flash', 'enable_math', 'enable_mem_efficient'])
+try:
+    from flash_attn import flash_attn_func as _flash_attn_func
+except Exception:
+    _flash_attn_func = None
 
 # helpers
 
 def exists(val):
     return val is not None
-
-def once(fn):
-    called = False
-    @wraps(fn)
-    def inner(x):
-        nonlocal called
-        if called:
-            return
-        called = True
-        return fn(x)
-    return inner
-
-print_once = once(print)
 
 # main class
 
@@ -50,28 +36,49 @@ class Attend(nn.Module):
         self.flash = flash
         assert not (flash and version.parse(torch.__version__) < version.parse('2.0.0')), 'in order to use flash attention, you must be using pytorch 2.0 or above'
 
-        # determine efficient attention configs for cuda and cpu
-
-        self.cpu_config = EfficientAttentionConfig(True, True, True)
-        self.cuda_config = None
-
-        if not torch.cuda.is_available() or not flash:
-            return
-
-        device_properties = torch.cuda.get_device_properties(torch.device('cuda'))
-
-        if device_properties.major == 8 and device_properties.minor == 0:
-            print_once('A100 GPU detected, using flash attention if input tensor is on cuda')
-            self.cuda_config = EfficientAttentionConfig(True, False, False)
-        else:
-            print_once('Non-A100 GPU detected, using math or mem efficient attention if input tensor is on cuda')
-            self.cuda_config = EfficientAttentionConfig(False, True, True)
-
     def get_mask(self, i, j, device):
         return torch.ones((i, j), device=device, dtype=torch.bool).triu(j - i + 1)
 
-    def flash_attn(self, q, k, v, mask = None, attn_bias = None):
+    def _alibi_bias_from_slopes(self, alibi_slopes, q_len, k_len, device, dtype):
+        positions = torch.arange(k_len, device=device, dtype=dtype)
+        slopes = alibi_slopes.to(device=device, dtype=dtype)
+        return positions.view(1, 1, k_len) * slopes.view(-1, 1, 1)
+
+    def package_flash_attn(self, q, k, v, alibi_slopes = None):
+        if _flash_attn_func is None or not q.is_cuda:
+            return None
+
+        q = rearrange(q, 'b h n d -> b n h d')
+        if k.ndim == 3:
+            k = rearrange(k, 'b n d -> b n 1 d')
+        else:
+            k = rearrange(k, 'b h n d -> b n h d')
+        if v.ndim == 3:
+            v = rearrange(v, 'b n d -> b n 1 d')
+        else:
+            v = rearrange(v, 'b h n d -> b n h d')
+
+        slopes = None
+        if exists(alibi_slopes):
+            slopes = alibi_slopes.to(device=q.device, dtype=torch.float32)
+
+        out = _flash_attn_func(
+            q,
+            k,
+            v,
+            dropout_p = self.dropout if self.training else 0.,
+            causal = self.causal,
+            alibi_slopes = slopes,
+        )
+        return rearrange(out, 'b n h d -> b h n d')
+
+    def flash_attn(self, q, k, v, mask = None, attn_bias = None, alibi_slopes = None):
         _, heads, q_len, _, k_len, is_cuda, device = *q.shape, k.shape[-2], q.is_cuda, q.device
+
+        if is_cuda and not exists(attn_bias) and not exists(mask):
+            out = self.package_flash_attn(q, k, v, alibi_slopes=alibi_slopes)
+            if exists(out):
+                return out
 
         # single headed key / values
 
@@ -81,16 +88,21 @@ class Attend(nn.Module):
         if v.ndim == 3:
             v = rearrange(v, 'b n d -> b 1 n d')
 
+        if k.shape[1] == 1 and heads > 1:
+            k = k.expand(-1, heads, -1, -1)
+
+        if v.shape[1] == 1 and heads > 1:
+            v = v.expand(-1, heads, -1, -1)
+
+        if exists(alibi_slopes) and not exists(attn_bias):
+            attn_bias = self._alibi_bias_from_slopes(alibi_slopes, q_len, k_len, device, q.dtype)
+
         # Check if mask exists and expand to compatible shape
         # The mask is B L, so it would have to be expanded to B H N L
 
         if exists(mask) and mask.ndim != 4:
             mask = rearrange(mask, 'b j -> b 1 1 j')
             mask = mask.expand(-1, heads, q_len, -1)
-
-        # Check if there is a compatible device for flash attention
-
-        config = self.cuda_config if is_cuda else self.cpu_config
 
         causal = self.causal
 
@@ -108,18 +120,16 @@ class Attend(nn.Module):
             causal = False
 
         # pytorch 2.0 flash attn: q, k, v, mask, dropout, causal, softmax_scale
-
-        with torch.backends.cuda.sdp_kernel(**config._asdict()):
-            out = F.scaled_dot_product_attention(
-                q, k, v,
-                attn_mask = mask,
-                dropout_p = self.dropout if self.training else 0., 
-                is_causal = causal
-            )
+        out = F.scaled_dot_product_attention(
+            q, k, v,
+            attn_mask = mask,
+            dropout_p = self.dropout if self.training else 0.,
+            is_causal = causal
+        )
 
         return out
 
-    def forward(self, q, k, v, mask = None, attn_bias = None):
+    def forward(self, q, k, v, mask = None, attn_bias = None, alibi_slopes = None):
         """
         einstein notation
         b - batch
@@ -135,7 +145,7 @@ class Attend(nn.Module):
         kv_einsum_eq = 'b j d' if k.ndim == 3 else 'b h j d'
 
         if self.flash:
-            return self.flash_attn(q, k, v, mask = mask, attn_bias = attn_bias)
+            return self.flash_attn(q, k, v, mask = mask, attn_bias = attn_bias, alibi_slopes = alibi_slopes)
 
         # similarity
 
@@ -145,6 +155,8 @@ class Attend(nn.Module):
 
         if exists(attn_bias):
             sim = sim + attn_bias
+        elif exists(alibi_slopes):
+            sim = sim + self._alibi_bias_from_slopes(alibi_slopes, q_len, k_len, device, sim.dtype)
 
         # causal mask
 

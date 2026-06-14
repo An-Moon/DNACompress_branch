@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from scripts.run_geco2_baseline import (
+from DNACompress.scripts.run_geco2_dnacorpus_baseline import (
     DEFAULT_MODE_NAME,
     build_geco2_command,
     resolve_geco2_level,

@@ -1,0 +1,2106 @@
+species,source_name,mode,geco2_level,geco2_binary,geco2_command,geco2_returncode,geco2_stdout_tail,geco2_stderr_tail,sample_bytes,sample_bases,sample_symbols_with_eos,uses_eos,theoretical_bits,theoretical_bits_per_base,arithmetic_coded_bytes,arithmetic_bits_per_base,arithmetic_coding_mode,arithmetic_merge_size,emitted_arithmetic_symbol_count,compression_process_seconds,compression_bytes_per_second,compression_bases_per_second,compression_symbols_per_second,ascii_bytes,two_bit_pack_bytes,gzip_bytes,bz2_bytes,lzma_bytes,split
+OrSa,OrSa,geco2_paper_modes,10,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""10"", ""/tmp/geco2_baseline_wuagq0sf/full_1_OrSa.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:43262523] ...
+Done!                          
+Total bytes: 8646543 (8.2 MB), 1.599 bpb, 1.599 bps w/ no header, Normalized Dissimilarity Rate: 0.799449
+Spent 43.6506 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 9
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 5:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 6:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 7:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 8
+  [+] Gamma ........................ 0.890
+  [+] Allowable substitutions ...... 5
+  [+] Substitutions alpha den ...... 10
+  [+] Substitutions gamma .......... 0.900
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_wuagq0sf/full_1_OrSa.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",43262523,43262523,43262523,False,69172344.0,1.5988975955008449,8646543,1.5988975955008449,geco2_paper_modes,1,43262523,43.79734348598868,987788.7459964376,987788.7459964376,987788.7459964376,43262523,10815631,,,,full
+HoSa,HoSa,geco2_paper_modes,12,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""12"", ""/tmp/geco2_baseline_dwe0q6jm/full_2_HoSa.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:189752667] ...
+Done!                          
+Total bytes: 38845642 (37.0 MB), 1.638 bpb, 1.638 bps w/ no header, Normalized Dissimilarity Rate: 0.818869
+Spent 213.915 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.850
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 9
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 5:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 6:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 7:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 20
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 3
+  [+] Substitutions alpha den ...... 10
+  [+] Substitutions gamma .......... 0.900
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_dwe0q6jm/full_2_HoSa.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",189752667,189752667,189752667,False,310765136.0,1.6377379085796986,38845642,1.6377379085796986,geco2_paper_modes,1,189752667,214.27914881007746,885539.5779464474,885539.5779464474,885539.5779464474,189752667,47438167,,,,full
+DaRe,DaRe,geco2_paper_modes,10,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""10"", ""/tmp/geco2_baseline_27g3v9ab/full_3_DaRe.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:62565020] ...
+Done!                          
+Total bytes: 11488819 (11.0 MB), 1.469 bpb, 1.469 bps w/ no header, Normalized Dissimilarity Rate: 0.73452
+Spent 60.1852 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 9
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 5:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 6:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 7:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 8
+  [+] Gamma ........................ 0.890
+  [+] Allowable substitutions ...... 5
+  [+] Substitutions alpha den ...... 10
+  [+] Substitutions gamma .......... 0.900
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_27g3v9ab/full_3_DaRe.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",62565020,62565020,62565020,False,91910552.0,1.469040559724907,11488819,1.469040559724907,geco2_paper_modes,1,62565020,60.37503223796375,1036273.0698578275,1036273.0698578275,1036273.0698578275,62565020,15641255,,,,full
+ScPo,ScPo,geco2_paper_modes,8,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""8"", ""/tmp/geco2_baseline_8mnikbz2/full_4_ScPo.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:10652155] ...
+Done!                          
+Total bytes: 2518963 (2.4 MB), 1.892 bpb, 1.892 bps w/ no header, Normalized Dissimilarity Rate: 0.945898
+Spent 11.6265 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.800
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 1
+  [+] Substitutions alpha den ...... 20
+  [+] Substitutions gamma .......... 0.940
+Target model 4:
+  [+] Context order ................ 16
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 5
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 3
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_8mnikbz2/full_4_ScPo.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",10652155,10652155,10652155,False,20151704.0,1.8917959793112287,2518963,1.8917959793112287,geco2_paper_modes,1,10652155,11.74606036185287,906870.4460769251,906870.4460769251,906870.4460769251,10652155,2663039,,,,full
+EsCo,EsCo,geco2_paper_modes,6,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""6"", ""/tmp/geco2_baseline_ig28e953/full_5_EsCo.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:4641652] ...
+Done!                          
+Total bytes: 1098552 (1.0 MB), 1.893 bpb, 1.893 bps w/ no header, Normalized Dissimilarity Rate: 0.946691
+Spent 2.23533 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.880
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.760
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_ig28e953/full_5_EsCo.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",4641652,4641652,4641652,False,8788416.0,1.893381063466197,1098552,1.893381063466197,geco2_paper_modes,1,4641652,2.237232725135982,2074729.1722714605,2074729.1722714605,2074729.1722714605,4641652,1160413,,,,full
+YeMi,YeMi,geco2_paper_modes,3,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""3"", ""/tmp/geco2_baseline_g_khif8g/full_6_YeMi.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:73689] ...
+Done!                          
+Total bytes: 16798 (16.4 KB), 1.824 bpb, 1.818 bps w/ no header, Normalized Dissimilarity Rate: 0.911832
+Spent 0.122846 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.800
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.840
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 12
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.940
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_g_khif8g/full_6_YeMi.seq
+",73689,73689,73689,False,134384.0,1.8236643189621247,16798,1.8236643189621247,geco2_paper_modes,1,73689,0.12470839801244438,590890.4386106117,590890.4386106117,590890.4386106117,73689,18423,,,,full
+BuEb,BuEb,geco2_paper_modes,1,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""1"", ""/tmp/geco2_baseline_q9imoou3/full_7_BuEb.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:18940] ...
+Done!                          
+Total bytes: 4686 (4.6 KB), 1.979 bpb, 1.963 bps w/ no header, Normalized Dissimilarity Rate: 0.989652
+Spent 0.076292 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.700
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 12
+  [+] Alpha denominator ............ 20
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.970
+  [+] Allowable substitutions ...... 0
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_q9imoou3/full_7_BuEb.seq
+",18940,18940,18940,False,37488.0,1.9793030623020063,4686,1.9793030623020063,geco2_paper_modes,1,18940,0.0778370089828968,243328.9799735458,243328.9799735458,243328.9799735458,18940,4735,,,,full
+AgPh,AgPh,geco2_paper_modes,2,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""2"", ""/tmp/geco2_baseline_ecv8e7cn/full_8_AgPh.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:43970] ...
+Done!                          
+Total bytes: 10708 (10.5 KB), 1.948 bpb, 1.939 bps w/ no header, Normalized Dissimilarity Rate: 0.974119
+Spent 0.048971 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 2
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.780
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.780
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 80
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.960
+  [+] Allowable substitutions ...... 0
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_ecv8e7cn/full_8_AgPh.seq
+",43970,43970,43970,False,85664.0,1.94823743461451,10708,1.94823743461451,geco2_paper_modes,1,43970,0.05085424613207579,864627.8992279934,864627.8992279934,864627.8992279934,43970,10993,,,,full
+GaGa,GaGa,geco2_paper_modes,11,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""11"", ""/tmp/geco2_baseline_p79uvclb/full_9_GaGa.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:148532294] ...
+Done!                          
+Total bytes: 33877671 (32.3 MB), 1.825 bpb, 1.825 bps w/ no header, Normalized Dissimilarity Rate: 0.912331
+Spent 141.796 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.910
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 1
+  [+] Substitutions alpha den ...... 20
+  [+] Substitutions gamma .......... 0.940
+Target model 4:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 15
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 3
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_p79uvclb/full_9_GaGa.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",148532294,148532294,148532294,False,271021368.0,1.8246629113531365,33877671,1.8246629113531365,geco2_paper_modes,1,148532294,142.08830858790316,1045351.9749523252,1045351.9749523252,1045351.9749523252,148532294,37133074,,,,full
+DrMe,DrMe,geco2_paper_modes,10,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""10"", ""/tmp/geco2_baseline_i878comt/full_10_DrMe.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:32181429] ...
+Done!                          
+Total bytes: 7481093 (7.1 MB), 1.86 bpb, 1.86 bps w/ no header, Normalized Dissimilarity Rate: 0.929865
+Spent 32.3871 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 1
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 3
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 9
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 5:
+  [+] Context order ................ 11
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 6:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 7:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 8
+  [+] Gamma ........................ 0.890
+  [+] Allowable substitutions ...... 5
+  [+] Substitutions alpha den ...... 10
+  [+] Substitutions gamma .......... 0.900
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_i878comt/full_10_DrMe.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",32181429,32181429,32181429,False,59848744.0,1.8597292245785606,7481093,1.8597292245785606,geco2_paper_modes,1,32181429,32.58931661909446,987484.008214659,987484.008214659,987484.008214659,32181429,8045358,,,,full
+EnIn,EnIn,geco2_paper_modes,9,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""9"", ""/tmp/geco2_baseline_atc1trun/full_11_EnIn.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:26403087] ...
+Done!                          
+Total bytes: 5170889 (4.9 MB), 1.567 bpb, 1.567 bps w/ no header, Normalized Dissimilarity Rate: 0.783376
+Spent 25.8013 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.910
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 1
+  [+] Substitutions alpha den ...... 20
+  [+] Substitutions gamma .......... 0.940
+Target model 4:
+  [+] Context order ................ 17
+  [+] Alpha denominator ............ 100
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 8
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 3
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_atc1trun/full_11_EnIn.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",26403087,26403087,26403087,False,41367112.0,1.5667528573458096,5170889,1.5667528573458096,geco2_paper_modes,1,26403087,26.401262406026945,1000069.110103335,1000069.110103335,1000069.110103335,26403087,6600772,,,,full
+PlFa,PlFa,geco2_paper_modes,7,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""7"", ""/tmp/geco2_baseline_914xfuau/full_12_PlFa.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:8986712] ...
+Done!                          
+Total bytes: 1925726 (1.8 MB), 1.714 bpb, 1.714 bps w/ no header, Normalized Dissimilarity Rate: 0.857144
+Spent 10.2583 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.900
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.790
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 8
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.910
+  [+] Allowable substitutions ...... 0
+Target model 4:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 10
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.940
+  [+] Allowable substitutions ...... 1
+  [+] Substitutions alpha den ...... 20
+  [+] Substitutions gamma .......... 0.940
+Target model 5:
+  [+] Context order ................ 16
+  [+] Alpha denominator ............ 200
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 5
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 4
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_914xfuau/full_12_PlFa.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",8986712,8986712,8986712,False,15405808.0,1.7142874946921633,1925726,1.7142874946921633,geco2_paper_modes,1,8986712,10.374887047102675,866198.5387599625,866198.5387599625,866198.5387599625,8986712,2246678,,,,full
+HePy,HePy,geco2_paper_modes,4,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""4"", ""/tmp/geco2_baseline_hcxoj6li/full_13_HePy.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:1667825] ...
+Done!                          
+Total bytes: 375481 (366.7 KB), 1.801 bpb, 1.801 bps w/ no header, Normalized Dissimilarity Rate: 0.900529
+Spent 1.09126 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.800
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.840
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.940
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_hcxoj6li/full_13_HePy.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",1667825,1667825,1667825,False,3003848.0,1.801057065339589,375481,1.801057065339589,geco2_paper_modes,1,1667825,1.0932761458680034,1525529.4888702023,1525529.4888702023,1525529.4888702023,1667825,416957,,,,full
+AeCa,AeCa,geco2_paper_modes,5,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""5"", ""/tmp/geco2_baseline_69gl7mme/full_14_AeCa.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:1591049] ...
+Done!                          
+Total bytes: 380115 (371.2 KB), 1.911 bpb, 1.911 bps w/ no header, Normalized Dissimilarity Rate: 0.955634
+Spent 1.11912 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.720
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_69gl7mme/full_14_AeCa.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",1591049,1591049,1591049,False,3040920.0,1.9112673462602345,380115,1.9112673462602345,geco2_paper_modes,1,1591049,1.1209722091443837,1419347.4084557518,1419347.4084557518,1419347.4084557518,1591049,397763,,,,full
+HaHi,HaHi,geco2_paper_modes,5,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""5"", ""/tmp/geco2_baseline_ynewteuc/full_15_HaHi.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:3890005] ...
+Done!                          
+Total bytes: 902831 (881.7 KB), 1.857 bpb, 1.857 bps w/ no header, Normalized Dissimilarity Rate: 0.92836
+Spent 1.9289 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.720
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_ynewteuc/full_15_HaHi.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",3890005,3890005,3890005,False,7222648.0,1.8567194643708684,902831,1.8567194643708684,geco2_paper_modes,1,3890005,1.930863156914711,2014645.6190172296,2014645.6190172296,2014645.6190172296,3890005,972502,,,,full
+AnCa,AnCa,geco2_paper_modes,5,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""5"", ""/tmp/geco2_baseline_6s5euzl1/full_16_AnCa.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:142189675] ...
+Done!                          
+Total bytes: 29481172 (28.1 MB), 1.659 bpb, 1.659 bps w/ no header, Normalized Dissimilarity Rate: 0.829348
+Spent 53.5654 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.720
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_6s5euzl1/full_16_AnCa.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",142189675,142189675,142189675,False,235849376.0,1.6586955135807153,29481172,1.6586955135807153,geco2_paper_modes,1,142189675,53.57196963112801,2654180.460025137,2654180.460025137,2654180.460025137,142189675,35547419,,,,full
+WaMe,WaMe,geco2_paper_modes,5,/home/Liang_junnan/miniconda3/bin/GeCo2,"[""/home/Liang_junnan/miniconda3/bin/GeCo2"", ""-F"", ""-v"", ""-l"", ""5"", ""/tmp/geco2_baseline_bj_88aib/full_17_WaMe.seq""]",0,"Analyzing data and creating models ...
+Done!
+Compressing target sequence 1 [bases:9144432] ...
+Done!                          
+Total bytes: 2217655 (2.1 MB), 1.94 bpb, 1.94 bps w/ no header, Normalized Dissimilarity Rate: 0.970057
+Spent 4.10429 sec.
+","Force mode ......................... yes
+Target model 1:
+  [+] Context order ................ 4
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. no (only regular)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.820
+  [+] Allowable substitutions ...... 0
+Target model 2:
+  [+] Context order ................ 6
+  [+] Alpha denominator ............ 1
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 0
+  [+] Gamma ........................ 0.720
+  [+] Allowable substitutions ...... 0
+Target model 3:
+  [+] Context order ................ 13
+  [+] Alpha denominator ............ 50
+  [+] Inverted repeats ............. mix (regular and inverted)
+  [+] Cache-hash size .............. 1
+  [+] Gamma ........................ 0.950
+  [+] Allowable substitutions ...... 2
+  [+] Substitutions alpha den ...... 15
+  [+] Substitutions gamma .......... 0.950
+Target files (1):
+  [+] Filename 1  .................. /tmp/geco2_baseline_bj_88aib/full_17_WaMe.seq
+Progress:  1 %
+Progress:  2 %
+Progress:  3 %
+Progress:  4 %
+Progress:  5 %
+Progress:  6 %
+Progress:  7 %
+Progress:  8 %
+Progress:  9 %
+Progress: 10 %
+Progress: 11 %
+Progress: 12 %
+Progress: 13 %
+Progress: 14 %
+Progress: 15 %
+Progress: 16 %
+Progress: 17 %
+Progress: 18 %
+Progress: 19 %
+Progress: 20 %
+Progress: 21 %
+Progress: 22 %
+Progress: 23 %
+Progress: 24 %
+Progress: 25 %
+Progress: 26 %
+Progress: 27 %
+Progress: 28 %
+Progress: 29 %
+Progress: 30 %
+Progress: 31 %
+Progress: 32 %
+Progress: 33 %
+Progress: 34 %
+Progress: 35 %
+Progress: 36 %
+Progress: 37 %
+Progress: 38 %
+Progress: 39 %
+Progress: 40 %
+Progress: 41 %
+Progress: 42 %
+Progress: 43 %
+Progress: 44 %
+Progress: 45 %
+Progress: 46 %
+Progress: 47 %
+Progress: 48 %
+Progress: 49 %
+Progress: 50 %
+Progress: 51 %
+Progress: 52 %
+Progress: 53 %
+Progress: 54 %
+Progress: 55 %
+Progress: 56 %
+Progress: 57 %
+Progress: 58 %
+Progress: 59 %
+Progress: 60 %
+Progress: 61 %
+Progress: 62 %
+Progress: 63 %
+Progress: 64 %
+Progress: 65 %
+Progress: 66 %
+Progress: 67 %
+Progress: 68 %
+Progress: 69 %
+Progress: 70 %
+Progress: 71 %
+Progress: 72 %
+Progress: 73 %
+Progress: 74 %
+Progress: 75 %
+Progress: 76 %
+Progress: 77 %
+Progress: 78 %
+Progress: 79 %
+Progress: 80 %
+Progress: 81 %
+Progress: 82 %
+Progress: 83 %
+Progress: 84 %
+Progress: 85 %
+Progress: 86 %
+Progress: 87 %
+Progress: 88 %
+Progress: 89 %
+Progress: 90 %
+Progress: 91 %
+Progress: 92 %
+Progress: 93 %
+Progress: 94 %
+Progress: 95 %
+Progress: 96 %
+Progress: 97 %
+Progress: 98 %
+Progress: 99 %
+Progress:100 %
+",9144432,9144432,9144432,False,17741240.0,1.9401139403737706,2217655,1.9401139403737706,geco2_paper_modes,1,9144432,4.1063819660339504,2226882.953324463,2226882.953324463,2226882.953324463,9144432,2286108,,,,full

@@ -31,8 +31,9 @@ MegabyteConfig = namedtuple(
         "attn_dropout", "ff_dropout",
         "initializer_range",
         "pad_id", "eos_id",
+        "flash_attn",
     ],
-    defaults=(0.0, 0.0)
+    defaults=(False,)
 )
 
 
@@ -62,14 +63,14 @@ class Attention(nn.Module):
         self.to_kv = nn.Linear(dim, dim_head * 2, bias = False)
         self.to_out = nn.Linear(inner_dim, dim, bias = False)
 
-    def forward(self, x, attn_bias = None):
+    def forward(self, x, attn_bias = None, alibi_slopes = None):
         h, device = self.heads, x.device
 
         x = self.norm(x)
         q, k, v = (self.to_q(x), *self.to_kv(x).chunk(2, dim = -1))
         q = rearrange(q, 'b n (h d) -> b h n d', h = h)
 
-        out = self.attend(q, k, v, attn_bias = attn_bias)
+        out = self.attend(q, k, v, attn_bias = attn_bias, alibi_slopes = alibi_slopes)
 
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out)
@@ -101,6 +102,8 @@ class Transformer(nn.Module):
         super().__init__()
         self.layers = nn.ModuleList([])
         self.nheads = heads
+        slopes = torch.tensor([2**((-8/heads)*i) for i in range(1, heads+1)], dtype=torch.float32)
+        self.register_buffer("alibi_slopes", slopes, persistent=False)
 
         for _ in range(layers):
             self.layers.append(nn.ModuleList([
@@ -110,18 +113,14 @@ class Transformer(nn.Module):
 
 
     def alibi_bias(self, T):
-        n = self.nheads
-        m = torch.tensor([2**((-8/n)*i) for i in range(1, n+1)])
-
         bias = torch.arange(T)
 
-        return bias.view(1, 1, T) * m.view(n, 1, 1)
+        return bias.view(1, 1, T) * self.alibi_slopes.view(self.nheads, 1, 1)
 
     def forward(self, x):
-        _, T, _ = x.shape
-        attn_bias = self.alibi_bias(T).to(x.dtype).to(x.device)
+        alibi_slopes = self.alibi_slopes.to(device=x.device, dtype=torch.float32)
         for attn, ff in self.layers:
-            x = attn(x, attn_bias=attn_bias) + x
+            x = attn(x, alibi_slopes=alibi_slopes) + x
             x = ff(x) + x
 
         return x
@@ -175,7 +174,7 @@ class Megabyte(nn.Module):
             heads=config.g_nheads,
             attn_dropout=config.attn_dropout,
             ff_dropout=config.ff_dropout,
-            flash_attn=True,
+            flash_attn=config.flash_attn,
         )
         self.gl_linear = nn.Sequential(
             Rearrange("... (P D_G) -> ... P D_G", P=P, D_G=D_G),
@@ -191,7 +190,7 @@ class Megabyte(nn.Module):
             heads=config.l_nheads,
             attn_dropout=config.attn_dropout,
             ff_dropout=config.ff_dropout,
-            flash_attn=True,
+            flash_attn=config.flash_attn,
         )
         
         self.to_logits = nn.Linear(D_L, V)
