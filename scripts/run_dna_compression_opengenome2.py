@@ -9,8 +9,9 @@ Example:
     python scripts/run_dna_compression_opengenome2.py \
       --run-dir outputs/dna_megabyte_large_opengenome2_4 \
       --input-dir /data/students/Liang_junnan/opengenome2_subset/fasta_test_subset_100mb_per_source \
-      --device cuda:0 \
-      --eval-batch-size 128 \
+      --device cuda:1 \
+      --window-codec-out-dir outputs/dna_megabyte_large_opengenome2_4/statistics_opengenome2_fasta_100mb/window_codec \
+      --window-codec-batch-size 8192 \
       --geco2-baseline opengenome2_100mb
 """
 
@@ -39,14 +40,25 @@ if str(REPO_ROOT) not in sys.path:
 from dna_compress import load_experiment_config
 from dna_compress.compression_eval import (
     MEGABYTE_ARITHMETIC_CODING_MODES,
+    MEGABYTE_ARITHMETIC_QUANTIZATION_MODES,
     NON_OVERLAP_MODE,
     compress_source,
     resolve_device,
+    sample_payload,
     summarize_per_source,
 )
 from dna_compress.fast_arithmetic import ARITHMETIC_BACKENDS
 from dna_compress.fixed_token_factorization import build_fixed_token_arithmetic_factorizer
 from dna_compress.megabyte_loader import build_model
+from dna_compress.megabyte_window_codec import (
+    actual_window_codec_metrics,
+    build_codec_metadata,
+    compress_token_windows,
+    frame_compressed_streams,
+    payload_sha256,
+    payload_to_token_windows,
+    resolve_frequency_total,
+)
 from dna_compress.tokenization import apply_token_merge_to_model_config, normalize_alphabet
 from scripts.export_statistics import write_compression_report_tables
 from scripts.plot_compression_curves import generate_artifacts_for_compression_compare, resolve_geco2_baseline_path
@@ -156,6 +168,77 @@ def _checkpoint_path(run_dir: Path, checkpoint_tag: str) -> Path:
     return path
 
 
+def _write_window_codec_payload(
+    *,
+    model: torch.nn.Module,
+    config,
+    checkpoint: dict[str, Any],
+    run_dir: Path,
+    checkpoint_tag: str,
+    device: torch.device,
+    source_name: str,
+    payload: bytes,
+    requested_bytes: int | None,
+    out_dir: Path,
+    batch_size: int,
+    include_codec_baselines: bool,
+) -> dict[str, Any]:
+    sampled_payload = sample_payload(payload, requested_bytes)
+    tokens_cpu, token_metadata = payload_to_token_windows(
+        sampled_payload,
+        seq_length=int(config.model.seq_length),
+        pad_id=int(config.model.pad_id),
+        eos_id=int(config.model.eos_id),
+        token_merge_size=int(config.data.token_merge_size),
+        token_merge_alphabet=str(config.data.token_merge_alphabet),
+    )
+    frequency_total, arithmetic_metadata = resolve_frequency_total(config, config.arithmetic.frequency_total)
+    streams, compression_metrics = compress_token_windows(
+        model=model,
+        tokens_cpu=tokens_cpu,
+        batch_size=int(batch_size),
+        device=device,
+        dtype_name=str(config.train.dtype),
+        frequency_total=frequency_total,
+        compression_mode="cached",
+    )
+    framed, framing_metrics = frame_compressed_streams(streams)
+    metadata = build_codec_metadata(
+        run_dir=run_dir,
+        checkpoint_tag=checkpoint_tag,
+        checkpoint_metadata=checkpoint,
+        dtype_name=str(config.train.dtype),
+        device=device,
+        tokens_cpu=tokens_cpu,
+        token_merge_size=int(config.data.token_merge_size),
+        frequency_total=frequency_total,
+        arithmetic_metadata=arithmetic_metadata,
+        compression_metrics=compression_metrics,
+        framing_metrics=framing_metrics,
+        extra={
+            **token_metadata,
+            "source_name": source_name,
+            "requested_bytes": requested_bytes,
+            "payload_sha256": payload_sha256(framed),
+        },
+    )
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    payload_path = out_dir / f"{_safe_source_filename(source_name)}.mbw"
+    metadata_path = payload_path.with_suffix(payload_path.suffix + ".json")
+    payload_path.write_bytes(framed)
+    metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return {
+        **actual_window_codec_metrics(
+            payload=sampled_payload,
+            metadata=metadata,
+            include_codec_baselines=include_codec_baselines,
+        ),
+        "window_codec_payload_path": str(payload_path),
+        "window_codec_metadata_path": str(metadata_path),
+    }
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Compress FASTA sequence content with a Megabyte checkpoint.")
     parser.add_argument("--run-dir", default=str(DEFAULT_RUN_DIR))
@@ -167,7 +250,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--eval-batch-size",
         type=int,
         default=None,
-        help="Override config train.eval_batch_size. Leave unset to use the checkpoint config.",
+        help="Batch size for legacy statistical compression. Ignored when --window-codec-out-dir is set.",
     )
     parser.add_argument("--dtype", choices=["float32", "float16", "bfloat16"])
     parser.add_argument(
@@ -176,6 +259,12 @@ def _build_parser() -> argparse.ArgumentParser:
         default="model_symbol",
     )
     parser.add_argument("--arithmetic-merge-size", type=int, default=3)
+    parser.add_argument(
+        "--arithmetic-quantization-mode",
+        choices=list(MEGABYTE_ARITHMETIC_QUANTIZATION_MODES),
+        default="precise",
+        help="Probability-to-integer quantization strategy for model_symbol arithmetic coding.",
+    )
     parser.add_argument("--arithmetic-backend", choices=list(ARITHMETIC_BACKENDS), default="auto")
     parser.add_argument("--split-name", default="test")
     parser.add_argument("--mode-name", default=NON_OVERLAP_MODE)
@@ -206,6 +295,17 @@ def _build_parser() -> argparse.ArgumentParser:
         default="compression_curves",
         help="Artifact subdirectory name for generated compression curve CSV/PNG files.",
     )
+    parser.add_argument(
+        "--window-codec-out-dir",
+        default=None,
+        help="Directory for real framed MEGABYTE window bitstreams (.mbw + .json). When set, metrics use actual payloads.",
+    )
+    parser.add_argument(
+        "--window-codec-batch-size",
+        type=int,
+        default=None,
+        help="Batch size used for cached window codec payloads. Defaults to --eval-batch-size/config eval_batch_size.",
+    )
     parser.add_argument("--no-plots", action="store_true")
     return parser
 
@@ -222,6 +322,7 @@ def main() -> None:
     if args.dtype is not None:
         config.train.dtype = args.dtype
     config.arithmetic.coding_mode = args.arithmetic_coding_mode
+    config.arithmetic.quantization_mode = args.arithmetic_quantization_mode
     config.arithmetic.merge_size = args.arithmetic_merge_size
     config.arithmetic.backend = args.arithmetic_backend
     apply_token_merge_to_model_config(config.model, config.data)
@@ -245,6 +346,17 @@ def main() -> None:
         raise FileNotFoundError(f"no FASTA files found under {input_dir}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    window_codec_out_dir = Path(args.window_codec_out_dir) if args.window_codec_out_dir else None
+    window_codec_batch_size = int(args.window_codec_batch_size or config.train.eval_batch_size)
+    if window_codec_out_dir is not None:
+        if window_codec_batch_size <= 0:
+            raise ValueError("--window-codec-batch-size must be > 0")
+        if args.mode_name != NON_OVERLAP_MODE or config.arithmetic.coding_mode != "model_symbol":
+            raise ValueError("--window-codec-out-dir currently requires windows_nonoverlap + model_symbol.")
+        print(
+            f"[window-codec] enabled out_dir={window_codec_out_dir} batch_size={window_codec_batch_size}",
+            flush=True,
+        )
     per_source: list[dict[str, Any]] = []
     dataset_rows: list[dict[str, Any]] = []
     for index, (source, path, manifest_entry) in enumerate(sources, start=1):
@@ -269,28 +381,46 @@ def main() -> None:
             )
 
         compression_started = time.perf_counter()
-        metrics = compress_source(
-            model=model,
-            source=payload,
-            seq_length=config.model.seq_length,
-            pad_id=config.model.pad_id,
-            eos_id=config.model.eos_id,
-            device=device,
-            dtype_name=config.train.dtype,
-            batch_size=config.train.eval_batch_size,
-            requested_bytes=requested_bytes,
-            mode=args.mode_name,
-            token_merge_size=config.data.token_merge_size,
-            token_merge_alphabet=config.data.token_merge_alphabet,
-            arithmetic_frequency_total=config.arithmetic.frequency_total,
-            arithmetic_target_uniform_mass=config.arithmetic.target_uniform_mass,
-            arithmetic_coding_mode=config.arithmetic.coding_mode,
-            arithmetic_merge_size=config.arithmetic.merge_size,
-            arithmetic_backend=config.arithmetic.backend,
-            factorizer=factorizer,
-            include_codec_baselines=False,
-            progress_callback=_progress,
-        )
+        if window_codec_out_dir is not None:
+            print(f"[window-codec] writing source={source}", flush=True)
+            metrics = _write_window_codec_payload(
+                model=model,
+                config=config,
+                checkpoint=checkpoint,
+                run_dir=run_dir,
+                checkpoint_tag=args.checkpoint_tag,
+                device=device,
+                source_name=source,
+                payload=payload,
+                requested_bytes=requested_bytes,
+                out_dir=window_codec_out_dir,
+                batch_size=window_codec_batch_size,
+                include_codec_baselines=False,
+            )
+        else:
+            metrics = compress_source(
+                model=model,
+                source=payload,
+                seq_length=config.model.seq_length,
+                pad_id=config.model.pad_id,
+                eos_id=config.model.eos_id,
+                device=device,
+                dtype_name=config.train.dtype,
+                batch_size=config.train.eval_batch_size,
+                requested_bytes=requested_bytes,
+                mode=args.mode_name,
+                token_merge_size=config.data.token_merge_size,
+                token_merge_alphabet=config.data.token_merge_alphabet,
+                arithmetic_frequency_total=config.arithmetic.frequency_total,
+                arithmetic_target_uniform_mass=config.arithmetic.target_uniform_mass,
+                arithmetic_coding_mode=config.arithmetic.coding_mode,
+                arithmetic_quantization_mode=config.arithmetic.quantization_mode,
+                arithmetic_merge_size=config.arithmetic.merge_size,
+                arithmetic_backend=config.arithmetic.backend,
+                factorizer=factorizer,
+                include_codec_baselines=False,
+                progress_callback=_progress,
+            )
         compression_wall_seconds = time.perf_counter() - compression_started
         total_wall_seconds = time.perf_counter() - source_wall_started
         print()

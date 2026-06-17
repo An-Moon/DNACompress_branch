@@ -12,6 +12,7 @@ from .compression import ArithmeticEncoder, probabilities_to_cumulative_batch
 
 
 ARITHMETIC_BACKENDS = ("python", "fast_cpp", "auto")
+ARITHMETIC_QUANTIZATION_MODES = ("precise", "fast_floor_cpu", "fast_floor_gpu")
 
 _EXTENSION = None
 _EXTENSION_ERROR: Exception | None = None
@@ -22,10 +23,12 @@ class EncodeTimings:
     quantize_seconds: float
     range_seconds: float
     emitted_count: int
+    interval_transfer_seconds: float = 0.0
+    fast_floor_interval_seconds: float = 0.0
 
     @property
     def encode_seconds(self) -> float:
-        return self.quantize_seconds + self.range_seconds
+        return self.quantize_seconds + self.interval_transfer_seconds + self.range_seconds
 
 
 def _extension_source_path() -> Path:
@@ -147,6 +150,37 @@ class StreamingArithmeticEncoder:
             emitted_count=int(symbols.shape[0]),
         )
 
+    def encode_probability_rows_fast_floor(self, probability_rows, target_symbols, *, total: int) -> EncodeTimings:
+        if self.backend != "fast_cpp":
+            raise ValueError("fast_floor_cpu quantization requires arithmetic backend 'fast_cpp' or 'auto'")
+        result = self._encoder.encode_probability_rows_fast_floor(
+            _as_cpu_probability_tensor(probability_rows),
+            _as_cpu_symbol_tensor(target_symbols),
+            int(total),
+        )
+        quantize_seconds = float(result["quantize_seconds"])
+        return EncodeTimings(
+            quantize_seconds=quantize_seconds,
+            range_seconds=float(result["range_seconds"]),
+            emitted_count=int(result["emitted_count"]),
+            fast_floor_interval_seconds=quantize_seconds,
+        )
+
+    def encode_intervals(self, lows, highs, totals, *, interval_transfer_seconds: float = 0.0) -> EncodeTimings:
+        if self.backend != "fast_cpp":
+            raise ValueError("interval encoding requires arithmetic backend 'fast_cpp' or 'auto'")
+        result = self._encoder.encode_intervals(
+            _as_cpu_symbol_tensor(lows),
+            _as_cpu_symbol_tensor(highs),
+            _as_cpu_symbol_tensor(totals),
+        )
+        return EncodeTimings(
+            quantize_seconds=0.0,
+            range_seconds=float(result["range_seconds"]),
+            emitted_count=int(result["emitted_count"]),
+            interval_transfer_seconds=float(interval_transfer_seconds),
+        )
+
     def encode_grouped_steps(
         self,
         step_probabilities: Iterable,
@@ -216,3 +250,110 @@ def fast_decode_probability_rows(encoded: bytes, probability_rows, *, total: int
     decoder = extension.FastArithmeticDecoder(encoded)
     decoded = decoder.decode_probability_rows(_as_cpu_probability_tensor(probability_rows), int(total))
     return decoded.cpu().numpy()
+
+
+def fast_decode_probability_rows_fast_floor(encoded: bytes, probability_rows, *, total: int) -> np.ndarray:
+    extension = load_fast_arithmetic_extension()
+    decoder = extension.FastArithmeticDecoder(encoded)
+    decoded = decoder.decode_probability_rows_fast_floor(_as_cpu_probability_tensor(probability_rows), int(total))
+    return decoded.cpu().numpy()
+
+
+class StreamingArithmeticDecoder:
+    def __init__(self, encoded: bytes) -> None:
+        self._decoder = load_fast_arithmetic_extension().FastArithmeticDecoder(bytes(encoded))
+
+    def decode_frequency_row(self, frequencies) -> int:
+        return int(self._decoder.decode_frequency_row(_as_cpu_symbol_tensor(frequencies)))
+
+
+class BatchedStreamingArithmeticEncoder:
+    def __init__(self, stream_count: int) -> None:
+        if stream_count <= 0:
+            raise ValueError("batched arithmetic encoder requires at least one stream")
+        self._encoder = load_fast_arithmetic_extension().BatchedFastArithmeticEncoder(int(stream_count))
+
+    @property
+    def size(self) -> int:
+        return int(self._encoder.size())
+
+    def encode_interval_matrix(self, lows, highs, totals) -> EncodeTimings:
+        result = self._encoder.encode_interval_matrix(
+            _as_cpu_symbol_tensor(lows),
+            _as_cpu_symbol_tensor(highs),
+            _as_cpu_symbol_tensor(totals),
+        )
+        return EncodeTimings(
+            quantize_seconds=0.0,
+            range_seconds=float(result["range_seconds"]),
+            emitted_count=int(result["emitted_count"]),
+        )
+
+    def finish(self) -> list[bytes]:
+        return [bytes(stream) for stream in self._encoder.finish()]
+
+
+class BatchedStreamingArithmeticDecoder:
+    def __init__(self, encoded_streams: Iterable[bytes], *, threads: int = 0) -> None:
+        streams = [bytes(stream) for stream in encoded_streams]
+        if not streams:
+            raise ValueError("batched arithmetic decoder requires at least one stream")
+        self._decoder = load_fast_arithmetic_extension().BatchedFastArithmeticDecoder(streams, int(threads))
+
+    @property
+    def size(self) -> int:
+        return int(self._decoder.size())
+
+    def decode_frequency_rows(self, frequencies) -> torch.Tensor:
+        if not isinstance(frequencies, torch.Tensor):
+            frequencies = torch.as_tensor(frequencies)
+        if frequencies.device.type != "cpu":
+            raise ValueError("frequency rows must already be on CPU")
+        if frequencies.dim() != 2:
+            raise ValueError("frequency rows must be a 2D tensor")
+        if frequencies.dtype not in {torch.int64, torch.int32, torch.int16, torch.uint16, torch.uint8}:
+            frequencies = frequencies.to(torch.int32)
+        return self._decoder.decode_frequency_rows(frequencies.contiguous())
+
+    def decode_frequency_rows_with_totals(self, frequencies, totals) -> torch.Tensor:
+        if not isinstance(frequencies, torch.Tensor):
+            frequencies = torch.as_tensor(frequencies)
+        if not isinstance(totals, torch.Tensor):
+            totals = torch.as_tensor(totals)
+        if frequencies.device.type != "cpu" or totals.device.type != "cpu":
+            raise ValueError("frequency rows and totals must already be on CPU")
+        if frequencies.dim() != 2 or totals.dim() != 1 or totals.shape[0] != frequencies.shape[0]:
+            raise ValueError("frequency rows must be [batch, vocab] and totals must be [batch]")
+        if frequencies.dtype not in {torch.int64, torch.int32, torch.uint16}:
+            frequencies = frequencies.to(torch.int32)
+        if totals.dtype not in {torch.int64, torch.int32}:
+            totals = totals.to(torch.int32)
+        return self._decoder.decode_frequency_rows_with_totals(frequencies.contiguous(), totals.contiguous())
+
+
+def fast_floor_intervals_from_probabilities(
+    probability_rows: torch.Tensor,
+    target_symbols: torch.Tensor,
+    *,
+    total: int,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    if probability_rows.dim() != 2:
+        raise ValueError("probability_rows must be a 2D tensor")
+    if target_symbols.dim() != 1 or target_symbols.shape[0] != probability_rows.shape[0]:
+        raise ValueError("target_symbols must be a 1D tensor matching probability rows")
+    if target_symbols.device != probability_rows.device:
+        target_symbols = target_symbols.to(probability_rows.device)
+
+    probs = probability_rows.float()
+    probs = torch.where(torch.isfinite(probs) & (probs > 0), probs, torch.zeros((), dtype=probs.dtype, device=probs.device))
+    freqs = torch.floor(probs * float(total)).to(torch.int64)
+    freqs = torch.clamp(freqs, min=1)
+    cumulative = torch.cumsum(freqs, dim=1)
+    symbols = target_symbols.to(dtype=torch.long)
+    if torch.any(symbols < 0) or torch.any(symbols >= probability_rows.shape[1]):
+        raise ValueError("target symbol is outside the probability row vocabulary")
+    high = cumulative.gather(1, symbols.unsqueeze(1)).squeeze(1)
+    selected_freq = freqs.gather(1, symbols.unsqueeze(1)).squeeze(1)
+    low = high - selected_freq
+    row_totals = cumulative[:, -1]
+    return low.contiguous(), high.contiguous(), row_totals.contiguous()

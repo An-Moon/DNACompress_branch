@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Run DNA Megabyte experiments.
+"""Run DNA Megabyte training.
 
 Complete example (train + eval + compression, with common overrides):
 
@@ -51,7 +51,7 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --config configs/dna_megabyte_large.json \
         --mode all \
         --init-from resume \
-        --pretrained-weight-path outputs/dna_megabyte_large_opengenome2_4/last.pt \
+        --pretrained-weight-path outputs/dna_megabyte_large_20260616_144744_20260616_171309/last.pt \
         --seed 42 \
         --sequence-source-mode indexed_fasta \
         --fasta-index-dir /data/students/Liang_junnan/opengenome2_subset/index \
@@ -63,15 +63,15 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --indexed-window-mode source_batch_file_stream \
         --indexed-train-epoch-mode all_windows \
         --indexed-file-stream-order-seed 0 \
-        --indexed-source-read-chunk-windows 32768 \
+        --indexed-source-read-chunk-windows 8192 \
         --indexed-source-read-chunk-shuffle \
         --indexed-source-file-order-seed 0 \
         --source-sampling-weights-json '{"gtdb_v220":0.35,"metagenomes":0.3,"ncbi_eukaryotic_genomes":0.25,"plasmids_phage":0.1}' \
-        --dtype bfloat16 \
+        --dtype float16 \
         --epochs 2 \
         --batch-size 32 \
         --eval-batch-size 32 \
-        --learning-rate 1e-4 \
+        --learning-rate 3e-5 \
         --print-config \
         --seq-length 1024 \
         --token-merge-size 3 \
@@ -82,13 +82,13 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --val-ratio 0.01 \
         --test-ratio 0.01 \
         --lr-scheduler cosine \
-        --lr-warmup-steps 1024 \
+        --lr-warmup-steps 0 \
         --lr-min-ratio 0.1 \
         --grad-clip-norm 1.0 \
         --num-workers 2 \
         --no-persistent-workers \
         --wandb-project dna-compress \
-        --wandb-name dna_megabyte_large_opengenome2_5
+        --wandb-name dna_megabyte_large_opengenome2_9
 
 OpenGenome2 repacked window variant (train + eval; compression is recorded as skipped):
   
@@ -125,10 +125,6 @@ OpenGenome2 repacked window variant (train + eval; compression is recorded as sk
         --lr-min-ratio 0.1 \
         --grad-clip-norm 1.0 \
         --num-workers 4 
-        
-        --wandb-project dna-compress \
-        --wandb-name dna_megabyte_large_opengenome2 \
-        --gpu-ids 2 3 
 
 Multi-GPU DDP example (2 GPUs):
 

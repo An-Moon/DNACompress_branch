@@ -241,6 +241,7 @@ def _ratio_row(
         "bz2_bytes": _int_number(bz2_bytes),
         "lzma_bytes": _int_number(lzma_bytes),
         "arithmetic_coding_mode": payload.get("arithmetic_coding_mode"),
+        "arithmetic_quantization_mode": payload.get("arithmetic_quantization_mode"),
         "arithmetic_merge_size": payload.get("arithmetic_merge_size"),
         "arithmetic_backend": payload.get("arithmetic_backend"),
         "arithmetic_frequency_total": payload.get("arithmetic_frequency_total"),
@@ -287,6 +288,8 @@ def _speed_row(
         else _number(_row_value(payload, row_type, "model_forward_softmax_seconds"))
     )
     data_transfer_seconds = _number(_row_value(payload, row_type, "data_transfer_seconds"))
+    window_build_seconds = _number(_row_value(payload, row_type, "window_build_seconds"))
+    python_overhead_seconds = _number(_row_value(payload, row_type, "python_overhead_seconds"))
     gpu_prefix_aggregate_seconds = _number(_row_value(payload, row_type, "gpu_prefix_aggregate_seconds"))
     quantize_seconds = _number(
         _row_value(payload, row_type, "arithmetic_quantize_seconds", "total_arithmetic_quantize_seconds")
@@ -301,12 +304,21 @@ def _speed_row(
             )
         )
     range_seconds = _number(_row_value(payload, row_type, "arithmetic_range_seconds"))
+    wrapper_seconds = _number(_row_value(payload, row_type, "arithmetic_wrapper_seconds"))
+    interval_transfer_seconds = _number(
+        _row_value(payload, row_type, "arithmetic_interval_transfer_seconds", "total_arithmetic_interval_transfer_seconds")
+    )
+    fast_floor_interval_seconds = _number(
+        _row_value(payload, row_type, "fast_floor_interval_seconds", "total_fast_floor_interval_seconds")
+    )
     arithmetic_encode_seconds = _number(_row_value(payload, row_type, "arithmetic_encode_seconds"))
     compression_process_seconds = _number(_row_value(payload, row_type, "compression_process_seconds"))
     if compression_process_seconds is None:
         parts = [
             model_forward_seconds,
             softmax_seconds,
+            window_build_seconds,
+            python_overhead_seconds,
             gpu_prefix_aggregate_seconds,
             data_transfer_seconds,
             arithmetic_encode_seconds,
@@ -342,11 +354,16 @@ def _speed_row(
         "model_forward_seconds": model_forward_seconds,
         "softmax_seconds": softmax_seconds,
         "model_forward_softmax_seconds": model_forward_softmax_seconds,
+        "window_build_seconds": window_build_seconds,
+        "python_overhead_seconds": python_overhead_seconds,
         "data_transfer_seconds": data_transfer_seconds,
         "gpu_prefix_aggregate_seconds": gpu_prefix_aggregate_seconds,
         "arithmetic_quantize_seconds": quantize_seconds,
         "cpu_small_alphabet_quantize_seconds": quantize_seconds,
         "arithmetic_range_seconds": range_seconds,
+        "arithmetic_wrapper_seconds": wrapper_seconds,
+        "arithmetic_interval_transfer_seconds": interval_transfer_seconds,
+        "fast_floor_interval_seconds": fast_floor_interval_seconds,
         "arithmetic_encode_seconds": arithmetic_encode_seconds,
         "compression_process_seconds": compression_process_seconds,
         "recorded_wall_seconds": wall_seconds,
@@ -374,11 +391,26 @@ def _speed_row(
         "data_transfer_process_fraction": _safe_div(data_transfer_seconds, compression_process_seconds)
         if data_transfer_seconds is not None and compression_process_seconds is not None
         else None,
+        "window_build_process_fraction": _safe_div(window_build_seconds, compression_process_seconds)
+        if window_build_seconds is not None and compression_process_seconds is not None
+        else None,
+        "python_overhead_process_fraction": _safe_div(python_overhead_seconds, compression_process_seconds)
+        if python_overhead_seconds is not None and compression_process_seconds is not None
+        else None,
         "arithmetic_quantize_process_fraction": _safe_div(quantize_seconds, compression_process_seconds)
         if quantize_seconds is not None and compression_process_seconds is not None
         else None,
         "arithmetic_range_process_fraction": _safe_div(range_seconds, compression_process_seconds)
         if range_seconds is not None and compression_process_seconds is not None
+        else None,
+        "arithmetic_wrapper_process_fraction": _safe_div(wrapper_seconds, compression_process_seconds)
+        if wrapper_seconds is not None and compression_process_seconds is not None
+        else None,
+        "arithmetic_interval_transfer_process_fraction": _safe_div(interval_transfer_seconds, compression_process_seconds)
+        if interval_transfer_seconds is not None and compression_process_seconds is not None
+        else None,
+        "fast_floor_interval_process_fraction": _safe_div(fast_floor_interval_seconds, compression_process_seconds)
+        if fast_floor_interval_seconds is not None and compression_process_seconds is not None
         else None,
         "arithmetic_encode_process_fraction": _safe_div(arithmetic_encode_seconds, compression_process_seconds)
         if arithmetic_encode_seconds is not None and compression_process_seconds is not None
@@ -388,6 +420,7 @@ def _speed_row(
         else None,
         "arithmetic_backend": payload.get("arithmetic_backend"),
         "arithmetic_coding_mode": payload.get("arithmetic_coding_mode"),
+        "arithmetic_quantization_mode": payload.get("arithmetic_quantization_mode"),
         "arithmetic_merge_size": payload.get("arithmetic_merge_size"),
     }
     return row
