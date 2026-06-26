@@ -289,6 +289,27 @@ class BatchedStreamingArithmeticEncoder:
             emitted_count=int(result["emitted_count"]),
         )
 
+    def encode_interval_matrix_with_lengths(self, lows, highs, totals, lengths) -> EncodeTimings:
+        if not isinstance(lengths, torch.Tensor):
+            lengths = torch.as_tensor(lengths)
+        if lengths.device.type != "cpu":
+            raise ValueError("row lengths must already be on CPU")
+        if lengths.dim() != 1:
+            raise ValueError("row lengths must be a 1D tensor")
+        if lengths.dtype not in {torch.int64, torch.int32}:
+            lengths = lengths.to(torch.int64)
+        result = self._encoder.encode_interval_matrix_with_lengths(
+            _as_cpu_symbol_tensor(lows),
+            _as_cpu_symbol_tensor(highs),
+            _as_cpu_symbol_tensor(totals),
+            lengths.contiguous(),
+        )
+        return EncodeTimings(
+            quantize_seconds=0.0,
+            range_seconds=float(result["range_seconds"]),
+            emitted_count=int(result["emitted_count"]),
+        )
+
     def finish(self) -> list[bytes]:
         return [bytes(stream) for stream in self._encoder.finish()]
 
@@ -329,6 +350,31 @@ class BatchedStreamingArithmeticDecoder:
         if totals.dtype not in {torch.int64, torch.int32}:
             totals = totals.to(torch.int32)
         return self._decoder.decode_frequency_rows_with_totals(frequencies.contiguous(), totals.contiguous())
+
+    def decode_frequency_rows_with_totals_and_active(self, frequencies, totals, active) -> torch.Tensor:
+        if not isinstance(frequencies, torch.Tensor):
+            frequencies = torch.as_tensor(frequencies)
+        if not isinstance(totals, torch.Tensor):
+            totals = torch.as_tensor(totals)
+        if not isinstance(active, torch.Tensor):
+            active = torch.as_tensor(active)
+        if frequencies.device.type != "cpu" or totals.device.type != "cpu" or active.device.type != "cpu":
+            raise ValueError("frequency rows, totals, and active mask must already be on CPU")
+        if frequencies.dim() != 2 or totals.dim() != 1 or active.dim() != 1:
+            raise ValueError("frequency rows must be [batch, vocab], totals [batch], active [batch]")
+        if totals.shape[0] != frequencies.shape[0] or active.shape[0] != frequencies.shape[0]:
+            raise ValueError("frequency rows, totals, and active mask must have matching batch size")
+        if frequencies.dtype not in {torch.int64, torch.int32, torch.uint16}:
+            frequencies = frequencies.to(torch.int32)
+        if totals.dtype not in {torch.int64, torch.int32}:
+            totals = totals.to(torch.int32)
+        if active.dtype not in {torch.bool, torch.uint8, torch.int32, torch.int64}:
+            active = active.to(torch.bool)
+        return self._decoder.decode_frequency_rows_with_totals_and_active(
+            frequencies.contiguous(),
+            totals.contiguous(),
+            active.contiguous(),
+        )
 
 
 def fast_floor_intervals_from_probabilities(

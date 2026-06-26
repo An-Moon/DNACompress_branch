@@ -2,6 +2,7 @@
 """Example:
 .venv/bin/python scripts/run_megabyte_window_decompress.py \
   --input outputs/example.megabyte_windows.mbw \
+  --decode-devices cuda:0 cuda:1 \
   --output-tokens-npy outputs/example.decoded_windows.npy
 """
 from __future__ import annotations
@@ -21,9 +22,13 @@ import torch
 from dna_compress.compression_eval import resolve_device
 from dna_compress.megabyte_window_codec import (
     WINDOW_CODEC_NAME,
-    decode_framed_token_windows,
-    load_codec_model,
+    WINDOW_CODEC_V3_FORMAT_VERSION,
+    WindowCodecPipeline,
+    decode_window_payload_with_pipeline,
+    load_codec_config_and_metadata,
     payload_sha256,
+    resolve_device_names,
+    resolve_frequency_total,
     save_token_windows,
 )
 
@@ -35,6 +40,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-dir", default=None, help="Override run_dir stored in metadata.")
     parser.add_argument("--checkpoint-tag", choices=["best", "last"], default=None, help="Override checkpoint tag.")
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--decode-devices", nargs="+", default=None)
     parser.add_argument("--dtype", choices=["float32", "float16", "bfloat16"], default=None)
     parser.add_argument("--decode-batch-size", type=int, default=None, help="Defaults to compression_batch_size in metadata.")
     parser.add_argument("--allow-mismatched-batch", action="store_true")
@@ -53,6 +59,8 @@ def main() -> None:
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     if metadata.get("codec") != WINDOW_CODEC_NAME:
         raise ValueError(f"unsupported codec metadata: {metadata.get('codec')}")
+    if int(metadata.get("format_version", 0)) != WINDOW_CODEC_V3_FORMAT_VERSION:
+        raise ValueError("only v3 .mbw payloads are supported by this decompressor")
 
     compression_batch_size = int(metadata["compression_batch_size"])
     decode_batch_size = int(args.decode_batch_size or compression_batch_size)
@@ -71,29 +79,40 @@ def main() -> None:
     run_dir = Path(args.run_dir or metadata["run_dir"])
     checkpoint_tag = args.checkpoint_tag or metadata["checkpoint_tag"]
     device = resolve_device(args.device)
-    config, model, _ = load_codec_model(run_dir, checkpoint_tag, device)
+    device_names = resolve_device_names(args.decode_devices, fallback=device)
+    config, _ = load_codec_config_and_metadata(run_dir, checkpoint_tag)
     dtype_name = args.dtype or metadata.get("dtype") or config.train.dtype
+    frequency_total, _ = resolve_frequency_total(config, int(metadata["frequency_total"]))
 
     expected_tokens = None
     if args.expected_tokens_npy:
         expected_tokens = torch.as_tensor(np.load(args.expected_tokens_npy), dtype=torch.long)
 
-    decoded, metrics = decode_framed_token_windows(
-        model=model,
-        framed_payload=payload,
-        window_count=int(metadata["window_count"]),
-        tokens_per_window=int(metadata["tokens_per_window"]),
-        batch_size=decode_batch_size,
-        device=device,
+    with WindowCodecPipeline(
+        config=config,
+        checkpoint_path=run_dir / f"{checkpoint_tag}.pt",
+        devices=device_names,
         dtype_name=dtype_name,
-        frequency_total=int(metadata["frequency_total"]),
-        threads=int(args.threads),
-        expected_tokens_cpu=expected_tokens,
-    )
+        frequency_total=frequency_total,
+        batch_size=decode_batch_size,
+        compression_mode=str(metadata.get("compression_mode", "cached")),
+    ) as pipeline:
+        decoded, metrics, payload_header = decode_window_payload_with_pipeline(
+            pipeline=pipeline,
+            payload=payload,
+            expected_tokens_cpu=expected_tokens,
+            threads=int(args.threads),
+        )
+    if int(payload_header["tokens_per_window"]) != int(metadata["tokens_per_window"]):
+        raise ValueError("payload header tokens_per_window does not match metadata")
+    if int(payload_header["window_count"]) != int(metadata["window_count"]):
+        raise ValueError("payload header window_count does not match metadata")
+    if int(payload_header["logical_token_count"]) != int(metadata["token_count"]):
+        raise ValueError("payload header logical_token_count does not match metadata token_count")
     save_token_windows(
         decoded,
         args.output_tokens_npy,
-        original_token_count=metadata.get("original_token_count"),
+        original_token_count=metadata.get("token_count"),
         flat_output_path=args.output_flat_tokens_npy,
     )
 

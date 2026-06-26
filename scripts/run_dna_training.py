@@ -51,7 +51,7 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --config configs/dna_megabyte_large.json \
         --mode all \
         --init-from resume \
-        --pretrained-weight-path outputs/dna_megabyte_large_20260616_144744_20260616_171309/last.pt \
+        --pretrained-weight-path outputs/dna_megabyte_large_opengenome2_9/last.pt \
         --seed 42 \
         --sequence-source-mode indexed_fasta \
         --fasta-index-dir /data/students/Liang_junnan/opengenome2_subset/index \
@@ -67,7 +67,7 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --indexed-source-read-chunk-shuffle \
         --indexed-source-file-order-seed 0 \
         --source-sampling-weights-json '{"gtdb_v220":0.35,"metagenomes":0.3,"ncbi_eukaryotic_genomes":0.25,"plasmids_phage":0.1}' \
-        --dtype float16 \
+        --dtype bfloat16 \
         --epochs 2 \
         --batch-size 32 \
         --eval-batch-size 32 \
@@ -88,7 +88,7 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --num-workers 2 \
         --no-persistent-workers \
         --wandb-project dna-compress \
-        --wandb-name dna_megabyte_large_opengenome2_9
+        --wandb-name dna_megabyte_large_opengenome2_10
 
 OpenGenome2 repacked window variant (train + eval; compression is recorded as skipped):
   

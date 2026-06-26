@@ -1,7 +1,7 @@
 {
   "project": "",
   "entity": "",
-  "name": "dna_megabyte_large_opengenome2_4_statistics_dnacorpus_full",
+  "name": "dna_megabyte_large_opengenome2_4",
   "run_dir": "outputs/dna_megabyte_large_opengenome2_4",
   "has_resolved_config": true,
   "has_metrics_json": false,

@@ -1,22 +1,19 @@
 from __future__ import annotations
 
-"""Compare Megabyte compression procedures on selected DNA splits.
+"""Run real MEGABYTE Window Codec compression on selected DNA splits.
 
-Modes:
-  - sliding_token: original per-token right-aligned sliding window evaluation
-  - windows_nonoverlap: contiguous non-overlapping windows, matching training-style inputs
-  - windows_overlap: contiguous overlapping windows with patch-aligned stride;
-    exact cache reuse is not enabled in this evaluator
+This script is the actual .mbw codec entry point. It writes decompressible
+window bitstreams with --window-codec-out-dir. Historical statistical
+compression diagnostics (sliding_token, windows_overlap, no .mbw output) live
+in scripts/run_dna_compression_legacy.py.
 
 DNACorpus compression with the OpenGenome2-finetuned checkpoint, matching the
 existing GeCo2 paper-mode baseline source order, 0.6/0.2/0.2 split, and
 full-split sample setup:
 
-    CUDA_VISIBLE_DEVICES=2 python scripts/run_dna_compression.py \
-      --run-dir outputs/dna_megabyte_large_opengenome2_2 \
+    python scripts/run_dna_compression.py \
+      --run-dir outputs/dna_megabyte_large_opengenome2_4 \
       --checkpoint-tag best \
-      --output-json outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus/compression_compare.json \
-      --export-out-dir outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus \
       --dataset-dir datasets/DNACorpus \
       --sequence-source-mode auto \
       --multi-sequence-mode separate \
@@ -29,18 +26,18 @@ full-split sample setup:
       --test-ratio 0.2 \
       --arithmetic-coding-mode model_symbol \
       --arithmetic-merge-size 3 \
-      --window-codec-out-dir outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus/window_codec \
       --window-codec-batch-size 8192 \
       --geco2-baseline dnacorpus_0p6_0p2_0p2 \
       --skip-codec-baselines
 
-No-split compression over each full source:
+No-split real Window Codec compression over each full source. With
+CUDA_VISIBLE_DEVICES set, --window-codec-devices uses process-local ids:
 
-    CUDA_VISIBLE_DEVICES=0 python scripts/run_dna_compression.py \
-      --run-dir outputs/dna_megabyte_large_opengenome2_2 \
+    python scripts/run_dna_compression.py \
+      --run-dir outputs/dna_megabyte_large_20260616_144626_20260616_171418_20260617_140138 \
       --checkpoint-tag best \
-      --output-json outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus_full/compression_compare.json \
-      --export-out-dir outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus_full \
+      --window-codec-devices cuda:1 cuda:2 \
+      --window-codec-compression-mode cached \
       --dataset-dir datasets/DNACorpus \
       --sequence-source-mode auto \
       --multi-sequence-mode separate \
@@ -50,7 +47,6 @@ No-split compression over each full source:
       --species OrSa HoSa DaRe ScPo EsCo YeMi BuEb AgPh GaGa DrMe EnIn PlFa HePy AeCa HaHi AnCa WaMe \
       --arithmetic-coding-mode model_symbol \
       --arithmetic-merge-size 3 \
-      --window-codec-out-dir outputs/dna_megabyte_large_opengenome2_2/statistics_dnacorpus_full/window_codec \
       --window-codec-batch-size 8192 \
       --geco2-baseline dnacorpus_fullsplit \
       --skip-codec-baselines
@@ -59,6 +55,7 @@ No-split compression over each full source:
  
 import argparse
 import csv
+import gzip
 import importlib
 import json
 import math
@@ -90,18 +87,24 @@ from dna_compress.compression_eval import (
     summarize_per_source,
 )
 from dna_compress.config import ExperimentConfig
-from dna_compress.data import load_full_sources, load_splits
+from dna_compress.data import (
+    _boundary_bytes,
+    _discover_fasta_files,
+    _resolve_sequence_source_mode,
+    _sequence_key_from_path,
+    load_full_sources,
+    load_splits,
+)
+from dna_compress.fasta_cleaning import _fasta_translation_tables
 from dna_compress.fast_arithmetic import ARITHMETIC_BACKENDS
 from dna_compress.fixed_token_factorization import build_fixed_token_arithmetic_factorizer
-from dna_compress.megabyte_loader import build_model
+from dna_compress.megabyte_loader import build_model, load_megabyte_checkpoint
 from dna_compress.megabyte_window_codec import (
+    WindowCodecPipeline,
     actual_window_codec_metrics,
-    build_codec_metadata,
-    compress_token_windows,
-    frame_compressed_streams,
-    payload_sha256,
-    payload_to_token_windows,
+    compress_chunk_stream_to_v2_payload,
     resolve_frequency_total,
+    resolve_device_names,
 )
 from dna_compress.tokenization import apply_token_merge_to_model_config, normalize_alphabet
 from scripts.plot_compression_curves import generate_artifacts_for_compression_compare, resolve_geco2_baseline_path
@@ -270,6 +273,121 @@ def _source_entries(splits) -> list[dict[str, object]]:
     return [dict(item) for item in splits.summary["species"]]
 
 
+def _iter_flat_file_chunks(path: Path, chunk_bytes: int = 8 << 20):
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(chunk_bytes)
+            if not chunk:
+                break
+            yield chunk
+
+
+def _iter_sanitized_fasta_chunks(path: Path, alphabet: str):
+    translation, delete_bytes = _fasta_translation_tables(alphabet)
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rb") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
+            if not line or line.startswith(b">"):
+                continue
+            filtered = line.translate(translation, delete_bytes)
+            if filtered:
+                yield filtered
+
+
+def _iter_concat_chunks(parts):
+    for index, (chunks, boundary) in enumerate(parts):
+        if index > 0 and boundary:
+            yield boundary
+        yield from chunks
+
+
+def _iter_full_window_codec_sources(config: ExperimentConfig) -> tuple[list[dict[str, object]], list[tuple[dict[str, object], Any]]]:
+    entries: list[dict[str, object]] = []
+    sources: list[tuple[dict[str, object], Any]] = []
+    dataset_dir = Path(config.data.dataset_dir)
+    boundary = _boundary_bytes(config.data, config.model.seq_length)
+    for species in config.data.species:
+        species_path = dataset_dir / species
+        source_mode = _resolve_sequence_source_mode(species_path, config.data)
+        if source_mode == "flat_file":
+            entry = {
+                "species": species,
+                "source_name": species,
+                "source_mode": "flat_file",
+                "source_path": str(species_path),
+                "sequence_keys": [species],
+                "sequence_files": [species_path.name],
+                "selected_sequence_count": 1,
+                "total_size": species_path.stat().st_size,
+                "full_start": 0,
+                "full_bytes": species_path.stat().st_size,
+                "clean_cache_status": "streamed",
+                "clean_cache_path": None,
+            }
+            entries.append(entry)
+            sources.append((entry, _iter_flat_file_chunks(species_path)))
+            continue
+
+        fasta_files = _discover_fasta_files(species_path)
+        selected_keys = config.data.sequence_include_map.get(species)
+        selected_set = {item.strip() for item in selected_keys} if selected_keys is not None else None
+        selected: list[tuple[str, Path]] = []
+        for fasta_path in fasta_files:
+            sequence_key = _sequence_key_from_path(fasta_path)
+            if selected_set is not None and sequence_key not in selected_set:
+                continue
+            selected.append((sequence_key, fasta_path))
+        if selected_set is not None:
+            found = {key for key, _ in selected}
+            missing = sorted(selected_set - found)
+            if missing:
+                raise ValueError(f"{species} requested sequence keys not found: {', '.join(missing)}")
+        if not selected:
+            raise ValueError(f"{species} does not have any usable FASTA files")
+
+        if config.data.multi_sequence_mode == "separate":
+            for sequence_key, fasta_path in selected:
+                entry = {
+                    "species": species,
+                    "source_name": f"{species}:{sequence_key}",
+                    "source_mode": "fasta_dir_separate_streamed",
+                    "source_path": str(fasta_path),
+                    "sequence_keys": [sequence_key],
+                    "sequence_files": [str(fasta_path.relative_to(species_path))],
+                    "selected_sequence_count": 1,
+                    "total_size": fasta_path.stat().st_size,
+                    "full_start": 0,
+                    "full_bytes": fasta_path.stat().st_size,
+                    "clean_cache_status": "streamed",
+                    "clean_cache_path": None,
+                }
+                entries.append(entry)
+                sources.append((entry, _iter_sanitized_fasta_chunks(fasta_path, config.data.token_merge_alphabet)))
+        else:
+            chunk_parts = [
+                (_iter_sanitized_fasta_chunks(fasta_path, config.data.token_merge_alphabet), boundary)
+                for _, fasta_path in selected
+            ]
+            entry = {
+                "species": species,
+                "source_name": species,
+                "source_mode": "fasta_dir_concat_streamed",
+                "source_path": None,
+                "sequence_keys": [key for key, _ in selected],
+                "sequence_files": [str(path.relative_to(species_path)) for _, path in selected],
+                "selected_sequence_count": len(selected),
+                "total_size": sum(path.stat().st_size for _, path in selected),
+                "full_start": 0,
+                "full_bytes": sum(path.stat().st_size for _, path in selected),
+                "clean_cache_status": "streamed",
+                "clean_cache_path": None,
+            }
+            entries.append(entry)
+            sources.append((entry, _iter_concat_chunks(chunk_parts)))
+    return entries, sources
+
+
 def _validate_args(config: ExperimentConfig, args: argparse.Namespace) -> None:
     if config.model.implementation not in {
         "megabyte",
@@ -352,7 +470,7 @@ def _sanitize_artifact_name(name: str) -> str:
 
 def _write_window_codec_payload(
     *,
-    model: torch.nn.Module,
+    pipeline: WindowCodecPipeline,
     config: ExperimentConfig,
     checkpoint: dict[str, Any],
     run_dir: Path,
@@ -368,45 +486,23 @@ def _write_window_codec_payload(
     include_codec_baselines: bool,
 ) -> dict[str, Any]:
     sampled_payload = sample_payload(source, config.data.compression_sample_bytes)
-    tokens_cpu, token_metadata = payload_to_token_windows(
-        sampled_payload,
-        seq_length=int(config.model.seq_length),
-        pad_id=int(config.model.pad_id),
-        eos_id=int(config.model.eos_id),
-        token_merge_size=int(config.data.token_merge_size),
-        token_merge_alphabet=str(config.data.token_merge_alphabet),
-    )
     frequency_total, arithmetic_metadata = resolve_frequency_total(config, config.arithmetic.frequency_total)
-    streams, compression_metrics = compress_token_windows(
-        model=model,
-        tokens_cpu=tokens_cpu,
-        batch_size=int(batch_size),
-        device=device,
-        dtype_name=str(config.train.dtype),
-        frequency_total=frequency_total,
-        compression_mode="cached",
-    )
-    framed, framing_metrics = frame_compressed_streams(streams)
-    metadata = build_codec_metadata(
+    framed, metadata = compress_chunk_stream_to_v2_payload(
+        pipeline=pipeline,
+        chunks=[sampled_payload],
+        config=config,
         run_dir=run_dir,
         checkpoint_tag=checkpoint_tag,
         checkpoint_metadata=checkpoint,
-        dtype_name=str(config.train.dtype),
         device=device,
-        tokens_cpu=tokens_cpu,
-        token_merge_size=int(config.data.token_merge_size),
-        frequency_total=frequency_total,
         arithmetic_metadata=arithmetic_metadata,
-        compression_metrics=compression_metrics,
-        framing_metrics=framing_metrics,
-        extra={
-            **token_metadata,
+        source_name=source_name,
+        requested_bytes=config.data.compression_sample_bytes,
+        extra_metadata={
             "split": split_name,
             "mode": mode_name,
             "species": species_name,
             "source_name": source_name,
-            "requested_bytes": config.data.compression_sample_bytes,
-            "payload_sha256": payload_sha256(framed),
         },
     )
 
@@ -598,9 +694,11 @@ def _export_position_bits_profile_artifacts(
 
 def _run_split(
     *,
-    model: torch.nn.Module,
+    model: torch.nn.Module | None,
+    window_codec_pipeline: WindowCodecPipeline | None,
     config: ExperimentConfig,
     checkpoint: dict[str, Any],
+    checkpoint_path: Path,
     run_dir: Path,
     checkpoint_tag: str,
     split_name: str,
@@ -651,8 +749,10 @@ def _run_split(
                     f"[window-codec] writing split={split_name} mode={mode} source={source_name}",
                     flush=True,
                 )
+                if window_codec_pipeline is None:
+                    raise RuntimeError("window codec pipeline is required when --window-codec-out-dir is set")
                 metrics = _write_window_codec_payload(
-                    model=model,
+                    pipeline=window_codec_pipeline,
                     config=config,
                     checkpoint=checkpoint,
                     run_dir=run_dir,
@@ -721,6 +821,93 @@ def _run_split(
     return split_result
 
 
+def _run_full_window_codec_streaming(
+    *,
+    pipeline: WindowCodecPipeline,
+    config: ExperimentConfig,
+    checkpoint: dict[str, Any],
+    run_dir: Path,
+    checkpoint_tag: str,
+    device: torch.device,
+    out_dir: Path,
+    include_codec_baselines: bool,
+) -> tuple[dict[str, object], dict[str, object]]:
+    entries, lazy_sources = _iter_full_window_codec_sources(config)
+    per_source: list[dict[str, object]] = []
+    dataset_summary = {
+        "species": entries,
+        "alphabet_bytes": [],
+        "clean_cache": {
+            "enabled": config.data.clean_cache_enabled,
+            "cache_dir": config.data.clean_cache_dir,
+            "applicable_sources": 0,
+            "hits": 0,
+            "created": 0,
+            "rebuilt": 0,
+            "disabled": 0,
+        },
+        "split_mode": "full",
+        "source_loading": "streamed_window_codec",
+    }
+    frequency_total, arithmetic_metadata = resolve_frequency_total(config, config.arithmetic.frequency_total)
+
+    for index, (entry, chunks) in enumerate(lazy_sources, start=1):
+        species_name = str(entry["species"])
+        source_name = str(entry.get("source_name", species_name))
+        print(
+            f"[window-codec] writing split=full mode={NON_OVERLAP_MODE} "
+            f"source={index}/{len(lazy_sources)}({source_name})",
+            flush=True,
+        )
+        started = time.perf_counter()
+        target_dir = out_dir / _sanitize_artifact_name("full") / _sanitize_artifact_name(NON_OVERLAP_MODE)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        stem = _sanitize_artifact_name(f"{species_name}_{source_name}")
+        payload_path = target_dir / f"{stem}.mbw"
+        metadata_path = payload_path.with_suffix(payload_path.suffix + ".json")
+        payload, metadata = compress_chunk_stream_to_v2_payload(
+            pipeline=pipeline,
+            chunks=chunks,
+            config=config,
+            run_dir=run_dir,
+            checkpoint_tag=checkpoint_tag,
+            checkpoint_metadata=checkpoint,
+            device=device,
+            source_name=source_name,
+            requested_bytes=config.data.compression_sample_bytes,
+            arithmetic_metadata=arithmetic_metadata,
+            extra_metadata={
+                "split": "full",
+                "mode": NON_OVERLAP_MODE,
+                "species": species_name,
+                **entry,
+            },
+        )
+        payload_path.write_bytes(payload)
+        metadata_path.write_text(json.dumps(metadata, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        metrics = {
+            **actual_window_codec_metrics(
+                payload=b"",
+                metadata=metadata,
+                include_codec_baselines=include_codec_baselines,
+            ),
+            "window_codec_payload_path": str(payload_path),
+            "window_codec_metadata_path": str(metadata_path),
+            "total_wall_seconds_including_source_read": time.perf_counter() - started,
+        }
+        per_source.append({"species": species_name, "source_name": source_name, **metrics})
+
+    return (
+        {
+            NON_OVERLAP_MODE: {
+                "aggregate": summarize_per_source(per_source),
+                "per_source": per_source,
+            }
+        },
+        dataset_summary,
+    )
+
+
 def _run_local_payload_export(
     *,
     run_dir: Path,
@@ -777,7 +964,8 @@ def _resolve_output_paths(args: argparse.Namespace, config: ExperimentConfig) ->
     if args.output_json:
         output_json = Path(args.output_json)
     elif args.run_dir is not None:
-        output_json = Path(args.run_dir) / "compression_compare.json"
+        default_dir_name = "statistics_dnacorpus_full" if _normalize_splits(args.split) == ["full"] else "statistics_dnacorpus"
+        output_json = Path(args.run_dir) / default_dir_name / "compression_compare.json"
     else:
         output_json = Path(config.output.output_dir) / "compression_compare.json"
 
@@ -829,9 +1017,9 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--compression-modes",
         nargs="+",
-        default=list(SUPPORTED_COMPRESSION_MODES),
+        default=[NON_OVERLAP_MODE],
         choices=list(SUPPORTED_COMPRESSION_MODES),
-        help="Compression procedures to run.",
+        help="Compression procedures to run. The actual Window Codec path currently supports windows_nonoverlap.",
     )
     parser.add_argument(
         "--overlap-stride",
@@ -846,7 +1034,13 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Preferred overlap stride measured in patches. Effective stride = overlap_patches * patch_size.",
     )
     parser.add_argument("--print-config", action="store_true", help="Print resolved config before running.")
-    parser.add_argument("--output-json", help="Where to save JSON metrics. Defaults to output_dir/compression_compare.json")
+    parser.add_argument(
+        "--output-json",
+        help=(
+            "Where to save JSON metrics. Defaults to <run-dir>/statistics_dnacorpus_full/compression_compare.json "
+            "for --split full, otherwise <run-dir>/statistics_dnacorpus/compression_compare.json."
+        ),
+    )
     parser.add_argument(
         "--no-auto-export",
         action="store_true",
@@ -901,13 +1095,31 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--window-codec-out-dir",
         default=None,
-        help="Directory for real framed MEGABYTE window bitstreams (.mbw + .json). When set, metrics use actual payloads.",
+        help="Directory for real framed MEGABYTE window bitstreams (.mbw + .json). Defaults to <export-out-dir>/window_codec.",
     )
     parser.add_argument(
         "--window-codec-batch-size",
         type=int,
         default=None,
         help="Batch size used for cached window codec payloads. Defaults to --eval-batch-size/config eval_batch_size.",
+    )
+    parser.add_argument(
+        "--window-codec-compression-mode",
+        choices=["cached", "full_forward"],
+        default="cached",
+        help="Real window codec compression path: cached uses KV cache; full_forward computes complete windows in one forward pass.",
+    )
+    parser.add_argument(
+        "--window-codec-devices",
+        nargs="+",
+        default=None,
+        help="Devices for actual window codec compression, e.g. cuda:0 cuda:1. Defaults to --device.",
+    )
+    parser.add_argument(
+        "--window-codec-workers-per-device",
+        type=int,
+        default=1,
+        help="Reserved for future use; currently only 1 worker per device is supported.",
     )
     parser.add_argument("--export-project", default="", help="Optional project metadata for exported run_metadata.json.")
     parser.add_argument("--export-entity", default="", help="Optional entity metadata for exported run_metadata.json.")
@@ -955,7 +1167,7 @@ def _build_parser() -> argparse.ArgumentParser:
     runtime_group.add_argument(
         "--eval-batch-size",
         type=int,
-        help="Batch size for legacy statistical compression. Ignored when --window-codec-out-dir is set.",
+        help="Legacy statistical batch size. For actual Window Codec compression use --window-codec-batch-size.",
     )
     runtime_group.add_argument("--output-dir")
     runtime_group.add_argument(
@@ -996,19 +1208,31 @@ def main() -> None:
 
     device = resolve_device(config.train.device)
     checkpoint_path = _checkpoint_path(args, config)
-    model, checkpoint = _load_model(config, checkpoint_path, device)
-    window_codec_out_dir = Path(args.window_codec_out_dir) if args.window_codec_out_dir else None
+    output_json, export_out_dir = _resolve_output_paths(args, config)
+    window_codec_out_dir = Path(args.window_codec_out_dir) if args.window_codec_out_dir else export_out_dir / "window_codec"
     window_codec_batch_size = int(args.window_codec_batch_size or config.train.eval_batch_size)
     window_codec_run_dir = Path(args.run_dir) if args.run_dir is not None else config_path.parent
+    window_codec_devices = resolve_device_names(args.window_codec_devices, fallback=device)
     if window_codec_out_dir is not None:
         if window_codec_batch_size <= 0:
             raise ValueError("--window-codec-batch-size must be > 0")
+        if int(args.window_codec_workers_per_device) != 1:
+            raise ValueError("--window-codec-workers-per-device values other than 1 are not supported yet.")
         if args.compression_modes != [NON_OVERLAP_MODE] or config.arithmetic.coding_mode != "model_symbol":
             raise ValueError("--window-codec-out-dir currently requires --compression-modes windows_nonoverlap + model_symbol.")
         print(
-            f"[window-codec] enabled out_dir={window_codec_out_dir} batch_size={window_codec_batch_size}",
+            f"[window-codec] enabled out_dir={window_codec_out_dir} batch_size={window_codec_batch_size} "
+            f"devices={','.join(window_codec_devices)}",
             flush=True,
         )
+    window_codec_pipeline: WindowCodecPipeline | None = None
+    if window_codec_out_dir is not None:
+        model_state_for_count, checkpoint, _ = load_megabyte_checkpoint(checkpoint_path, map_location="cpu")
+        model_parameter_count = int(sum(parameter.numel() for parameter in model_state_for_count.values()))
+        model = None
+    else:
+        model, checkpoint = _load_model(config, checkpoint_path, device)
+        model_parameter_count = int(sum(parameter.numel() for parameter in model.parameters()))
     factorizer = None
     if config.arithmetic.coding_mode == "base_prefix_exact_gpu_cpu":
         factorizer = build_fixed_token_arithmetic_factorizer(
@@ -1020,33 +1244,39 @@ def main() -> None:
         ).to(device)
     requested_splits = _normalize_splits(args.split)
     loading_full_sources = requested_splits == ["full"]
-    print("[compress] loading full sources..." if loading_full_sources else "[compress] loading data splits...", flush=True)
-    split_started = time.time()
-    splits = (
-        load_full_sources(config.data, seq_length=config.model.seq_length)
-        if loading_full_sources
-        else load_splits(config.data, seq_length=config.model.seq_length)
-    )
-    split_entries = splits.summary["species"]
-    clean_cache_summary = splits.summary.get("clean_cache", {})
-    print(
-        f"[compress] {'full sources' if loading_full_sources else 'data splits'} loaded: "
-        f"sources={len(split_entries)} elapsed={time.time() - split_started:.1f}s",
-        flush=True,
-    )
-    if isinstance(clean_cache_summary, dict) and int(clean_cache_summary.get("applicable_sources", 0)) > 0:
+    streaming_full_window_codec = window_codec_out_dir is not None and loading_full_sources
+    if streaming_full_window_codec:
+        print("[compress] using streamed full-source window codec loading", flush=True)
+        splits = None
+        dataset_summary: dict[str, object] = {"species": [], "source_loading": "streamed_window_codec"}
+    else:
+        print("[compress] loading full sources..." if loading_full_sources else "[compress] loading data splits...", flush=True)
+        split_started = time.time()
+        splits = (
+            load_full_sources(config.data, seq_length=config.model.seq_length)
+            if loading_full_sources
+            else load_splits(config.data, seq_length=config.model.seq_length)
+        )
+        split_entries = splits.summary["species"]
+        clean_cache_summary = splits.summary.get("clean_cache", {})
         print(
-            "[cache] clean "
-            f"enabled={bool(clean_cache_summary.get('enabled'))} "
-            f"dir={clean_cache_summary.get('cache_dir')} "
-            f"hits={int(clean_cache_summary.get('hits', 0))} "
-            f"created={int(clean_cache_summary.get('created', 0))} "
-            f"rebuilt={int(clean_cache_summary.get('rebuilt', 0))} "
-            f"disabled={int(clean_cache_summary.get('disabled', 0))}",
+            f"[compress] {'full sources' if loading_full_sources else 'data splits'} loaded: "
+            f"sources={len(split_entries)} elapsed={time.time() - split_started:.1f}s",
             flush=True,
         )
+        if isinstance(clean_cache_summary, dict) and int(clean_cache_summary.get("applicable_sources", 0)) > 0:
+            print(
+                "[cache] clean "
+                f"enabled={bool(clean_cache_summary.get('enabled'))} "
+                f"dir={clean_cache_summary.get('cache_dir')} "
+                f"hits={int(clean_cache_summary.get('hits', 0))} "
+                f"created={int(clean_cache_summary.get('created', 0))} "
+                f"rebuilt={int(clean_cache_summary.get('rebuilt', 0))} "
+                f"disabled={int(clean_cache_summary.get('disabled', 0))}",
+                flush=True,
+            )
+        dataset_summary = splits.summary
     overlap_stride = _resolve_overlap_stride(config, args)
-    output_json, export_out_dir = _resolve_output_paths(args, config)
     position_bits_out_dir = _resolve_position_bits_out_dir(
         args,
         output_json=output_json,
@@ -1057,55 +1287,94 @@ def main() -> None:
         "checkpoint_path": str(checkpoint_path),
         "checkpoint_step": checkpoint.get("step"),
         "best_val_bpb": checkpoint.get("best_val_bpb"),
-        "model_parameters": int(sum(parameter.numel() for parameter in model.parameters())),
+        "model_parameters": model_parameter_count,
         "overlap_stride_tokens": overlap_stride,
         "overlap_stride_patches": overlap_stride // config.model.patch_size,
         "resolved_config": config.to_dict(),
-        "dataset": splits.summary,
+        "dataset": dataset_summary,
         "results": {},
     }
 
-    for split_name in requested_splits:
-        print(f"[compress] split={split_name} modes={','.join(args.compression_modes)}")
-        metrics["results"][split_name] = _run_split(
-            model=model,
+    if window_codec_out_dir is not None:
+        frequency_total, _ = resolve_frequency_total(config, config.arithmetic.frequency_total)
+        window_codec_pipeline = WindowCodecPipeline(
             config=config,
-            checkpoint=checkpoint,
-            run_dir=window_codec_run_dir,
-            checkpoint_tag=args.checkpoint_tag,
-            split_name=split_name,
-            splits=splits,
-            modes=args.compression_modes,
-            overlap_stride=overlap_stride,
-            device=device,
-            factorizer=factorizer,
-            export_position_bits_curves=args.export_position_bits_curves,
-            position_bits_out_dir=position_bits_out_dir,
-            include_codec_baselines=not args.skip_codec_baselines,
-            window_codec_out_dir=window_codec_out_dir,
-            window_codec_batch_size=window_codec_batch_size,
+            checkpoint_path=checkpoint_path,
+            devices=window_codec_devices,
+            dtype_name=str(config.train.dtype),
+            frequency_total=frequency_total,
+            batch_size=window_codec_batch_size,
+            compression_mode=args.window_codec_compression_mode,
         )
-        if "arithmetic" not in metrics:
-            split_result = metrics["results"][split_name]
-            if isinstance(split_result, dict):
-                for mode_payload in split_result.values():
-                    if not isinstance(mode_payload, dict):
-                        continue
-                    aggregate = mode_payload.get("aggregate")
-                    if not isinstance(aggregate, dict):
-                        continue
-                    if "arithmetic_frequency_total" in aggregate:
-                        metrics["arithmetic"] = {
-                            "frequency_total": aggregate.get("arithmetic_frequency_total"),
-                            "vocab_size": aggregate.get("arithmetic_vocab_size"),
-                            "target_uniform_mass": aggregate.get("arithmetic_target_uniform_mass"),
-                            "effective_uniform_mass": aggregate.get("arithmetic_effective_uniform_mass"),
-                            "coding_mode": aggregate.get("arithmetic_coding_mode"),
-                            "quantization_mode": aggregate.get("arithmetic_quantization_mode"),
-                            "merge_size": aggregate.get("arithmetic_merge_size"),
-                            "backend": aggregate.get("arithmetic_backend"),
-                        }
-                        break
+
+    try:
+        if window_codec_pipeline is not None:
+            window_codec_pipeline.start()
+        if streaming_full_window_codec:
+            if window_codec_pipeline is None:
+                raise RuntimeError("window codec pipeline is required for streaming full-source compression")
+            split_result, dataset_summary = _run_full_window_codec_streaming(
+                pipeline=window_codec_pipeline,
+                config=config,
+                checkpoint=checkpoint,
+                run_dir=window_codec_run_dir,
+                checkpoint_tag=args.checkpoint_tag,
+                device=device,
+                out_dir=window_codec_out_dir,
+                include_codec_baselines=not args.skip_codec_baselines,
+            )
+            metrics["dataset"] = dataset_summary
+            metrics["results"]["full"] = split_result
+            split_names_to_scan = ["full"]
+        else:
+            split_names_to_scan = requested_splits
+            for split_name in requested_splits:
+                print(f"[compress] split={split_name} modes={','.join(args.compression_modes)}")
+                metrics["results"][split_name] = _run_split(
+                    model=model,
+                    window_codec_pipeline=window_codec_pipeline,
+                    config=config,
+                    checkpoint=checkpoint,
+                    checkpoint_path=checkpoint_path,
+                    run_dir=window_codec_run_dir,
+                    checkpoint_tag=args.checkpoint_tag,
+                    split_name=split_name,
+                    splits=splits,
+                    modes=args.compression_modes,
+                    overlap_stride=overlap_stride,
+                    device=device,
+                    factorizer=factorizer,
+                    export_position_bits_curves=args.export_position_bits_curves,
+                    position_bits_out_dir=position_bits_out_dir,
+                    include_codec_baselines=not args.skip_codec_baselines,
+                    window_codec_out_dir=window_codec_out_dir,
+                    window_codec_batch_size=window_codec_batch_size,
+                )
+        for split_name in split_names_to_scan:
+            if "arithmetic" not in metrics:
+                split_result = metrics["results"][split_name]
+                if isinstance(split_result, dict):
+                    for mode_payload in split_result.values():
+                        if not isinstance(mode_payload, dict):
+                            continue
+                        aggregate = mode_payload.get("aggregate")
+                        if not isinstance(aggregate, dict):
+                            continue
+                        if "arithmetic_frequency_total" in aggregate:
+                            metrics["arithmetic"] = {
+                                "frequency_total": aggregate.get("arithmetic_frequency_total"),
+                                "vocab_size": aggregate.get("arithmetic_vocab_size"),
+                                "target_uniform_mass": aggregate.get("arithmetic_target_uniform_mass"),
+                                "effective_uniform_mass": aggregate.get("arithmetic_effective_uniform_mass"),
+                                "coding_mode": aggregate.get("arithmetic_coding_mode"),
+                                "quantization_mode": aggregate.get("arithmetic_quantization_mode"),
+                                "merge_size": aggregate.get("arithmetic_merge_size"),
+                                "backend": aggregate.get("arithmetic_backend"),
+                            }
+                            break
+    finally:
+        if window_codec_pipeline is not None:
+            window_codec_pipeline.close()
 
     output_json.parent.mkdir(parents=True, exist_ok=True)
     output_json.write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")

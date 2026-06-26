@@ -1,0 +1,489 @@
+{
+  "dataset": "opengenome2",
+  "source": "gtdb_v220",
+  "species": null,
+  "source_paths": [
+    "/data/students/Liang_junnan/opengenome2_subset/fasta_test_subset_100mb_per_source/gtdb_v220.fasta"
+  ],
+  "source_is_fasta": true,
+  "alphabet": "ACGTN",
+  "filtered_source_bases": 97479784,
+  "filtered_source_bases_known": true,
+  "filtered_source_bases_lower_bound": 8383393,
+  "region_start": 8333393,
+  "requested_region_bases": 50000,
+  "region_bases": 50000,
+  "random_region": true,
+  "seed": 12345,
+  "model_count": 2,
+  "models": {
+    "megabyte1": {
+      "adapter_name": "megabyte1",
+      "adapter_class": "MegabyteProbabilityAdapter",
+      "alphabet": "ACGTN",
+      "token_size": 3,
+      "valid_base_count": 49998,
+      "filtered_out_bases": 0,
+      "trimmed_tail_bases": 2,
+      "model_window_bases": 3072,
+      "model_forward_seconds": 0.21321212498878594,
+      "softmax_seconds": 0.001775040989741683,
+      "factorization_seconds": 0.6270024840341648,
+      "data_transfer_seconds": 0.00023874599719420075,
+      "total_bits": 74042.17030822473,
+      "total_bpb": 1.4809026422701854,
+      "statistics": {
+        "min": 2.5913974733780707e-05,
+        "mean": 1.4809026422701854,
+        "median": 1.4089043097782157,
+        "p90": 2.6147153053946943,
+        "p95": 3.1288948050301593,
+        "p99": 4.561395291832568,
+        "max": 9.337577660726826
+      },
+      "worst_plot_window": {
+        "window_index": 16,
+        "region_start": 49152,
+        "region_end_exclusive": 52224,
+        "source_start": 8382545,
+        "source_end_exclusive": 8385617,
+        "base_count": 846,
+        "sum_bits": 1455.5450020792018,
+        "mean_bpb": 1.7205023665238792,
+        "model": "megabyte1",
+        "plot_window_bases": 3072
+      },
+      "adapter_wall_seconds": 0.8902265220094705
+    },
+    "geco22": {
+      "adapter_name": "geco22",
+      "adapter_class": "Geco2RegionAdapter",
+      "alphabet": "ACGTN",
+      "token_size": 1,
+      "valid_base_count": 50000,
+      "filtered_out_bases": 0,
+      "trimmed_tail_bases": 0,
+      "model_window_bases": 1024,
+      "model_forward_seconds": 0.0,
+      "softmax_seconds": 0.0,
+      "factorization_seconds": 0.0,
+      "data_transfer_seconds": 0.0,
+      "geco2_binary": "/home/Liang_junnan/miniconda3/bin/GeCo2",
+      "geco2_level": 5,
+      "geco2_level_source": "configured",
+      "geco2_default_level": 5,
+      "geco2_use_dnacorpus_paper_levels": true,
+      "geco2_profile_mode": "prefix_delta",
+      "geco2_pseudo_window_bases": 1024,
+      "continuous_compressed_bytes": 11624,
+      "continuous_bits": 92992.0,
+      "continuous_bits_per_base": 1.85984,
+      "geco2_compression_seconds": 9.179192843061173,
+      "geco2_wall_seconds": 9.26237100599974,
+      "geco2_full_command": [
+        "/home/Liang_junnan/miniconda3/bin/GeCo2",
+        "-F",
+        "-v",
+        "-l",
+        "5",
+        "/tmp/geco2_region_zlsg9dht/geco22_full.seq"
+      ],
+      "geco2_full_stdout_tail": "Analyzing data and creating models ...\nDone!\nCompressing target sequence 1 [bases:50000] ...\nDone!                          \nTotal bytes: 11624 (11.4 KB), 1.86 bpb, 1.851 bps w/ no header, Normalized Dissimilarity Rate: 0.92992\nSpent 0.305819 sec.\n",
+      "geco2_full_stderr_tail": "Force mode ......................... yes\nTarget model 1:\n  [+] Context order ................ 4\n  [+] Alpha denominator ............ 1\n  [+] Inverted repeats ............. no (only regular)\n  [+] Cache-hash size .............. 0\n  [+] Gamma ........................ 0.820\n  [+] Allowable substitutions ...... 0\nTarget model 2:\n  [+] Context order ................ 6\n  [+] Alpha denominator ............ 1\n  [+] Inverted repeats ............. mix (regular and inverted)\n  [+] Cache-hash size .............. 0\n  [+] Gamma ........................ 0.720\n  [+] Allowable substitutions ...... 0\nTarget model 3:\n  [+] Context order ................ 13\n  [+] Alpha denominator ............ 50\n  [+] Inverted repeats ............. mix (regular and inverted)\n  [+] Cache-hash size .............. 1\n  [+] Gamma ........................ 0.950\n  [+] Allowable substitutions ...... 2\n  [+] Substitutions alpha den ...... 15\n  [+] Substitutions gamma .......... 0.950\nTarget files (1):\n  [+] Filename 1  .................. /tmp/geco2_region_zlsg9dht/geco22_full.seq\n",
+      "geco2_prefix_results": [
+        {
+          "endpoint_bases": 1024,
+          "compressed_bytes": 313,
+          "delta_bytes": 313,
+          "span_bases": 1024,
+          "seconds": 0.034632823007996194
+        },
+        {
+          "endpoint_bases": 2048,
+          "compressed_bytes": 554,
+          "delta_bytes": 241,
+          "span_bases": 1024,
+          "seconds": 0.03487850000965409
+        },
+        {
+          "endpoint_bases": 3072,
+          "compressed_bytes": 793,
+          "delta_bytes": 239,
+          "span_bases": 1024,
+          "seconds": 0.03838874099892564
+        },
+        {
+          "endpoint_bases": 4096,
+          "compressed_bytes": 1026,
+          "delta_bytes": 233,
+          "span_bases": 1024,
+          "seconds": 0.0479499849898275
+        },
+        {
+          "endpoint_bases": 5120,
+          "compressed_bytes": 1269,
+          "delta_bytes": 243,
+          "span_bases": 1024,
+          "seconds": 0.06780892499955371
+        },
+        {
+          "endpoint_bases": 6144,
+          "compressed_bytes": 1502,
+          "delta_bytes": 233,
+          "span_bases": 1024,
+          "seconds": 0.06347565101168584
+        },
+        {
+          "endpoint_bases": 7168,
+          "compressed_bytes": 1743,
+          "delta_bytes": 241,
+          "span_bases": 1024,
+          "seconds": 0.08124596100242343
+        },
+        {
+          "endpoint_bases": 8192,
+          "compressed_bytes": 1986,
+          "delta_bytes": 243,
+          "span_bases": 1024,
+          "seconds": 0.06919069599825889
+        },
+        {
+          "endpoint_bases": 9216,
+          "compressed_bytes": 2229,
+          "delta_bytes": 243,
+          "span_bases": 1024,
+          "seconds": 0.0751325550081674
+        },
+        {
+          "endpoint_bases": 10240,
+          "compressed_bytes": 2468,
+          "delta_bytes": 239,
+          "span_bases": 1024,
+          "seconds": 0.08963258200674318
+        },
+        {
+          "endpoint_bases": 11264,
+          "compressed_bytes": 2706,
+          "delta_bytes": 238,
+          "span_bases": 1024,
+          "seconds": 0.09736097299901303
+        },
+        {
+          "endpoint_bases": 12288,
+          "compressed_bytes": 2953,
+          "delta_bytes": 247,
+          "span_bases": 1024,
+          "seconds": 0.11269815301056951
+        },
+        {
+          "endpoint_bases": 13312,
+          "compressed_bytes": 3186,
+          "delta_bytes": 233,
+          "span_bases": 1024,
+          "seconds": 0.17330814099113923
+        },
+        {
+          "endpoint_bases": 14336,
+          "compressed_bytes": 3415,
+          "delta_bytes": 229,
+          "span_bases": 1024,
+          "seconds": 0.1549517750099767
+        },
+        {
+          "endpoint_bases": 15360,
+          "compressed_bytes": 3652,
+          "delta_bytes": 237,
+          "span_bases": 1024,
+          "seconds": 0.14461935000144877
+        },
+        {
+          "endpoint_bases": 16384,
+          "compressed_bytes": 3894,
+          "delta_bytes": 242,
+          "span_bases": 1024,
+          "seconds": 0.15921536799578462
+        },
+        {
+          "endpoint_bases": 17408,
+          "compressed_bytes": 4132,
+          "delta_bytes": 238,
+          "span_bases": 1024,
+          "seconds": 0.1785728230024688
+        },
+        {
+          "endpoint_bases": 18432,
+          "compressed_bytes": 4367,
+          "delta_bytes": 235,
+          "span_bases": 1024,
+          "seconds": 0.23964591599360574
+        },
+        {
+          "endpoint_bases": 19456,
+          "compressed_bytes": 4607,
+          "delta_bytes": 240,
+          "span_bases": 1024,
+          "seconds": 0.12260980800783727
+        },
+        {
+          "endpoint_bases": 20480,
+          "compressed_bytes": 4847,
+          "delta_bytes": 240,
+          "span_bases": 1024,
+          "seconds": 0.13067794899689034
+        },
+        {
+          "endpoint_bases": 21504,
+          "compressed_bytes": 5092,
+          "delta_bytes": 245,
+          "span_bases": 1024,
+          "seconds": 0.14972268599376548
+        },
+        {
+          "endpoint_bases": 22528,
+          "compressed_bytes": 5347,
+          "delta_bytes": 255,
+          "span_bases": 1024,
+          "seconds": 0.22847109599388205
+        },
+        {
+          "endpoint_bases": 23552,
+          "compressed_bytes": 5589,
+          "delta_bytes": 242,
+          "span_bases": 1024,
+          "seconds": 0.1718141699966509
+        },
+        {
+          "endpoint_bases": 24576,
+          "compressed_bytes": 5828,
+          "delta_bytes": 239,
+          "span_bases": 1024,
+          "seconds": 0.18714372100657783
+        },
+        {
+          "endpoint_bases": 25600,
+          "compressed_bytes": 6065,
+          "delta_bytes": 237,
+          "span_bases": 1024,
+          "seconds": 0.1764205219951691
+        },
+        {
+          "endpoint_bases": 26624,
+          "compressed_bytes": 6299,
+          "delta_bytes": 234,
+          "span_bases": 1024,
+          "seconds": 0.24358455100446008
+        },
+        {
+          "endpoint_bases": 27648,
+          "compressed_bytes": 6533,
+          "delta_bytes": 234,
+          "span_bases": 1024,
+          "seconds": 0.19071568299841601
+        },
+        {
+          "endpoint_bases": 28672,
+          "compressed_bytes": 6773,
+          "delta_bytes": 240,
+          "span_bases": 1024,
+          "seconds": 0.1595989909983473
+        },
+        {
+          "endpoint_bases": 29696,
+          "compressed_bytes": 7008,
+          "delta_bytes": 235,
+          "span_bases": 1024,
+          "seconds": 0.20056168601149693
+        },
+        {
+          "endpoint_bases": 30720,
+          "compressed_bytes": 7243,
+          "delta_bytes": 235,
+          "span_bases": 1024,
+          "seconds": 0.2688787160004722
+        },
+        {
+          "endpoint_bases": 31744,
+          "compressed_bytes": 7476,
+          "delta_bytes": 233,
+          "span_bases": 1024,
+          "seconds": 0.18387476800126024
+        },
+        {
+          "endpoint_bases": 32768,
+          "compressed_bytes": 7714,
+          "delta_bytes": 238,
+          "span_bases": 1024,
+          "seconds": 0.2311435250012437
+        },
+        {
+          "endpoint_bases": 33792,
+          "compressed_bytes": 7948,
+          "delta_bytes": 234,
+          "span_bases": 1024,
+          "seconds": 0.26545534998876974
+        },
+        {
+          "endpoint_bases": 34816,
+          "compressed_bytes": 8175,
+          "delta_bytes": 227,
+          "span_bases": 1024,
+          "seconds": 0.1872091539989924
+        },
+        {
+          "endpoint_bases": 35840,
+          "compressed_bytes": 8405,
+          "delta_bytes": 230,
+          "span_bases": 1024,
+          "seconds": 0.19500317799975164
+        },
+        {
+          "endpoint_bases": 36864,
+          "compressed_bytes": 8638,
+          "delta_bytes": 233,
+          "span_bases": 1024,
+          "seconds": 0.38644505399861373
+        },
+        {
+          "endpoint_bases": 37888,
+          "compressed_bytes": 8889,
+          "delta_bytes": 251,
+          "span_bases": 1024,
+          "seconds": 0.19493516600050498
+        },
+        {
+          "endpoint_bases": 38912,
+          "compressed_bytes": 9121,
+          "delta_bytes": 232,
+          "span_bases": 1024,
+          "seconds": 0.24900233901280444
+        },
+        {
+          "endpoint_bases": 39936,
+          "compressed_bytes": 9337,
+          "delta_bytes": 216,
+          "span_bases": 1024,
+          "seconds": 0.31135415901371744
+        },
+        {
+          "endpoint_bases": 40960,
+          "compressed_bytes": 9555,
+          "delta_bytes": 218,
+          "span_bases": 1024,
+          "seconds": 0.24518682999769226
+        },
+        {
+          "endpoint_bases": 41984,
+          "compressed_bytes": 9785,
+          "delta_bytes": 230,
+          "span_bases": 1024,
+          "seconds": 0.24166303800302558
+        },
+        {
+          "endpoint_bases": 43008,
+          "compressed_bytes": 10019,
+          "delta_bytes": 234,
+          "span_bases": 1024,
+          "seconds": 0.41602543501358014
+        },
+        {
+          "endpoint_bases": 44032,
+          "compressed_bytes": 10256,
+          "delta_bytes": 237,
+          "span_bases": 1024,
+          "seconds": 0.2271799629961606
+        },
+        {
+          "endpoint_bases": 45056,
+          "compressed_bytes": 10487,
+          "delta_bytes": 231,
+          "span_bases": 1024,
+          "seconds": 0.28201294799509924
+        },
+        {
+          "endpoint_bases": 46080,
+          "compressed_bytes": 10717,
+          "delta_bytes": 230,
+          "span_bases": 1024,
+          "seconds": 0.29981214899453335
+        },
+        {
+          "endpoint_bases": 47104,
+          "compressed_bytes": 10951,
+          "delta_bytes": 234,
+          "span_bases": 1024,
+          "seconds": 0.3060837100056233
+        },
+        {
+          "endpoint_bases": 48128,
+          "compressed_bytes": 11191,
+          "delta_bytes": 240,
+          "span_bases": 1024,
+          "seconds": 0.30955063000146765
+        },
+        {
+          "endpoint_bases": 49152,
+          "compressed_bytes": 11428,
+          "delta_bytes": 237,
+          "span_bases": 1024,
+          "seconds": 0.2442850660008844
+        },
+        {
+          "endpoint_bases": 50000,
+          "compressed_bytes": 11624,
+          "delta_bytes": 196,
+          "span_bases": 848,
+          "seconds": 0.3100618839962408
+        }
+      ],
+      "geco2_note": "GeCo2 is compressed continuously; per-base BPB is assigned from continuous prefix-size deltas over pseudo windows.",
+      "total_bits": 92992.0,
+      "total_bpb": 1.85984,
+      "statistics": {
+        "min": 1.6875,
+        "mean": 1.85984,
+        "median": 1.8515625,
+        "p90": 1.9140625,
+        "p95": 1.9609375,
+        "p99": 2.4453125,
+        "max": 2.4453125
+      },
+      "worst_plot_window": {
+        "window_index": 0,
+        "region_start": 0,
+        "region_end_exclusive": 1024,
+        "source_start": 8333393,
+        "source_end_exclusive": 8334417,
+        "base_count": 1024,
+        "sum_bits": 2504.0,
+        "mean_bpb": 2.4453125,
+        "model": "geco22",
+        "plot_window_bases": 1024
+      },
+      "adapter_wall_seconds": 9.262441918006516
+    }
+  },
+  "timing": {
+    "source_length_seconds": 2.800181288999738,
+    "region_read_seconds": 0.1446666690026177,
+    "total_wall_seconds": 15.597853416009457
+  },
+  "outputs": {
+    "json": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/region_bpb.json",
+    "per_base_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/region_bpb_per_base.csv",
+    "windows_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/region_bpb_windows.csv",
+    "model_window_average_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/region_bpb_model_window_average.csv",
+    "curve_png": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/region_bpb_curve.png",
+    "individual_window_dir": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows",
+    "individual_window_pngs": [
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows/window_00000.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows/window_00001.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows/window_00002.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows/window_00003.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows/window_00004.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows/window_00005.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows/window_00006.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/individual_windows/window_00007.png"
+    ]
+  },
+  "_json_path": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe_og2/gtdb_v220/region_bpb.json"
+}

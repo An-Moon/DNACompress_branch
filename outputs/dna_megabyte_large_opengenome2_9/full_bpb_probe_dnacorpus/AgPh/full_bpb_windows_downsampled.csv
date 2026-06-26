@@ -1,0 +1,3 @@
+window_index,region_start,region_end_exclusive,source_start,source_end_exclusive,base_count,sum_bits,mean_bpb,model,plot_window_bases
+0,0,43968,0,43968,43968,80409.25768232346,1.8288131750892342,megabyte1,1000000
+0,0,43970,0,43970,43970,85225.39541625977,1.9382623474246023,geco22,1000000

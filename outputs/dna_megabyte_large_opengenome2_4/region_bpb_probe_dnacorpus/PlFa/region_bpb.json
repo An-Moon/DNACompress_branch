@@ -1,0 +1,83 @@
+{
+  "dataset": "dnacorpus",
+  "source": "PlFa",
+  "species": "PlFa",
+  "source_paths": [
+    "datasets/DNACorpus/PlFa"
+  ],
+  "source_is_fasta": false,
+  "alphabet": "ACGTN",
+  "filtered_source_bases": 8986712,
+  "filtered_source_bases_known": true,
+  "filtered_source_bases_lower_bound": 8091980,
+  "region_start": 8042828,
+  "requested_region_bases": 49152,
+  "region_bases": 49152,
+  "random_region": true,
+  "seed": 12345,
+  "model_count": 1,
+  "models": {
+    "megabyte1": {
+      "adapter_name": "megabyte1",
+      "adapter_class": "MegabyteProbabilityAdapter",
+      "alphabet": "ACGTN",
+      "token_size": 3,
+      "valid_base_count": 49152,
+      "filtered_out_bases": 0,
+      "trimmed_tail_bases": 0,
+      "model_window_bases": 3072,
+      "model_forward_seconds": 0.14259165700059384,
+      "softmax_seconds": 0.0001237239921465516,
+      "factorization_seconds": 0.3054354180057999,
+      "data_transfer_seconds": 5.328199767973274e-05,
+      "total_bits": 88765.27024132025,
+      "total_bpb": 1.8059340462508189,
+      "statistics": {
+        "min": 0.010811438617880934,
+        "mean": 1.8059340462508189,
+        "median": 1.5882520147020214,
+        "p90": 2.878317235079875,
+        "p95": 3.1157625546328225,
+        "p99": 3.6239386906582185,
+        "max": 7.673216576004333
+      },
+      "worst_plot_window": {
+        "window_index": 11,
+        "region_start": 33792,
+        "region_end_exclusive": 36864,
+        "source_start": 8076620,
+        "source_end_exclusive": 8079692,
+        "base_count": 3072,
+        "sum_bits": 5675.965770824449,
+        "mean_bpb": 1.8476451076902503,
+        "model": "megabyte1",
+        "plot_window_bases": 3072
+      },
+      "adapter_wall_seconds": 0.479478516994277
+    }
+  },
+  "timing": {
+    "source_length_seconds": 0.059099823993165046,
+    "region_read_seconds": 0.04293221999250818,
+    "total_wall_seconds": 17.426873119009542
+  },
+  "outputs": {
+    "json": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/region_bpb.json",
+    "per_base_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/region_bpb_per_base.csv",
+    "windows_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/region_bpb_windows.csv",
+    "model_window_average_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/region_bpb_model_window_average.csv",
+    "curve_png": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/region_bpb_curve.png",
+    "individual_window_dir": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows",
+    "individual_window_pngs": [
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows/window_00000.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows/window_00001.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows/window_00002.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows/window_00003.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows/window_00004.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows/window_00005.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows/window_00006.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/individual_windows/window_00007.png"
+    ]
+  },
+  "_json_path": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/PlFa/region_bpb.json"
+}

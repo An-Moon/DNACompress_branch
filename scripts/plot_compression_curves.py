@@ -12,7 +12,7 @@ For each statistics directory that contains one, it generates per split/mode art
 Example:
 
     python scripts/plot_compression_curves.py \
-      --root-dir outputs/dna_dnagpt_0p1bm_all_finetune
+      --root-dir outputs/dna_megabyte_large_opengenome2_4
 """
 
 import argparse
@@ -290,6 +290,54 @@ def _experiment_baseline_map(compression_compare: dict[str, Any], split_name: st
     return result
 
 
+def _split_names(compression_compare: dict[str, Any]) -> list[str]:
+    results = compression_compare.get("results")
+    if not isinstance(results, dict):
+        return []
+    return [str(split_name) for split_name, split_payload in results.items() if isinstance(split_payload, dict)]
+
+
+def _looks_like_opengenome2_compare(compression_compare: dict[str, Any]) -> bool:
+    markers: list[Any] = [compression_compare.get("input_dir")]
+    dataset = compression_compare.get("dataset")
+    if isinstance(dataset, dict):
+        markers.extend([dataset.get("dataset_dir"), dataset.get("sequence_source_mode")])
+        species_rows = dataset.get("species")
+        if isinstance(species_rows, list):
+            for row in species_rows:
+                if isinstance(row, dict):
+                    markers.extend([row.get("source_path"), row.get("source_mode")])
+    return any(isinstance(marker, str) and "opengenome2" in marker.lower() for marker in markers)
+
+
+def _resolve_auto_geco2_baseline_path(compression_compare: dict[str, Any]) -> Path | None:
+    if _looks_like_opengenome2_compare(compression_compare):
+        return resolve_geco2_baseline_path("opengenome2_100mb")
+    split_names = _split_names(compression_compare)
+    selector = "dnacorpus_fullsplit" if split_names == ["full"] else "dnacorpus_0p6_0p2_0p2"
+    return resolve_geco2_baseline_path(selector)
+
+
+def _resolve_baseline_compare_for_artifacts(
+    compression_compare: dict[str, Any],
+    baseline_compression_compare_path: Path | None,
+    geco2_baseline_selector: str | None,
+) -> dict[str, Any] | None:
+    baseline_path = baseline_compression_compare_path
+    if baseline_path is None:
+        selector = geco2_baseline_selector
+        if selector == "auto":
+            baseline_path = _resolve_auto_geco2_baseline_path(compression_compare)
+        else:
+            baseline_path = resolve_geco2_baseline_path(selector)
+    if baseline_path is None:
+        return None
+    if not baseline_path.exists():
+        print(f"[plots] skip baseline overlay: not found {baseline_path}", flush=True)
+        return None
+    return _read_json(baseline_path)
+
+
 def _baseline_rows(compression_compare: dict[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     metadata_map = _source_metadata_map(compression_compare)
     order_map = _source_order_map(compression_compare)
@@ -396,6 +444,7 @@ def _build_split_mode_rows(
         metadata = metadata_map.get(source_name) or metadata_map.get(species_name) or {}
         total_size = _safe_float(metadata.get("total_size"))
         arithmetic_bpb = _safe_float(item.get("arithmetic_bits_per_base"))
+        payload_only_bpb = _safe_float(item.get("compressed_bpb_payload_only"))
         theoretical_bpb = _safe_float(item.get("theoretical_bits_per_base"))
         compression_bases_per_second = _safe_float(item.get("compression_bases_per_second"))
         compression_bytes_per_second = _safe_float(item.get("compression_bytes_per_second"))
@@ -415,8 +464,12 @@ def _build_split_mode_rows(
             "sample_bytes": item.get("sample_bytes"),
             "sample_bases": item.get("sample_bases"),
             "arithmetic_bits_per_base": arithmetic_bpb,
+            "payload_only_bits_per_base": payload_only_bpb,
             "theoretical_bits_per_base": theoretical_bpb,
             "vs_2bit_percent": (arithmetic_bpb / 2.0 * 100.0) if arithmetic_bpb is not None else None,
+            "payload_only_vs_2bit_percent": (payload_only_bpb / 2.0 * 100.0) if payload_only_bpb is not None else None,
+            "arithmetic_payload_bytes": item.get("arithmetic_payload_bytes"),
+            "framing_bytes": item.get("framing_bytes"),
             **paper_baseline,
             "experiment_baseline_compressed_bytes": experiment_baseline.get("experiment_baseline_compressed_bytes"),
             "experiment_baseline_geco2_mode": experiment_baseline.get("experiment_baseline_geco2_mode"),
@@ -453,8 +506,12 @@ def _write_rows_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "sample_bytes",
         "sample_bases",
         "arithmetic_bits_per_base",
+        "payload_only_bits_per_base",
         "theoretical_bits_per_base",
         "vs_2bit_percent",
+        "payload_only_vs_2bit_percent",
+        "arithmetic_payload_bytes",
+        "framing_bytes",
         "paper_baseline_compressed_bytes",
         "paper_baseline_geco2_mode",
         "paper_baseline_percent",
@@ -520,6 +577,7 @@ def _write_plot_png(
     run_name: str,
     split_name: str,
     mode_name: str,
+    payload_only: bool = False,
 ) -> None:
     plt = _load_matplotlib_pyplot()
 
@@ -529,8 +587,16 @@ def _write_plot_png(
         float(value) if isinstance(value := row.get("arithmetic_bits_per_base"), (int, float)) else float("nan")
         for row in rows
     ]
+    payload_only_bpb = [
+        float(value) if isinstance(value := row.get("payload_only_bits_per_base"), (int, float)) else float("nan")
+        for row in rows
+    ]
     vs_2bit_percent = [
         float(value) if isinstance(value := row.get("vs_2bit_percent"), (int, float)) else float("nan")
+        for row in rows
+    ]
+    payload_only_vs_2bit_percent = [
+        float(value) if isinstance(value := row.get("payload_only_vs_2bit_percent"), (int, float)) else float("nan")
         for row in rows
     ]
     paper_baseline_percent = [
@@ -553,6 +619,14 @@ def _write_plot_png(
         float(value) if isinstance(value := row.get("compression_mbases_per_second"), (int, float)) else float("nan")
         for row in rows
     ]
+    if payload_only:
+        arithmetic_plot_bpb = payload_only_bpb
+        percent_plot_values = payload_only_vs_2bit_percent
+        ratio_title_suffix = "Payload-only Compression Ratio (BPB)"
+    else:
+        arithmetic_plot_bpb = arithmetic_bpb
+        percent_plot_values = vs_2bit_percent
+        ratio_title_suffix = "Compression Ratio (BPB)"
 
     figure_width = max(12.0, min(28.0, len(rows) * 0.8))
     figure, axes = plt.subplots(3, 1, figsize=(figure_width, 13.0), sharex=True)
@@ -560,9 +634,9 @@ def _write_plot_png(
     _plot_series(
         axes[0],
         x_values,
-        arithmetic_bpb,
+        arithmetic_plot_bpb,
         ylabel="Arithmetic BPB",
-        title=f"{run_name} | {split_name} | {mode_name} | Compression Ratio (BPB)",
+        title=f"{run_name} | {split_name} | {mode_name} | {ratio_title_suffix}",
         color="#1f77b4",
         label=series_label,
     )
@@ -583,7 +657,7 @@ def _write_plot_png(
     _plot_series(
         axes[1],
         x_values,
-        vs_2bit_percent,
+        percent_plot_values,
         ylabel="% of 2-bit",
         title="Compression Ratio Relative to 2-bit Encoding",
         color="#ff7f0e",
@@ -671,11 +745,14 @@ def generate_artifacts_for_compression_compare(
     *,
     out_dir_name: str = "compression_curves",
     baseline_compression_compare_path: Path | None = None,
+    geco2_baseline_selector: str | None = None,
     include_geco2_modes: bool = False,
 ) -> list[Path]:
     compression_compare = _read_json(compression_compare_path)
-    experiment_baseline_compare = (
-        _read_json(baseline_compression_compare_path) if baseline_compression_compare_path is not None else None
+    experiment_baseline_compare = _resolve_baseline_compare_for_artifacts(
+        compression_compare,
+        baseline_compression_compare_path,
+        geco2_baseline_selector,
     )
     stats_dir = compression_compare_path.parent
     results = compression_compare.get("results")
@@ -708,6 +785,7 @@ def generate_artifacts_for_compression_compare(
             artifact_stem = _artifact_stem(str(split_name), str(mode_name))
             csv_path = output_dir / f"{artifact_stem}_compression_curve_data.csv"
             png_path = output_dir / f"{artifact_stem}_compression_curves.png"
+            payload_only_png_path = output_dir / f"{artifact_stem}_payload_only_compression_curves.png"
             _write_rows_csv(csv_path, rows)
             _write_plot_png(
                 path=png_path,
@@ -716,7 +794,15 @@ def generate_artifacts_for_compression_compare(
                 split_name=str(split_name),
                 mode_name=str(mode_name),
             )
-            generated_paths.extend([csv_path, png_path])
+            _write_plot_png(
+                path=payload_only_png_path,
+                rows=rows,
+                run_name=run_name,
+                split_name=str(split_name),
+                mode_name=str(mode_name),
+                payload_only=True,
+            )
+            generated_paths.extend([csv_path, png_path, payload_only_png_path])
 
     return generated_paths
 
@@ -726,6 +812,7 @@ def generate_curves_for_root(
     *,
     out_dir_name: str = "compression_curves",
     baseline_compression_compare_path: Path | None = None,
+    geco2_baseline_selector: str | None = None,
     include_geco2_modes: bool = False,
 ) -> list[Path]:
     generated_paths: list[Path] = []
@@ -735,6 +822,7 @@ def generate_curves_for_root(
                 compression_compare_path,
                 out_dir_name=out_dir_name,
                 baseline_compression_compare_path=baseline_compression_compare_path,
+                geco2_baseline_selector=geco2_baseline_selector,
                 include_geco2_modes=include_geco2_modes,
             )
         )
@@ -757,11 +845,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--geco2-baseline",
+        default="auto",
         help=(
             "Reusable GeCo2 baseline selector to overlay. Known aliases: "
             + ", ".join(sorted(GECO2_BASELINE_ALIASES))
             + ". A dna_geco2_* directory name, directory path, or JSON path also works. "
-            "--baseline-compression-json takes precedence."
+            "Defaults to auto, matching the compression script. --baseline-compression-json takes precedence."
         ),
     )
     parser.add_argument(
@@ -781,11 +870,8 @@ def main() -> None:
     generated_paths = generate_curves_for_root(
         root_dir,
         out_dir_name=args.out_dir_name,
-        baseline_compression_compare_path=(
-            Path(args.baseline_compression_json)
-            if args.baseline_compression_json
-            else resolve_geco2_baseline_path(args.geco2_baseline)
-        ),
+        baseline_compression_compare_path=Path(args.baseline_compression_json) if args.baseline_compression_json else None,
+        geco2_baseline_selector=args.geco2_baseline,
         include_geco2_modes=args.include_geco2_modes,
     )
     if not generated_paths:

@@ -1,0 +1,83 @@
+{
+  "dataset": "dnacorpus",
+  "source": "YeMi",
+  "species": "YeMi",
+  "source_paths": [
+    "datasets/DNACorpus/YeMi"
+  ],
+  "source_is_fasta": false,
+  "alphabet": "ACGTN",
+  "filtered_source_bases": 73689,
+  "filtered_source_bases_known": true,
+  "filtered_source_bases_lower_bound": 71025,
+  "region_start": 21873,
+  "requested_region_bases": 49152,
+  "region_bases": 49152,
+  "random_region": true,
+  "seed": 12345,
+  "model_count": 1,
+  "models": {
+    "megabyte1": {
+      "adapter_name": "megabyte1",
+      "adapter_class": "MegabyteProbabilityAdapter",
+      "alphabet": "ACGTN",
+      "token_size": 3,
+      "valid_base_count": 49152,
+      "filtered_out_bases": 0,
+      "trimmed_tail_bases": 0,
+      "model_window_bases": 3072,
+      "model_forward_seconds": 0.4547769600030733,
+      "softmax_seconds": 0.00017197699344251305,
+      "factorization_seconds": 0.5860065160231898,
+      "data_transfer_seconds": 0.0007517379999626428,
+      "total_bits": 85658.94996967906,
+      "total_bpb": 1.7427357985367646,
+      "statistics": {
+        "min": 0.0024105504482852887,
+        "mean": 1.7427357985367646,
+        "median": 1.5458198789749054,
+        "p90": 2.904224286002691,
+        "p95": 3.2348169612810076,
+        "p99": 3.8215890904258916,
+        "max": 9.810776922181102
+      },
+      "worst_plot_window": {
+        "window_index": 8,
+        "region_start": 24576,
+        "region_end_exclusive": 27648,
+        "source_start": 46449,
+        "source_end_exclusive": 49521,
+        "base_count": 3072,
+        "sum_bits": 5480.629700286669,
+        "mean_bpb": 1.7840591472287333,
+        "model": "megabyte1",
+        "plot_window_bases": 3072
+      },
+      "adapter_wall_seconds": 1.097725192012149
+    }
+  },
+  "timing": {
+    "source_length_seconds": 0.00038428399420809,
+    "region_read_seconds": 0.00028058998577762395,
+    "total_wall_seconds": 23.07507553100004
+  },
+  "outputs": {
+    "json": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/region_bpb.json",
+    "per_base_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/region_bpb_per_base.csv",
+    "windows_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/region_bpb_windows.csv",
+    "model_window_average_csv": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/region_bpb_model_window_average.csv",
+    "curve_png": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/region_bpb_curve.png",
+    "individual_window_dir": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows",
+    "individual_window_pngs": [
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows/window_00000.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows/window_00001.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows/window_00002.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows/window_00003.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows/window_00004.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows/window_00005.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows/window_00006.png",
+      "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/individual_windows/window_00007.png"
+    ]
+  },
+  "_json_path": "outputs/dna_megabyte_large_opengenome2_4/region_bpb_probe/YeMi/region_bpb.json"
+}

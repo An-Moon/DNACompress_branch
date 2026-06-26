@@ -3,7 +3,8 @@ compression_compare.arithmetic.backend,fast_cpp
 compression_compare.arithmetic.coding_mode,model_symbol
 compression_compare.arithmetic.effective_uniform_mass,0.003875732421875
 compression_compare.arithmetic.frequency_total,32768
-compression_compare.arithmetic.merge_size,3
+compression_compare.arithmetic.merge_size,1
+compression_compare.arithmetic.quantization_mode,fast_floor
 compression_compare.arithmetic.target_uniform_mass,0.01
 compression_compare.arithmetic.vocab_size,127
 compression_compare.best_val_bpb,1.7188917868974187

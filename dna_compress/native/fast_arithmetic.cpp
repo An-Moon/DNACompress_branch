@@ -653,6 +653,88 @@ class BatchedFastArithmeticEncoder {
     return result;
   }
 
+  py::dict encode_interval_matrix_with_lengths(
+      const at::Tensor &lows,
+      const at::Tensor &highs,
+      const at::Tensor &totals,
+      const at::Tensor &lengths) {
+    if (lows.device().is_cuda() || highs.device().is_cuda() || totals.device().is_cuda() || lengths.device().is_cuda()) {
+      throw std::runtime_error("interval matrix tensors and lengths must be on CPU");
+    }
+    if (lows.dim() != 2 || highs.dim() != 2 || totals.dim() != 2 || lengths.dim() != 1 ||
+        highs.sizes() != lows.sizes() || totals.sizes() != lows.sizes() || lengths.size(0) != lows.size(0)) {
+      throw std::runtime_error("interval matrix tensors must be [rows, steps] and lengths must be [rows]");
+    }
+    if (lows.size(0) != static_cast<int64_t>(encoders_.size())) {
+      throw std::runtime_error("interval matrix row count must match batched encoder stream count");
+    }
+    at::Tensor low_tensor = lows.contiguous();
+    at::Tensor high_tensor = highs.contiguous();
+    at::Tensor total_tensor = totals.contiguous();
+    at::Tensor length_tensor = lengths.contiguous();
+    const int64_t rows = low_tensor.size(0);
+    const int64_t steps = low_tensor.size(1);
+    const auto range_start = Clock::now();
+    int64_t emitted = 0;
+
+    const auto length_at = [&](int64_t row) -> int64_t {
+      int64_t value = 0;
+      if (length_tensor.scalar_type() == at::kLong) {
+        value = length_tensor.data_ptr<int64_t>()[row];
+      } else if (length_tensor.scalar_type() == at::kInt) {
+        value = length_tensor.data_ptr<int32_t>()[row];
+      } else {
+        throw std::runtime_error("lengths must be int64 or int32");
+      }
+      if (value < 0 || value > steps) {
+        throw std::runtime_error("row length is outside interval matrix step count");
+      }
+      return value;
+    };
+
+    const auto encode_impl = [&](auto *low_ptr, auto *high_ptr, auto *total_ptr) {
+      for (int64_t row = 0; row < rows; ++row) {
+        FastArithmeticEncoder &encoder = encoders_[static_cast<size_t>(row)];
+        const int64_t row_steps = length_at(row);
+        for (int64_t step = 0; step < row_steps; ++step) {
+          const int64_t index = row * steps + step;
+          const int64_t low_i64 = static_cast<int64_t>(low_ptr[index]);
+          const int64_t high_i64 = static_cast<int64_t>(high_ptr[index]);
+          const int64_t total_i64 = static_cast<int64_t>(total_ptr[index]);
+          if (!(0 <= low_i64 && low_i64 < high_i64 && high_i64 <= total_i64)) {
+            throw std::runtime_error("invalid arithmetic interval matrix");
+          }
+          if (total_i64 <= 0 || total_i64 > static_cast<int64_t>((uint64_t{1} << 30) + 2)) {
+            throw std::runtime_error("interval matrix total is outside the supported 32-bit arithmetic range");
+          }
+          encoder.update(Interval{
+              static_cast<uint32_t>(low_i64),
+              static_cast<uint32_t>(high_i64),
+              static_cast<uint32_t>(total_i64)});
+          ++emitted;
+        }
+      }
+    };
+
+    if (low_tensor.scalar_type() == at::kLong &&
+        high_tensor.scalar_type() == at::kLong &&
+        total_tensor.scalar_type() == at::kLong) {
+      encode_impl(low_tensor.data_ptr<int64_t>(), high_tensor.data_ptr<int64_t>(), total_tensor.data_ptr<int64_t>());
+    } else if (low_tensor.scalar_type() == at::kInt &&
+               high_tensor.scalar_type() == at::kInt &&
+               total_tensor.scalar_type() == at::kInt) {
+      encode_impl(low_tensor.data_ptr<int32_t>(), high_tensor.data_ptr<int32_t>(), total_tensor.data_ptr<int32_t>());
+    } else {
+      throw std::runtime_error("interval matrix tensors must all be int32 or all be int64");
+    }
+
+    const auto range_end = Clock::now();
+    py::dict result;
+    result["range_seconds"] = elapsed_seconds(range_start, range_end);
+    result["emitted_count"] = emitted;
+    return result;
+  }
+
   std::vector<py::bytes> finish() {
     std::vector<py::bytes> streams;
     streams.reserve(encoders_.size());
@@ -1086,6 +1168,113 @@ class BatchedFastArithmeticDecoder {
     return torch::from_blob(decoded.data(), {rows}, torch::TensorOptions().dtype(torch::kInt64)).clone();
   }
 
+  at::Tensor decode_frequency_rows_with_totals_and_active(
+      const at::Tensor &frequencies,
+      const at::Tensor &totals,
+      const at::Tensor &active) {
+    if (frequencies.device().is_cuda() || totals.device().is_cuda() || active.device().is_cuda() ||
+        frequencies.dim() != 2 || totals.dim() != 1 || active.dim() != 1) {
+      throw std::runtime_error("frequency rows must be [rows, vocab], totals [rows], active [rows] on CPU");
+    }
+    if (frequencies.size(0) != static_cast<int64_t>(decoders_.size()) ||
+        totals.size(0) != frequencies.size(0) ||
+        active.size(0) != frequencies.size(0)) {
+      throw std::runtime_error("frequency, total, active row counts must match batched decoder stream count");
+    }
+    at::Tensor active_tensor = active.contiguous();
+    std::vector<int64_t> active_rows;
+    active_rows.reserve(static_cast<size_t>(active_tensor.size(0)));
+    for (int64_t row = 0; row < active_tensor.size(0); ++row) {
+      bool is_active = false;
+      if (active_tensor.scalar_type() == at::kBool) {
+        is_active = active_tensor.data_ptr<bool>()[row];
+      } else if (active_tensor.scalar_type() == at::kByte) {
+        is_active = active_tensor.data_ptr<uint8_t>()[row] != 0;
+      } else if (active_tensor.scalar_type() == at::kLong) {
+        is_active = active_tensor.data_ptr<int64_t>()[row] != 0;
+      } else if (active_tensor.scalar_type() == at::kInt) {
+        is_active = active_tensor.data_ptr<int32_t>()[row] != 0;
+      } else {
+        throw std::runtime_error("active mask must be bool, uint8, int32, or int64");
+      }
+      if (is_active) {
+        active_rows.push_back(row);
+      }
+    }
+    if (active_rows.empty()) {
+      return torch::empty({0}, torch::TensorOptions().dtype(torch::kInt64));
+    }
+
+    at::Tensor freq_tensor = frequencies.contiguous();
+    at::Tensor total_tensor = totals.contiguous();
+    std::vector<int64_t> decoded(active_rows.size());
+    const int64_t vocab_size = freq_tensor.size(1);
+
+    const auto total_at = [&](int64_t row) -> uint32_t {
+      int64_t value = 0;
+      if (total_tensor.scalar_type() == at::kLong) {
+        value = total_tensor.data_ptr<int64_t>()[row];
+      } else if (total_tensor.scalar_type() == at::kInt) {
+        value = total_tensor.data_ptr<int32_t>()[row];
+      } else {
+        throw std::runtime_error("totals must be int64 or int32");
+      }
+      if (value <= 0 || value > static_cast<int64_t>((uint64_t{1} << 30) + 2)) {
+        throw std::runtime_error("frequency row total is outside the supported 32-bit arithmetic range");
+      }
+      return static_cast<uint32_t>(value);
+    };
+
+    const auto run_range = [&](int64_t start, int64_t end) {
+      if (freq_tensor.scalar_type() == at::kLong) {
+        const int64_t *ptr = freq_tensor.data_ptr<int64_t>();
+        for (int64_t index = start; index < end; ++index) {
+          const int64_t row = active_rows[static_cast<size_t>(index)];
+          decoded[static_cast<size_t>(index)] = decoders_[static_cast<size_t>(row)].decode_frequency_row_ptr_with_total(
+              ptr + row * vocab_size, vocab_size, total_at(row));
+        }
+      } else if (freq_tensor.scalar_type() == at::kInt) {
+        const int32_t *ptr = freq_tensor.data_ptr<int32_t>();
+        for (int64_t index = start; index < end; ++index) {
+          const int64_t row = active_rows[static_cast<size_t>(index)];
+          decoded[static_cast<size_t>(index)] = decoders_[static_cast<size_t>(row)].decode_frequency_row_ptr_with_total(
+              ptr + row * vocab_size, vocab_size, total_at(row));
+        }
+      } else if (freq_tensor.scalar_type() == at::kUInt16) {
+        const uint16_t *ptr = freq_tensor.data_ptr<uint16_t>();
+        for (int64_t index = start; index < end; ++index) {
+          const int64_t row = active_rows[static_cast<size_t>(index)];
+          decoded[static_cast<size_t>(index)] = decoders_[static_cast<size_t>(row)].decode_frequency_row_ptr_with_total(
+              ptr + row * vocab_size, vocab_size, total_at(row));
+        }
+      } else {
+        throw std::runtime_error("frequency rows must be int64, int32, or uint16 when totals are provided");
+      }
+    };
+
+    const int64_t rows = static_cast<int64_t>(active_rows.size());
+    const int64_t requested_threads = thread_count_ > 0
+        ? thread_count_
+        : static_cast<int64_t>(std::min(8U, std::max(1U, std::thread::hardware_concurrency())));
+    const int64_t worker_count = std::max<int64_t>(1, std::min<int64_t>(requested_threads, rows));
+    if (worker_count == 1) {
+      run_range(0, rows);
+    } else {
+      std::vector<std::thread> workers;
+      workers.reserve(static_cast<size_t>(worker_count));
+      for (int64_t worker = 0; worker < worker_count; ++worker) {
+        const int64_t start = rows * worker / worker_count;
+        const int64_t end = rows * (worker + 1) / worker_count;
+        workers.emplace_back(run_range, start, end);
+      }
+      for (auto &worker : workers) {
+        worker.join();
+      }
+    }
+
+    return torch::from_blob(decoded.data(), {rows}, torch::TensorOptions().dtype(torch::kInt64)).clone();
+  }
+
   int64_t size() const {
     return static_cast<int64_t>(decoders_.size());
   }
@@ -1109,6 +1298,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   py::class_<BatchedFastArithmeticEncoder>(m, "BatchedFastArithmeticEncoder")
       .def(py::init<int64_t>(), py::arg("stream_count"))
       .def("encode_interval_matrix", &BatchedFastArithmeticEncoder::encode_interval_matrix)
+      .def("encode_interval_matrix_with_lengths", &BatchedFastArithmeticEncoder::encode_interval_matrix_with_lengths)
       .def("finish", &BatchedFastArithmeticEncoder::finish)
       .def("size", &BatchedFastArithmeticEncoder::size);
 
@@ -1122,5 +1312,6 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       .def(py::init<const std::vector<py::bytes> &, int64_t>(), py::arg("encoded_streams"), py::arg("threads") = 0)
       .def("decode_frequency_rows", &BatchedFastArithmeticDecoder::decode_frequency_rows)
       .def("decode_frequency_rows_with_totals", &BatchedFastArithmeticDecoder::decode_frequency_rows_with_totals)
+      .def("decode_frequency_rows_with_totals_and_active", &BatchedFastArithmeticDecoder::decode_frequency_rows_with_totals_and_active)
       .def("size", &BatchedFastArithmeticDecoder::size);
 }

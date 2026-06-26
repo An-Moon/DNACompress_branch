@@ -7,8 +7,10 @@ datasets/
 # Virtual environments
 .venv/
 .venv-*/
+.venv_*/
 venv/
 env/
+.conda_*/
 
 # Python cache / bytecode
 *.py[cod]
@@ -20,6 +22,7 @@ __pycache__/
 **/*.fpzip
 **/__pycache__/
 **/__pycache__/**
+**/*.mbw
 
 # Local model checkpoints and Hugging Face download cache
 third_party/megaDNA/checkpoints/
@@ -34,3 +37,6 @@ outputs/dna_gencoder_*/**/artifacts/
 **/position_bits_curves/**/*.jpeg
 **/position_bits_curves/**/*.svg
 **/position_bits_curves/**/*.pdf
+**/individual_windows/*.png
+
+
