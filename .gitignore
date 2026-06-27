@@ -40,3 +40,8 @@ outputs/dna_gencoder_*/**/artifacts/
 **/position_bits_curves/**/*.pdf
 **/individual_windows/*.png
 
+# Weights & Biases local run artifacts
+wandb/
+**/wandb/
+*.wandb
+
