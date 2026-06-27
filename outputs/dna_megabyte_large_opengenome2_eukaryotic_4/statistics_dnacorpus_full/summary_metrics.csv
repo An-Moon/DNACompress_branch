@@ -7,8 +7,8 @@ compression_compare.arithmetic.merge_size,1
 compression_compare.arithmetic.quantization_mode,fast_floor
 compression_compare.arithmetic.target_uniform_mass,0.01
 compression_compare.arithmetic.vocab_size,127
-compression_compare.best_val_bpb,1.6623622032529841
-compression_compare.checkpoint_step,1087500
+compression_compare.best_val_bpb,1.6689548304532953
+compression_compare.checkpoint_step,790000
 compression_compare.overlap_stride_patches,1
 compression_compare.overlap_stride_tokens,32
 config.arithmetic.backend,python

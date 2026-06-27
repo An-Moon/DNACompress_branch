@@ -100,6 +100,34 @@ Examples:
       --batch-size 1 \
       --output-dir outputs/evo2_megabyte_geco2_region_bpb_probe
 
+    # Carbon-500M fns branch. Download once with:
+    #   env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
+    #     HF_ENDPOINT=https://hf-mirror.com \
+    #     huggingface-cli download HuggingFaceBio/Carbon-500M --revision fns \
+    #       --local-dir third_party/Carbon-500M-fns --local-dir-use-symlinks False
+    CUDA_VISIBLE_DEVICES=3 python scripts/run_dna_region_bpb_probe.py \
+      --dataset dnacorpus \
+      --dataset-dir datasets/DNACorpus \
+      --species HoSa \
+      --random-region \
+      --seed 12345 \
+      --region-bases 50000 \
+      --model carbon:third_party/Carbon-500M-fns \
+      --carbon-context-bases 49152 \
+      --device cuda:0 \
+      --batch-size 4 \
+      --output-dir outputs/carbon_500m_region_bpb_probe
+
+    # Combine Carbon with existing Evo2 / Megabyte / GeCo2 artifacts from the same region.
+    python scripts/run_dna_region_bpb_probe.py \
+      --plot-only \
+      --result-dir outputs/carbon_500m_region_bpb_probe \
+      --result-dir outputs/evo2_7b_base_region_bpb_probe \
+      --result-dir outputs/evo2_1b_base_region_bpb_probe \
+      --result-dir outputs/dna_megabyte_large_20260616_144744_20260616_171309_20260617_140217/full_bpb_probe_dnacorpus \
+      --combine-matching-regions \
+      --output-dir outputs/carbon_evo2_megabyte_geco2_region_compare
+
     # For DNACorpus, GeCo2 uses previous per-species paper-mode levels by default.
     # Add --no-geco2-dnacorpus-paper-levels to force the uniform --geco2-level.
 
@@ -174,6 +202,9 @@ DEFAULT_REGION_BASES = 49152
 DEFAULT_CHUNK_BYTES = 4 * 1024 * 1024
 DEFAULT_EVO2_LOCAL_PATH = REPO_ROOT / "third_party" / "evo2_7b_base" / "evo2_7b_base.pt"
 DEFAULT_EVO2_1B_LOCAL_PATH = REPO_ROOT / "third_party" / "evo2_1b_base" / "evo2_1b_base.pt"
+DEFAULT_CARBON_LOCAL_PATH = REPO_ROOT / "third_party" / "Carbon-500M-fns"
+DEFAULT_CARBON_MODEL_NAME = "Carbon-500M"
+DEFAULT_CARBON_REVISION = "fns"
 COMPACT_METADATA_DROP_KEYS = {
     "geco2_full_stdout_tail",
     "geco2_full_stderr_tail",
@@ -820,6 +851,183 @@ class Evo2RegionAdapter:
         return bpb, offsets, metadata
 
 
+class CarbonRegionAdapter:
+    def __init__(
+        self,
+        *,
+        name: str,
+        model: Any,
+        tokenizer: Any,
+        local_path: Path,
+        model_name: str,
+        revision: str,
+        context_bases: int,
+        device: torch.device,
+        dtype_name: str,
+        trust_remote_code: bool,
+    ) -> None:
+        self.name = name
+        self.model = model
+        self.tokenizer = tokenizer
+        self.local_path = local_path
+        self.model_name = model_name
+        self.revision = revision
+        self.context_bases = int(context_bases)
+        self.device = device
+        self.dtype_name = dtype_name
+        self.trust_remote_code = bool(trust_remote_code)
+        self.token_size = 1
+        self.alphabet = "ACGTN"
+
+    @classmethod
+    def from_args(
+        cls,
+        *,
+        name: str,
+        local_path: Path,
+        model_name: str,
+        revision: str,
+        context_bases: int,
+        device: torch.device,
+        dtype_name: str,
+        trust_remote_code: bool,
+    ) -> "CarbonRegionAdapter":
+        if not local_path.exists():
+            raise FileNotFoundError(
+                f"Carbon local model directory not found: {local_path}. "
+                "Download it with HF_ENDPOINT=https://hf-mirror.com huggingface-cli download "
+                "HuggingFaceBio/Carbon-500M --revision fns --local-dir third_party/Carbon-500M-fns."
+            )
+        try:
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+        except ImportError as exc:
+            raise ImportError("Carbon adapter requires transformers to be installed.") from exc
+
+        torch_dtype = getattr(torch, dtype_name, None)
+        if not isinstance(torch_dtype, torch.dtype):
+            torch_dtype = torch.bfloat16 if dtype_name == "bfloat16" else torch.float32
+
+        tokenizer = AutoTokenizer.from_pretrained(
+            str(local_path),
+            revision=revision,
+            trust_remote_code=trust_remote_code,
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            str(local_path),
+            revision=revision,
+            trust_remote_code=trust_remote_code,
+            dtype=torch_dtype,
+        ).to(device)
+        model.eval()
+        if not hasattr(model, "score_sequence"):
+            raise TypeError(
+                "Loaded Carbon model does not expose score_sequence(); use the HuggingFaceBio/Carbon-500M "
+                "fns revision/local directory."
+            )
+        if hasattr(model, "setup_tokenizer"):
+            model.setup_tokenizer(tokenizer)
+        elif not hasattr(model, "tokenizer"):
+            model.tokenizer = tokenizer
+
+        return cls(
+            name=name,
+            model=model,
+            tokenizer=tokenizer,
+            local_path=local_path,
+            model_name=model_name,
+            revision=revision,
+            context_bases=context_bases,
+            device=device,
+            dtype_name=dtype_name,
+            trust_remote_code=trust_remote_code,
+        )
+
+    def _filter_sequence(self, region_sequence: str, region_offsets: np.ndarray) -> tuple[str, np.ndarray, int]:
+        allowed = set(self.alphabet)
+        keep_mask = np.asarray([base.upper() in allowed for base in region_sequence], dtype=bool)
+        kept = "".join(base.upper() for base, keep in zip(region_sequence, keep_mask) if keep)
+        return kept, region_offsets[keep_mask], int(len(region_sequence) - int(keep_mask.sum()))
+
+    @staticmethod
+    def _as_probability_list(actual_probs: Any) -> list[torch.Tensor]:
+        if torch.is_tensor(actual_probs):
+            return [actual_probs]
+        if isinstance(actual_probs, (tuple, list)):
+            return list(actual_probs)
+        raise TypeError(f"Carbon score_sequence returned unsupported actual_probs type: {type(actual_probs)!r}")
+
+    def region_bpb(
+        self,
+        *,
+        region_sequence: str,
+        region_offsets: np.ndarray,
+        batch_size: int,
+    ) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+        model_sequence, model_offsets, filtered_out = self._filter_sequence(region_sequence, region_offsets)
+        if not model_sequence:
+            raise ValueError("Carbon adapter requires at least one usable A/C/G/T/N base.")
+
+        context_bases = max(1, int(self.context_bases))
+        starts = list(range(0, len(model_sequence), context_bases))
+        bpb_chunks: list[np.ndarray] = []
+        offset_chunks: list[np.ndarray] = []
+        score_sequence_seconds = 0.0
+        aggregate_seconds = 0.0
+
+        with torch.inference_mode():
+            for batch_start in range(0, len(starts), int(batch_size)):
+                batch_starts = starts[batch_start : batch_start + int(batch_size)]
+                chunks = [model_sequence[start : start + context_bases] for start in batch_starts]
+
+                score_started = perf_counter()
+                _bp_probs, actual_probs = self.model.score_sequence(chunks)
+                score_sequence_seconds += perf_counter() - score_started
+
+                aggregate_started = perf_counter()
+                probability_rows = self._as_probability_list(actual_probs)
+                if len(probability_rows) != len(chunks):
+                    raise ValueError(
+                        f"Carbon score_sequence returned {len(probability_rows)} probability rows for {len(chunks)} chunks."
+                    )
+                for start, chunk, probs in zip(batch_starts, chunks, probability_rows):
+                    prob_tensor = probs.detach().float().clamp_min(1e-12)
+                    values = (-torch.log2(prob_tensor)).cpu().numpy().astype(np.float64, copy=False)
+                    length = len(chunk)
+                    bpb_chunks.append(values[:length])
+                    offset_chunks.append(model_offsets[start : start + length])
+                aggregate_seconds += perf_counter() - aggregate_started
+
+        bpb = np.concatenate(bpb_chunks) if bpb_chunks else np.zeros((0,), dtype=np.float64)
+        offsets = np.concatenate(offset_chunks) if offset_chunks else np.zeros((0,), dtype=np.int64)
+        metadata = {
+            "adapter_name": self.name,
+            "adapter_class": type(self).__name__,
+            "alphabet": self.alphabet,
+            "token_size": 1,
+            "valid_base_count": int(bpb.shape[0]),
+            "filtered_out_bases": int(filtered_out),
+            "trimmed_tail_bases": 0,
+            "dropped_context_bases": 0,
+            "model_window_bases": int(context_bases),
+            "model_forward_seconds": score_sequence_seconds,
+            "score_sequence_seconds": score_sequence_seconds,
+            "softmax_seconds": 0.0,
+            "factorization_seconds": aggregate_seconds,
+            "data_transfer_seconds": 0.0,
+            "carbon_model_name": self.model_name,
+            "carbon_revision": self.revision,
+            "carbon_local_path": str(self.local_path),
+            "carbon_context_bases": int(context_bases),
+            "carbon_runtime_device": str(self.device),
+            "carbon_dtype": self.dtype_name,
+            "carbon_trust_remote_code": self.trust_remote_code,
+            "carbon_tokenizer_k": int(getattr(self.tokenizer, "k", getattr(self.model, "k", 0)) or 0),
+            "carbon_alignment": "official fns score_sequence actual_probs converted with -log2(clamp(prob, 1e-12))",
+            "carbon_n_behavior": "official score_sequence uses max per-base probability for N.",
+        }
+        return bpb, offsets, metadata
+
+
 def _tail_text(text: str, max_chars: int = 4000) -> str:
     if len(text) <= max_chars:
         return text
@@ -1054,11 +1262,15 @@ def _evo2_path_from_args(args: argparse.Namespace, model_name: str) -> Path:
     return requested
 
 
+def _carbon_path_from_args(args: argparse.Namespace) -> Path:
+    return Path(args.carbon_local_path)
+
+
 def build_region_adapters(args: argparse.Namespace) -> list[Any]:
     device = resolve_device(args.device)
     specs = list(args.model or [])
     if not specs:
-        if args.run_dir is None and args.model_kind not in {"megadna", "geco2", "evo2"}:
+        if args.run_dir is None and args.model_kind not in {"megadna", "geco2", "evo2", "carbon"}:
             raise ValueError("--run-dir is required unless --model is provided")
         if args.run_dir is None:
             specs.append(args.model_kind)
@@ -1129,6 +1341,22 @@ def build_region_adapters(args: argparse.Namespace) -> list[Any]:
                     requested_device=str(args.device),
                     dtype_name=str(args.dtype),
                     use_kernels=bool(args.evo2_use_kernels),
+                )
+            )
+            continue
+        if kind == "carbon":
+            local_path = run_dir or _carbon_path_from_args(args)
+            revision = checkpoint or args.carbon_revision
+            adapters.append(
+                CarbonRegionAdapter.from_args(
+                    name=name,
+                    local_path=local_path,
+                    model_name=args.carbon_model_name,
+                    revision=revision,
+                    context_bases=int(args.carbon_context_bases),
+                    device=device,
+                    dtype_name=str(args.dtype),
+                    trust_remote_code=bool(args.carbon_trust_remote_code),
                 )
             )
             continue
@@ -1430,11 +1658,23 @@ def _resolve_artifact_path(path_text: str | None, *, json_dir: Path) -> Path | N
 
 def _load_model_artifact_payload(summary: dict[str, Any], *, json_dir: Path) -> dict[str, Any] | None:
     artifact_path = _resolve_artifact_path(str(summary.get("artifact_npz") or ""), json_dir=json_dir)
+    if artifact_path is not None and not artifact_path.exists():
+        model_name = str(summary.get("model") or "")
+        if model_name:
+            relocated = json_dir / "models" / _safe_label(model_name) / artifact_path.name
+            if relocated.exists():
+                artifact_path = relocated
     if artifact_path is None or not artifact_path.exists():
         summary_path = _resolve_artifact_path(str(summary.get("summary_json") or ""), json_dir=json_dir)
         if summary_path is not None and summary_path.exists():
             nested = json.loads(summary_path.read_text(encoding="utf-8"))
             artifact_path = _resolve_artifact_path(str(nested.get("artifact_npz") or ""), json_dir=summary_path.parent)
+            if artifact_path is not None and not artifact_path.exists():
+                model_name = str(nested.get("model") or summary.get("model") or "")
+                if model_name:
+                    relocated = summary_path.parent.parent / _safe_label(model_name) / artifact_path.name
+                    if relocated.exists():
+                        artifact_path = relocated
     if artifact_path is None or not artifact_path.exists():
         return None
     with np.load(artifact_path) as data:
@@ -1590,7 +1830,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=12345)
 
     parser.add_argument("--model", action="append", help="Repeatable model spec: kind:run_dir[:checkpoint_or_tag].")
-    parser.add_argument("--model-kind", choices=("megabyte", "megadna", "dnagpt", "geco2", "evo2"), default="megabyte")
+    parser.add_argument("--model-kind", choices=("megabyte", "megadna", "dnagpt", "geco2", "evo2", "carbon"), default="megabyte")
     parser.add_argument("--run-dir")
     parser.add_argument("--checkpoint")
     parser.add_argument("--checkpoint-tag", default="best")
@@ -1620,6 +1860,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--evo2-model-name", default="evo2_7b_base", help="Evo2 model name, e.g. evo2_7b_base or evo2_1b_base.")
     parser.add_argument("--evo2-context-bases", type=int, default=8192)
     parser.add_argument("--evo2-use-kernels", action="store_true", help="Enable optional Vortex Triton kernels for Evo2.")
+    parser.add_argument(
+        "--carbon-local-path",
+        default=str(DEFAULT_CARBON_LOCAL_PATH),
+        help="Local Carbon-500M fns model directory downloaded from HuggingFaceBio/Carbon-500M revision fns.",
+    )
+    parser.add_argument("--carbon-model-name", default=DEFAULT_CARBON_MODEL_NAME)
+    parser.add_argument("--carbon-revision", default=DEFAULT_CARBON_REVISION)
+    parser.add_argument("--carbon-context-bases", type=int, default=49152)
+    parser.add_argument("--carbon-trust-remote-code", dest="carbon_trust_remote_code", action="store_true", default=True)
+    parser.add_argument("--no-carbon-trust-remote-code", dest="carbon_trust_remote_code", action="store_false")
 
     parser.add_argument("--plot-window-bases", type=int)
     parser.add_argument("--smooth-window-bases", type=int, default=512)
@@ -1831,7 +2081,7 @@ def redraw_combined_matching_regions(args: argparse.Namespace, json_paths: list[
             for model_name, payload in payloads.items():
                 model_summary = models.get(model_name, {"model": model_name})
                 metadata = model_summary.get("metadata", {}) if isinstance(model_summary, dict) else {}
-                label = str(metadata.get("evo2_model_name") or model_name)
+                label = str(metadata.get("evo2_model_name") or metadata.get("carbon_model_name") or model_name)
                 if label in plot_payload:
                     label = f"{label}@{_safe_label(path.parent.name)}"
                 plot_payload[label] = payload
@@ -2140,6 +2390,12 @@ def run_probe_for_source(
                 source=str(source_info.get("source")) if source_info.get("source") is not None else None,
             )
         elif isinstance(adapter, Evo2RegionAdapter):
+            bpb, offsets, adapter_meta = adapter.region_bpb(
+                region_sequence=region_sequence,
+                region_offsets=region_offsets,
+                batch_size=args.batch_size,
+            )
+        elif isinstance(adapter, CarbonRegionAdapter):
             bpb, offsets, adapter_meta = adapter.region_bpb(
                 region_sequence=region_sequence,
                 region_offsets=region_offsets,
