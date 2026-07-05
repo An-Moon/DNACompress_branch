@@ -27,14 +27,14 @@ def _load_events(log_path: Path) -> list[dict[str, Any]]:
         raise FileNotFoundError(f"training log not found: {log_path}")
 
     events: list[dict[str, Any]] = []
-    with log_path.open("r", encoding="utf-8") as handle:
+    with log_path.open("rb") as handle:
         for line_number, line in enumerate(handle, start=1):
-            text = line.strip()
+            text = line.replace(b"\x00", b"").strip()
             if not text:
                 continue
             try:
-                event = json.loads(text)
-            except json.JSONDecodeError as error:
+                event = json.loads(text.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as error:
                 raise ValueError(f"Invalid JSON at {log_path}:{line_number}") from error
             if not isinstance(event, dict):
                 continue
@@ -55,6 +55,11 @@ def _extract_run_id_from_run_dir(path: Path) -> str | None:
     for wandb_file in wandb_files:
         run_id = _extract_run_id_from_wandb_file(wandb_file)
         if run_id is not None:
+            return run_id
+    name_parts = path.name.split("-")
+    if len(name_parts) >= 3 and name_parts[0] == "run":
+        run_id = name_parts[-1].strip()
+        if run_id:
             return run_id
     return None
 
@@ -95,23 +100,28 @@ def _discover_local_wandb_run(run_dir: Path | None) -> tuple[Path, str] | None:
     return local_run_dir, run_id
 
 
-def _fetch_remote_uploaded_event_count(wandb_module: Any, entity: str, project: str, run_id: str) -> int | None:
+def _fetch_remote_resume_state(wandb_module: Any, entity: str, project: str, run_id: str) -> tuple[int | None, int | None]:
     try:
         api = wandb_module.Api()
         remote_run = api.run(f"{entity}/{project}/{run_id}")
     except Exception:
-        return None
+        return None, None
 
     summary = getattr(remote_run, "summary", None)
-    if not isinstance(summary, dict):
-        return None
+    try:
+        summary_payload = dict(summary) if summary is not None else {}
+    except (TypeError, ValueError):
+        return None, None
 
-    uploaded_events = summary.get("uploaded_events")
-    if not isinstance(uploaded_events, int):
-        return None
-    if uploaded_events < 0:
-        return None
-    return uploaded_events
+    uploaded_events = summary_payload.get("uploaded_events")
+    if not isinstance(uploaded_events, int) or uploaded_events < 0:
+        uploaded_events = None
+
+    last_step = summary_payload.get("_step")
+    if not isinstance(last_step, int) or last_step < 0:
+        last_step = None
+
+    return uploaded_events, last_step
 
 
 def _event_to_wandb_row(event: dict[str, Any]) -> tuple[int | None, dict[str, Any]]:
@@ -120,8 +130,6 @@ def _event_to_wandb_row(event: dict[str, Any]) -> tuple[int | None, dict[str, An
     epoch = event.get("epoch")
 
     row: dict[str, Any] = {}
-    if isinstance(step, int):
-        row["step"] = step
     if isinstance(epoch, int):
         row["epoch"] = epoch
 
@@ -130,10 +138,14 @@ def _event_to_wandb_row(event: dict[str, Any]) -> tuple[int | None, dict[str, An
             row["train/loss"] = event["loss_nats_per_token"]
         if "bits_per_base" in event:
             row["train/bpb"] = event["bits_per_base"]
+        if "grad_norm" in event:
+            row["train/grad_norm"] = event["grad_norm"]
         if "learning_rate" in event:
             row["train/lr"] = event["learning_rate"]
         if "tokens_per_second" in event:
             row["train/tokens_per_second"] = event["tokens_per_second"]
+        if "data_time_fraction" in event:
+            row["train/data_time_fraction"] = event["data_time_fraction"]
     elif event_type == "eval":
         split = str(event.get("split", "eval"))
         if "loss_nats_per_token" in event:
@@ -144,6 +156,12 @@ def _event_to_wandb_row(event: dict[str, Any]) -> tuple[int | None, dict[str, An
             row[f"{split}/bpb"] = event["bits_per_base"]
             if split == "val":
                 row["eval/bpb"] = event["bits_per_base"]
+        per_source = event.get("per_source")
+        if isinstance(per_source, dict):
+            for source_name, values in per_source.items():
+                if not isinstance(values, dict) or "bits_per_base" not in values:
+                    continue
+                row[f"{split}/source_bpb/{source_name}"] = values["bits_per_base"]
 
     return (step if isinstance(step, int) else None), row
 
@@ -184,7 +202,11 @@ def upload_training_log(args: argparse.Namespace, wandb_module: Any) -> str:
         "reinit": True,
     }
     resumed_run_id: str | None = None
-    if local_wandb_run is not None:
+    if args.run_id:
+        resumed_run_id = args.run_id
+        init_kwargs["id"] = resumed_run_id
+        init_kwargs["resume"] = "allow"
+    elif local_wandb_run is not None:
         _, resumed_run_id = local_wandb_run
         init_kwargs["id"] = resumed_run_id
         init_kwargs["resume"] = "allow"
@@ -192,12 +214,13 @@ def upload_training_log(args: argparse.Namespace, wandb_module: Any) -> str:
     wandb_run = wandb_module.init(**init_kwargs)
 
     remote_uploaded_events: int | None = None
+    remote_last_step: int | None = None
     upload_start_index = 0
     if resumed_run_id is not None:
         resolved_entity = getattr(wandb_run, "entity", None) or args.entity
         resolved_project = getattr(wandb_run, "project", None) or args.project
         if isinstance(resolved_entity, str) and resolved_entity:
-            remote_uploaded_events = _fetch_remote_uploaded_event_count(
+            remote_uploaded_events, remote_last_step = _fetch_remote_resume_state(
                 wandb_module,
                 entity=resolved_entity,
                 project=resolved_project,
@@ -205,6 +228,14 @@ def upload_training_log(args: argparse.Namespace, wandb_module: Any) -> str:
             )
             if remote_uploaded_events is not None:
                 upload_start_index = min(remote_uploaded_events, len(events))
+            elif remote_last_step is not None:
+                upload_start_index = len(
+                    [
+                        event
+                        for event in events
+                        if isinstance(event.get("step"), int) and int(event["step"]) <= remote_last_step
+                    ]
+                )
 
     best_val_bpb: float | None = None
     for event in events[upload_start_index:]:
@@ -227,15 +258,18 @@ def upload_training_log(args: argparse.Namespace, wandb_module: Any) -> str:
                 value = float(row["val/bpb"])
                 best_val_bpb = value if best_val_bpb is None else min(best_val_bpb, value)
 
-    if best_val_bpb is not None:
-        wandb_run.summary["best_val/bpb"] = best_val_bpb
-    wandb_run.summary["uploaded_events"] = len(events)
-    wandb_run.summary["training_log_file"] = str(log_path)
-    if resumed_run_id is not None:
-        wandb_run.summary["upload_resumed_run_id"] = resumed_run_id
-        wandb_run.summary["upload_resumed_from_event"] = upload_start_index
-    if remote_uploaded_events is not None:
-        wandb_run.summary["upload_remote_uploaded_events_before_resume"] = remote_uploaded_events
+    if not args.skip_upload_metadata:
+        if best_val_bpb is not None:
+            wandb_run.summary["best_val/bpb"] = best_val_bpb
+        wandb_run.summary["uploaded_events"] = len(events)
+        wandb_run.summary["training_log_file"] = str(log_path)
+        if resumed_run_id is not None:
+            wandb_run.summary["upload_resumed_run_id"] = resumed_run_id
+            wandb_run.summary["upload_resumed_from_event"] = upload_start_index
+        if remote_uploaded_events is not None:
+            wandb_run.summary["upload_remote_uploaded_events_before_resume"] = remote_uploaded_events
+        if remote_last_step is not None:
+            wandb_run.summary["upload_remote_last_step_before_resume"] = remote_last_step
 
     wandb_module.finish()
     return (
@@ -255,6 +289,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--project", required=True, help="W&B project name.")
     parser.add_argument("--entity", default=None, help="W&B entity/team.")
     parser.add_argument("--name", default=None, help="W&B run name. Defaults to run-dir folder name.")
+    parser.add_argument("--run-id", default=None, help="Existing W&B run id to resume.")
     parser.add_argument("--mode", choices=["online", "offline", "disabled"], default="online")
     parser.add_argument(
         "--resolved-config",
@@ -265,6 +300,11 @@ def _build_parser() -> argparse.ArgumentParser:
         "--job-type",
         default="train",
         help="W&B job type for this upload run.",
+    )
+    parser.add_argument(
+        "--skip-upload-metadata",
+        action="store_true",
+        help="Do not write uploader-specific W&B summary fields.",
     )
     return parser
 

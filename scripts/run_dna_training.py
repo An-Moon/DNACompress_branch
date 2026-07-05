@@ -51,7 +51,7 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --config configs/dna_megabyte_large.json \
         --mode all \
         --init-from resume \
-        --pretrained-weight-path outputs/dna_megabyte_large_opengenome2_9/last.pt \
+        --pretrained-weight-path outputs/dna_megabyte_large_20260626_133824/last.pt \
         --seed 42 \
         --sequence-source-mode indexed_fasta \
         --fasta-index-dir /data/students/Liang_junnan/opengenome2_subset/index \
@@ -88,7 +88,72 @@ OpenGenome2 indexed FASTA variant (train + eval; compression is recorded as skip
         --num-workers 2 \
         --no-persistent-workers \
         --wandb-project dna-compress \
-        --wandb-name dna_megabyte_large_opengenome2_10
+        --wandb-name dna_megabyte_large_opengenome2_11
+
+Carbon HF corpus indexed FASTA variant:
+
+    # 1) Download in tmux, with proxies disabled and hf-mirror enabled:
+    tmux new-session -d -s carbon_hf_download \
+      'cd /home/Liang_junnan/DNACompress && \
+       env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
+       HF_ENDPOINT=https://hf-mirror.com \
+       huggingface-cli download HuggingFaceBio/carbon-pretraining-corpus \
+         --repo-type dataset \
+         --local-dir /data/students/Liang_junnan/carbon-pretraining-corpus \
+         --local-dir-use-symlinks False \
+       2>&1 | tee /data/students/Liang_junnan/carbon-pretraining-corpus/download.log'
+
+    # 2) Convert downloaded parquet files to FASTA and build the existing indexed_fasta index.
+    #    This can be run before the full download completes by adding --max-files/--max-bases for smoke tests.
+    python scripts/build_carbon_hf_fasta_index.py \
+        --dataset-root /data/students/Liang_junnan/carbon-pretraining-corpus \
+        --fasta-root /data/students/Liang_junnan/carbon-pretraining-corpus_fasta \
+        --index-dir /data/students/Liang_junnan/carbon-pretraining-corpus_index \
+        --build-index
+
+    # 3) Train MEGABYTE on the Carbon indexed FASTA corpus.
+    CUDA_VISIBLE_DEVICES=3 python scripts/run_dna_training.py \
+        --config configs/dna_megabyte_large.json \
+        --mode all \
+        --init-from pretrained \
+        --pretrained-weight-path outputs/dna_megabyte_large_opengenome2_9/best.pt \
+        --seed 42 \
+        --sequence-source-mode indexed_fasta \
+        --fasta-index-dir /data/students/Liang_junnan/carbon-pretraining-corpus_index \
+        --indexed-eval-samples 1024 \
+        --indexed-eval-cache-dir /data/students/Liang_junnan/carbon-pretraining-corpus_eval_cache \
+        --indexed-eval-cache-mode reuse \
+        --indexed-eval-random-seed 0 \
+        --indexed-split-seed 0 \
+        --indexed-window-mode source_batch_file_stream \
+        --indexed-train-epoch-mode all_windows \
+        --indexed-file-stream-order-seed 0 \
+        --indexed-source-read-chunk-windows 8192 \
+        --indexed-source-read-chunk-shuffle \
+        --indexed-source-file-order-seed 0 \
+        --source-sampling-weights-json '{"carbon_eukaryote_generator":0.70,"carbon_mrna_evo2":0.16,"carbon_prokaryote_evo2":0.10,"carbon_mrna_splice_evo2":0.04}' \
+        --dtype bfloat16 \
+        --epochs 1 \
+        --batch-size 32 \
+        --eval-batch-size 32 \
+        --learning-rate 3e-5 \
+        --print-config \
+        --seq-length 1024 \
+        --token-merge-size 3 \
+        --weight-decay 0.01 \
+        --log-interval 25 \
+        --eval-interval 2500 \
+        --train-ratio 0.98 \
+        --val-ratio 0.01 \
+        --test-ratio 0.01 \
+        --lr-scheduler cosine \
+        --lr-warmup-steps 0 \
+        --lr-min-ratio 0.1 \
+        --grad-clip-norm 1.0 \
+        --num-workers 2 \
+        --no-persistent-workers \
+        --wandb-project dna-compress \
+        --wandb-name dna_megabyte_large_carbon_hf
 
 OpenGenome2 repacked window variant (train + eval; compression is recorded as skipped):
   

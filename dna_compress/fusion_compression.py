@@ -44,6 +44,7 @@ class UnitProbabilityResult:
     softmax_seconds: float
     aggregate_seconds: float
     data_transfer_seconds: float
+    metadata: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,125 @@ class FusionSourceInputs:
     tail_sequence: str
     unit_size: int
     alphabet: str
+
+
+@dataclass
+class _MegabyteWindowMemoryState:
+    previous_patch_ids: torch.Tensor | None = None
+    previous_global_kv: tuple[tuple[torch.Tensor, torch.Tensor], ...] | None = None
+
+
+def _megabyte_attention_with_previous_kv(
+    attn: torch.nn.Module,
+    x: torch.Tensor,
+    previous_kv: tuple[torch.Tensor, torch.Tensor] | None,
+    *,
+    alibi_slopes: torch.Tensor,
+) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
+    batch, length, _ = x.shape
+    heads = int(attn.heads)
+
+    normed = attn.norm(x)
+    q = attn.to_q(normed)
+    k, v = attn.to_kv(normed).chunk(2, dim=-1)
+    dim_head = q.shape[-1] // heads
+    q = q.reshape(batch, length, heads, dim_head).permute(0, 2, 1, 3)
+
+    current_kv = (k.detach(), v.detach())
+    if previous_kv is not None:
+        previous_k, previous_v = previous_kv
+        k = torch.cat([previous_k.to(device=k.device, dtype=k.dtype), k], dim=1)
+        v = torch.cat([previous_v.to(device=v.device, dtype=v.dtype), v], dim=1)
+
+    out = attn.attend(q, k, v, alibi_slopes=alibi_slopes)
+    out = out.permute(0, 2, 1, 3).reshape(batch, length, heads * dim_head)
+    return attn.to_out(out), current_kv
+
+
+def _megabyte_global_transformer_with_previous_kv(
+    transformer: torch.nn.Module,
+    x: torch.Tensor,
+    previous_global_kv: tuple[tuple[torch.Tensor, torch.Tensor], ...] | None,
+) -> tuple[torch.Tensor, tuple[tuple[torch.Tensor, torch.Tensor], ...], int]:
+    alibi_slopes = transformer.alibi_slopes.to(device=x.device, dtype=torch.float32)
+    next_global_kv: list[tuple[torch.Tensor, torch.Tensor]] = []
+    layer_count = len(transformer.layers)
+    if previous_global_kv is not None and len(previous_global_kv) != layer_count:
+        raise ValueError("previous_global_kv layer count does not match the MEGABYTE global transformer.")
+
+    for layer_index, (attn, ff) in enumerate(transformer.layers):
+        layer_previous_kv = None if previous_global_kv is None else previous_global_kv[layer_index]
+        attn_out, layer_current_kv = _megabyte_attention_with_previous_kv(
+            attn,
+            x,
+            layer_previous_kv,
+            alibi_slopes=alibi_slopes,
+        )
+        next_global_kv.append(layer_current_kv)
+        x = attn_out + x
+        x = ff(x) + x
+
+    return x, tuple(next_global_kv), (0 if previous_global_kv is None else layer_count)
+
+
+def _megabyte_forward_with_window_memory(
+    model: torch.nn.Module,
+    ids: torch.Tensor,
+    state: _MegabyteWindowMemoryState,
+    *,
+    stitch_global_kv: bool = False,
+) -> tuple[torch.Tensor, _MegabyteWindowMemoryState, dict[str, int]]:
+    cfg = model.config
+    batch, seq_length = ids.shape
+    patch_size = int(cfg.P)
+    global_dim = int(cfg.D_G)
+    patch_count = seq_length // patch_size
+    if patch_count * patch_size != seq_length:
+        raise ValueError("MEGABYTE window-memory mode requires seq_length to be divisible by patch size.")
+
+    ids_3d = ids.reshape(batch, patch_count, patch_size)
+    if state.previous_patch_ids is not None:
+        pad_patch = state.previous_patch_ids.to(device=ids.device, dtype=ids.dtype)[:, None, :]
+    else:
+        pad_patch = torch.full(
+            (batch, 1, patch_size),
+            int(cfg.pad_id),
+            dtype=ids.dtype,
+            device=ids.device,
+        )
+    pad_ids = torch.cat([pad_patch, ids_3d], dim=1)
+    pad_embed = model.to_embed(pad_ids.reshape(batch, -1))
+    pad_embed = pad_embed.reshape(batch, patch_count + 1, patch_size, global_dim)
+    global_in = pad_embed[:, :patch_count, :, :].reshape(batch, patch_count, patch_size * global_dim)
+
+    if stitch_global_kv:
+        global_out, next_global_kv, global_memory_layers_used = _megabyte_global_transformer_with_previous_kv(
+            model.g_transformer,
+            global_in,
+            state.previous_global_kv,
+        )
+    else:
+        global_out = model.g_transformer(global_in)
+        next_global_kv = None
+        global_memory_layers_used = 0
+
+    flat_shifted = pad_embed.reshape(batch, (patch_count + 1) * patch_size, global_dim)[:, patch_size - 1 : -1, :]
+    l_embed = model.to_l_embed(flat_shifted.reshape(batch * patch_count, patch_size, global_dim))
+
+    local_condition = model.gl_linear(global_out).reshape(batch, patch_count, patch_size, int(cfg.D_L))
+    local_memory_used = int(state.previous_patch_ids is not None)
+
+    local_in = local_condition.reshape(batch * patch_count, patch_size, int(cfg.D_L)) + l_embed
+    local_out = model.l_transformer(local_in)
+    lm_logits = model.to_logits(local_out).reshape(batch, patch_count * patch_size, -1)
+    next_state = _MegabyteWindowMemoryState(
+        previous_patch_ids=ids_3d[:, -1, :].detach(),
+        previous_global_kv=next_global_kv,
+    )
+    return lm_logits, next_state, {
+        "global_memory_layers_used": int(global_memory_layers_used),
+        "local_memory_used": int(local_memory_used),
+    }
 
 
 @dataclass(frozen=True)
@@ -568,16 +688,33 @@ class MegabyteProbabilityAdapter(ProbabilityAdapter):
         config: ExperimentConfig,
         device: torch.device,
         dtype_name: str,
+        window_context_mode: str = "independent",
+        probe_seq_length: int | None = None,
     ) -> None:
         self.name = name
         self.model = model
         self.config = config
         self.device = device
         self.dtype_name = dtype_name
+        self.window_context_mode = window_context_mode
+        self.probe_seq_length = int(probe_seq_length) if probe_seq_length is not None else None
         self.token_size = int(config.data.token_merge_size)
         self.alphabet = normalize_alphabet(config.data.token_merge_alphabet)
         if self.token_size <= 0:
             raise ValueError("Megabyte token_merge_size must be positive.")
+        if self.window_context_mode not in {"independent", "previous_window_memory", "previous_window_kv", "paired_previous_window_kv"}:
+            raise ValueError(
+                "window_context_mode must be 'independent', 'previous_window_memory', "
+                "'previous_window_kv', or 'paired_previous_window_kv'."
+            )
+        if self.window_context_mode != "independent" and config.model.implementation != "megabyte_in_action":
+            raise ValueError("MEGABYTE cross-window memory modes only support implementation='megabyte_in_action'.")
+        if self.probe_seq_length is not None:
+            patch_size = int(config.model.patch_size)
+            if self.probe_seq_length <= 0:
+                raise ValueError("probe_seq_length must be positive.")
+            if self.probe_seq_length % patch_size != 0:
+                raise ValueError("probe_seq_length must be divisible by the MEGABYTE patch size.")
 
     @classmethod
     def from_checkpoint(
@@ -588,6 +725,8 @@ class MegabyteProbabilityAdapter(ProbabilityAdapter):
         checkpoint_path: Path,
         device: torch.device,
         dtype_name: str | None = None,
+        window_context_mode: str = "independent",
+        probe_seq_length: int | None = None,
     ) -> "MegabyteProbabilityAdapter":
         config = ExperimentConfig()
         config_path = run_dir / "resolved_config.json"
@@ -606,6 +745,8 @@ class MegabyteProbabilityAdapter(ProbabilityAdapter):
             config=config,
             device=device,
             dtype_name=dtype_name or config.train.dtype,
+            window_context_mode=window_context_mode,
+            probe_seq_length=probe_seq_length,
         )
 
     def unit_probabilities(
@@ -627,19 +768,34 @@ class MegabyteProbabilityAdapter(ProbabilityAdapter):
         if target_units.shape[0] != token_count * (self.token_size // unit_size):
             raise RuntimeError("Megabyte target unit count does not match token count.")
 
-        seq_length = int(self.config.model.seq_length)
+        seq_length = int(self.probe_seq_length or self.config.model.seq_length)
         pad_id = int(self.config.model.pad_id)
         all_unit_probabilities: list[np.ndarray] = []
         model_forward_seconds = 0.0
         softmax_seconds = 0.0
         aggregate_seconds = 0.0
         data_transfer_seconds = 0.0
+        memory_windows_with_global_kv = 0
+        memory_windows_with_local_feature = 0
+        memory_global_layer_uses = 0
+        effective_batch_size = int(batch_size)
 
         self.model.eval()
         with torch.no_grad():
             starts = list(range(0, token_count, seq_length))
-            for batch_start in range(0, len(starts), batch_size):
+            uses_cross_window_memory = self.window_context_mode != "independent"
+            uses_global_kv = self.window_context_mode in {"previous_window_kv", "paired_previous_window_kv"}
+            pairs_global_kv = self.window_context_mode == "paired_previous_window_kv"
+            stride = 1 if uses_cross_window_memory else batch_size
+            if uses_cross_window_memory:
+                effective_batch_size = 1
+                memory_state = _MegabyteWindowMemoryState()
+            else:
+                memory_state = None
+            for batch_start in range(0, len(starts), stride):
                 batch_starts = starts[batch_start : batch_start + batch_size]
+                if uses_cross_window_memory:
+                    batch_starts = starts[batch_start : batch_start + 1]
                 windows = torch.full((len(batch_starts), seq_length), pad_id, dtype=torch.long)
                 lengths: list[int] = []
                 for row_index, start in enumerate(batch_starts):
@@ -654,11 +810,29 @@ class MegabyteProbabilityAdapter(ProbabilityAdapter):
 
                 with autocast_context(self.device, self.dtype_name):
                     forward_started = perf_counter()
-                    output = self.model(batch, return_loss=False)
+                    if uses_cross_window_memory:
+                        if memory_state is None:
+                            raise RuntimeError("MEGABYTE cross-window memory state was not initialized.")
+                        if pairs_global_kv and batch_start % 2 == 0:
+                            memory_state = _MegabyteWindowMemoryState()
+                        lm_logits, memory_state, memory_metrics = _megabyte_forward_with_window_memory(
+                            self.model,
+                            batch,
+                            memory_state,
+                            stitch_global_kv=uses_global_kv,
+                        )
+                        if memory_metrics["global_memory_layers_used"] > 0:
+                            memory_windows_with_global_kv += 1
+                            memory_global_layer_uses += int(memory_metrics["global_memory_layers_used"])
+                        if memory_metrics["local_memory_used"] > 0:
+                            memory_windows_with_local_feature += 1
+                    else:
+                        output = self.model(batch, return_loss=False)
+                        lm_logits = output.lm_logits
                     model_forward_seconds += perf_counter() - forward_started
 
                     softmax_started = perf_counter()
-                    log_probs = torch.log_softmax(output.lm_logits, dim=-1)
+                    log_probs = torch.log_softmax(lm_logits, dim=-1)
                     softmax_seconds += perf_counter() - softmax_started
 
                 for row_index, (start, chunk_length) in enumerate(zip(batch_starts, lengths)):
@@ -689,6 +863,41 @@ class MegabyteProbabilityAdapter(ProbabilityAdapter):
             softmax_seconds=softmax_seconds,
             aggregate_seconds=aggregate_seconds,
             data_transfer_seconds=data_transfer_seconds,
+            metadata={
+                "megabyte_window_context_mode": self.window_context_mode,
+                "effective_window_batch_size": int(effective_batch_size),
+                "requested_batch_size": int(batch_size),
+                "model_seq_length_tokens": int(seq_length),
+                "model_window_bases": int(seq_length * self.token_size),
+                "memory_kv_slots": int(seq_length // int(self.config.model.patch_size))
+                if uses_global_kv
+                else 0,
+                "memory_extra_prediction_tokens": 0,
+                "memory_includes_previous_memory_slot": False,
+                "cross_window_reset": "paired_windows" if pairs_global_kv else "source",
+                "cross_window_memory_source": (
+                    "previous_window_global_kv_and_previous_last_patch"
+                    if self.window_context_mode in {"previous_window_kv", "paired_previous_window_kv"}
+                    else
+                    "previous_last_patch_shifted_input"
+                    if self.window_context_mode == "previous_window_memory"
+                    else "none"
+                ),
+                "cross_window_memory_summary": (
+                    "previous_window_global_kv"
+                    if self.window_context_mode in {"previous_window_kv", "paired_previous_window_kv"}
+                    else
+                    "previous_last_patch" if self.window_context_mode == "previous_window_memory" else "none"
+                ),
+                "cross_window_local_conditioning": (
+                    "previous_last_patch_shifted_input"
+                    if self.window_context_mode in {"previous_window_memory", "previous_window_kv", "paired_previous_window_kv"}
+                    else "none"
+                ),
+                "global_memory_windows": int(memory_windows_with_global_kv),
+                "local_memory_windows": int(memory_windows_with_local_feature),
+                "global_memory_layer_uses": int(memory_global_layer_uses),
+            },
         )
 
 

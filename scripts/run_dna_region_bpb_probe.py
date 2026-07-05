@@ -19,6 +19,38 @@ Examples:
       --batch-size 32 \
       --output-dir outputs/dna_megabyte_large_20260616_144744_20260616_171309_20260617_140217/region_bpb_probe_dnacorpus
 
+    # Experimental MEGABYTE cross-window memory probe. Windows are streamed
+    # within each source, so the effective MEGABYTE window batch size is 1.
+    python scripts/run_dna_region_bpb_probe.py \
+      --dataset dnacorpus \
+      --dataset-dir datasets/DNACorpus \
+      --species BuEb \
+      --model megabyte:outputs/dna_megabyte_large_20260616_144744_20260616_171309_20260617_140217:best \
+      --megabyte-window-context-mode previous_window_memory \
+      --megabyte-probe-seq-length 512 \
+      --random-region \
+      --seed 12345 \
+      --region-bases 50000 \
+      --device cuda:1 \
+      --batch-size 32 \
+      --output-dir outputs/megabyte_previous_window_memory_region_bpb_probe
+
+    # Pairwise KV stitching equivalence probe. Window 0 is independent, window 1
+    # stitches window 0 global KV; window 2 resets, window 3 stitches window 2.
+    python scripts/run_dna_region_bpb_probe.py \
+      --dataset dnacorpus \
+      --dataset-dir datasets/DNACorpus \
+      --species BuEb \
+      --model megabyte:outputs/dna_megabyte_large_20260616_144744_20260616_171309_20260617_140217:best \
+      --megabyte-window-context-mode paired_previous_window_kv \
+      --megabyte-probe-seq-length 512 \
+      --random-region \
+      --seed 12345 \
+      --region-bases 50000 \
+      --device cuda:1 \
+      --batch-size 32 \
+      --output-dir outputs/megabyte_paired_previous_window_kv_region_bpb_probe
+
     # DNACorpus GeCo2 per-base BPB. Default uses GeCo2 -e once per region and
     # stores compact per-base arrays under models/geco2*/bpb.npz. Pseudo windows
     # are only for statistics/plots; set them to the 3072-base model window.
@@ -1282,10 +1314,34 @@ def build_region_adapters(args: argparse.Namespace) -> list[Any]:
     for index, spec in enumerate(specs):
         kind, run_dir, checkpoint = _parse_model_spec(spec)
         name = f"{kind}{index + 1}"
-        if kind in {"megabyte", "dnagpt"}:
+        if kind == "megabyte":
             if run_dir is None:
                 raise ValueError(f"{kind} model spec requires a run directory: {spec}")
-            checkpoint_text = checkpoint or ("last" if kind == "dnagpt" else args.checkpoint_tag)
+            checkpoint_text = checkpoint or args.checkpoint_tag
+            checkpoint_path = _checkpoint_path(
+                run_dir,
+                checkpoint_text if checkpoint_text not in {"best", "last"} else None,
+                checkpoint_text,
+            )
+            adapter_name = name
+            if args.megabyte_window_context_mode != "independent":
+                adapter_name = f"{kind}_{args.megabyte_window_context_mode}{index + 1}"
+            adapters.append(
+                MegabyteProbabilityAdapter.from_checkpoint(
+                    name=adapter_name,
+                    run_dir=run_dir,
+                    checkpoint_path=checkpoint_path,
+                    device=device,
+                    dtype_name=args.dtype,
+                    window_context_mode=str(args.megabyte_window_context_mode),
+                    probe_seq_length=args.megabyte_probe_seq_length,
+                )
+            )
+            continue
+        if kind == "dnagpt":
+            if run_dir is None:
+                raise ValueError(f"{kind} model spec requires a run directory: {spec}")
+            checkpoint_text = checkpoint or "last"
             adapters.append(
                 build_adapter_from_spec(
                     spec=f"{kind}:{run_dir}:{checkpoint_text}",
@@ -1376,7 +1432,10 @@ def _adapter_window_bases(adapter: ProbabilityAdapter, species: str | None) -> i
             return max(1, max_target_tokens(int(adapter.config.model.seq_length), prefix_length) * int(adapter.token_size))
         except Exception:
             pass
-    seq_length = int(getattr(getattr(adapter, "config", None), "model", None).seq_length) if hasattr(getattr(adapter, "config", None), "model") else int(getattr(adapter, "seq_length", 1024))
+    if isinstance(adapter, MegabyteProbabilityAdapter) and getattr(adapter, "probe_seq_length", None):
+        seq_length = int(adapter.probe_seq_length)
+    else:
+        seq_length = int(getattr(getattr(adapter, "config", None), "model", None).seq_length) if hasattr(getattr(adapter, "config", None), "model") else int(getattr(adapter, "seq_length", 1024))
     return max(1, seq_length * int(adapter.token_size))
 
 
@@ -1436,6 +1495,8 @@ def bpb_for_adapter(
         "factorization_seconds": result.aggregate_seconds,
         "data_transfer_seconds": result.data_transfer_seconds,
     }
+    if result.metadata:
+        metadata.update(result.metadata)
     return bpb, model_offsets, metadata
 
 
@@ -1839,6 +1900,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument(
+        "--megabyte-window-context-mode",
+        choices=("independent", "previous_window_memory", "previous_window_kv", "paired_previous_window_kv"),
+        default="independent",
+        help=(
+            "Experimental MEGABYTE region-probe context mode. previous_window_memory only uses the "
+            "previous window last patch as shifted input; previous_window_kv also stitches the previous "
+            "window global KV; paired_previous_window_kv resets every other window for two-window equivalence probes."
+        ),
+    )
+    parser.add_argument(
+        "--megabyte-probe-seq-length",
+        type=int,
+        help="Override MEGABYTE region-probe window length in model tokens. Must be divisible by patch size; memory slots are not counted in this length.",
+    )
     parser.add_argument("--geco2-bin", default="GeCo2")
     parser.add_argument("--geco2-level", type=int, default=5)
     parser.add_argument("--geco2-profile-mode", choices=("estimate", "constant", "prefix_delta"), default="estimate")
