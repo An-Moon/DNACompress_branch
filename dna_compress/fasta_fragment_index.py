@@ -3017,8 +3017,11 @@ class IndexedMegabyteSourceBatchStreamDataset(IterableDataset):
 
     def _source_random_values(self, global_sample_indices: np.ndarray) -> np.ndarray:
         values = global_sample_indices.astype(np.uint64, copy=False)
-        values = values + np.uint64(self.seed) + np.uint64(self.source_file_order_seed) * np.uint64(0x9E3779B97F4A7C15)
-        values = values + np.uint64(self.epoch_index) * np.uint64(0xBF58476D1CE4E5B9)
+        uint64_mask = (1 << 64) - 1
+        source_seed = np.uint64((int(self.source_file_order_seed) * 0x9E3779B97F4A7C15) & uint64_mask)
+        epoch_seed = np.uint64((int(self.epoch_index) * 0xBF58476D1CE4E5B9) & uint64_mask)
+        values = values + np.uint64(int(self.seed) & uint64_mask) + source_seed
+        values = values + epoch_seed
         values ^= values >> np.uint64(30)
         values *= np.uint64(0xBF58476D1CE4E5B9)
         values ^= values >> np.uint64(27)

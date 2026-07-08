@@ -19,38 +19,6 @@ Examples:
       --batch-size 32 \
       --output-dir outputs/dna_megabyte_large_20260616_144744_20260616_171309_20260617_140217/region_bpb_probe_dnacorpus
 
-    # Experimental MEGABYTE cross-window memory probe. Windows are streamed
-    # within each source, so the effective MEGABYTE window batch size is 1.
-    python scripts/run_dna_region_bpb_probe.py \
-      --dataset dnacorpus \
-      --dataset-dir datasets/DNACorpus \
-      --species BuEb \
-      --model megabyte:outputs/dna_megabyte_large_20260616_144744_20260616_171309_20260617_140217:best \
-      --megabyte-window-context-mode previous_window_memory \
-      --megabyte-probe-seq-length 512 \
-      --random-region \
-      --seed 12345 \
-      --region-bases 50000 \
-      --device cuda:1 \
-      --batch-size 32 \
-      --output-dir outputs/megabyte_previous_window_memory_region_bpb_probe
-
-    # Pairwise KV stitching equivalence probe. Window 0 is independent, window 1
-    # stitches window 0 global KV; window 2 resets, window 3 stitches window 2.
-    python scripts/run_dna_region_bpb_probe.py \
-      --dataset dnacorpus \
-      --dataset-dir datasets/DNACorpus \
-      --species BuEb \
-      --model megabyte:outputs/dna_megabyte_large_20260616_144744_20260616_171309_20260617_140217:best \
-      --megabyte-window-context-mode paired_previous_window_kv \
-      --megabyte-probe-seq-length 512 \
-      --random-region \
-      --seed 12345 \
-      --region-bases 50000 \
-      --device cuda:1 \
-      --batch-size 32 \
-      --output-dir outputs/megabyte_paired_previous_window_kv_region_bpb_probe
-
     # DNACorpus GeCo2 per-base BPB. Default uses GeCo2 -e once per region and
     # stores compact per-base arrays under models/geco2*/bpb.npz. Pseudo windows
     # are only for statistics/plots; set them to the 3072-base model window.
@@ -132,11 +100,6 @@ Examples:
       --batch-size 1 \
       --output-dir outputs/evo2_megabyte_geco2_region_bpb_probe
 
-    # Carbon-500M fns branch. Download once with:
-    #   env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
-    #     HF_ENDPOINT=https://hf-mirror.com \
-    #     huggingface-cli download HuggingFaceBio/Carbon-500M --revision fns \
-    #       --local-dir third_party/Carbon-500M-fns --local-dir-use-symlinks False
     CUDA_VISIBLE_DEVICES=3 python scripts/run_dna_region_bpb_probe.py \
       --dataset dnacorpus \
       --dataset-dir datasets/DNACorpus \
@@ -225,6 +188,10 @@ from dna_compress.megadna_loader import (
     default_megadna_weight_path,
     load_megadna_model,
     wrap_megadna_for_target_aligned_logits,
+)
+from dna_compress.noncontiguous_prefix_codec import (
+    DEFAULT_NC_PREFIX_MIN_WINDOWS,
+    NoncontiguousPrefixProbabilityAdapter,
 )
 from dna_compress.tokenization import normalize_alphabet
 from scripts.plot_compression_curves import GECO2_PAPER_BASELINE_BY_SOURCE
@@ -1302,7 +1269,7 @@ def build_region_adapters(args: argparse.Namespace) -> list[Any]:
     device = resolve_device(args.device)
     specs = list(args.model or [])
     if not specs:
-        if args.run_dir is None and args.model_kind not in {"megadna", "geco2", "evo2", "carbon"}:
+        if args.run_dir is None and args.model_kind not in {"megadna", "geco2", "evo2", "carbon", "nc_prefix"}:
             raise ValueError("--run-dir is required unless --model is provided")
         if args.run_dir is None:
             specs.append(args.model_kind)
@@ -1416,6 +1383,17 @@ def build_region_adapters(args: argparse.Namespace) -> list[Any]:
                 )
             )
             continue
+        if kind == "nc_prefix":
+            adapters.append(
+                NoncontiguousPrefixProbabilityAdapter(
+                    name=name if len(specs) > 1 else "nc_prefix",
+                    window_bases=int(args.nc_prefix_window_bases),
+                    alphabet=str(args.alphabet),
+                    backend=str(getattr(args, "nc_prefix_backend", "auto")),
+                    min_windows=int(args.nc_prefix_min_windows),
+                )
+            )
+            continue
         raise ValueError(f"Unsupported model kind {kind!r}")
     return adapters
 
@@ -1516,13 +1494,19 @@ def window_rows(bpb: np.ndarray, offsets: np.ndarray, *, source_start: int, wind
     rows: list[dict[str, Any]] = []
     if bpb.size == 0:
         return rows
-    max_offset = int(offsets.max()) + 1
-    for start in range(0, max_offset, window_bases):
-        end = start + window_bases
-        mask = (offsets >= start) & (offsets < end)
-        if not bool(mask.any()):
-            continue
-        window_values = bpb[mask]
+    offsets = np.asarray(offsets, dtype=np.int64)
+    bpb = np.asarray(bpb, dtype=np.float64)
+    window_ids = offsets // int(window_bases)
+    if window_ids.size == 0:
+        return rows
+    max_window_id = int(window_ids.max())
+    sums = np.bincount(window_ids, weights=bpb, minlength=max_window_id + 1)
+    counts = np.bincount(window_ids, minlength=max_window_id + 1)
+    for window_id in np.flatnonzero(counts > 0):
+        start = int(window_id) * int(window_bases)
+        end = start + int(window_bases)
+        count = int(counts[window_id])
+        sum_bits = float(sums[window_id])
         rows.append(
             {
                 "window_index": len(rows),
@@ -1530,9 +1514,9 @@ def window_rows(bpb: np.ndarray, offsets: np.ndarray, *, source_start: int, wind
                 "region_end_exclusive": int(end),
                 "source_start": int(source_start + start),
                 "source_end_exclusive": int(source_start + end),
-                "base_count": int(window_values.size),
-                "sum_bits": float(window_values.sum()),
-                "mean_bpb": float(window_values.mean()),
+                "base_count": count,
+                "sum_bits": sum_bits,
+                "mean_bpb": sum_bits / max(count, 1),
             }
         )
     return rows
@@ -1891,7 +1875,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=12345)
 
     parser.add_argument("--model", action="append", help="Repeatable model spec: kind:run_dir[:checkpoint_or_tag].")
-    parser.add_argument("--model-kind", choices=("megabyte", "megadna", "dnagpt", "geco2", "evo2", "carbon"), default="megabyte")
+    parser.add_argument("--model-kind", choices=("megabyte", "megadna", "dnagpt", "geco2", "evo2", "carbon", "nc_prefix"), default="megabyte")
     parser.add_argument("--run-dir")
     parser.add_argument("--checkpoint")
     parser.add_argument("--checkpoint-tag", default="best")
@@ -1946,6 +1930,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--carbon-context-bases", type=int, default=49152)
     parser.add_argument("--carbon-trust-remote-code", dest="carbon_trust_remote_code", action="store_true", default=True)
     parser.add_argument("--no-carbon-trust-remote-code", dest="carbon_trust_remote_code", action="store_false")
+    parser.add_argument("--nc-prefix-window-bases", type=int, default=3072)
+    parser.add_argument("--nc-prefix-backend", choices=("auto", "fast_cpp"), default="auto")
+    parser.add_argument("--backend", dest="nc_prefix_backend", choices=("auto", "fast_cpp"), help=argparse.SUPPRESS)
+    parser.add_argument("--nc-prefix-min-windows", type=int, default=DEFAULT_NC_PREFIX_MIN_WINDOWS)
 
     parser.add_argument("--plot-window-bases", type=int)
     parser.add_argument("--smooth-window-bases", type=int, default=512)

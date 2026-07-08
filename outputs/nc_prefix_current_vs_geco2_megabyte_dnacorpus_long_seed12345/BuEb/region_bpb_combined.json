@@ -1,0 +1,1016 @@
+{
+  "combined_plot": true,
+  "dataset": "dnacorpus",
+  "source": "BuEb",
+  "species": "BuEb",
+  "region_start": 0,
+  "region_bases": 18940,
+  "region_window_count": 7,
+  "source_length": 18940,
+  "window_bases": 3072,
+  "max_windows": 8192,
+  "seed": 12345,
+  "models": {
+    "geco22": {
+      "model": "geco22",
+      "artifact_npz": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/models/geco22/bpb.npz",
+      "summary_json": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/models/geco22/summary.json",
+      "record_dtype": "float16",
+      "base_count": 18940,
+      "offset_start": 0,
+      "offsets_stored": false,
+      "model_window_bases": 3072,
+      "total_bits": 37136.36438,
+      "total_bpb": 1.960737,
+      "statistics": {
+        "min": 0.151978,
+        "mean": 1.960737,
+        "median": 1.990234,
+        "p90": 2.269531,
+        "p95": 2.380859,
+        "p99": 3.009766,
+        "max": 5.25
+      },
+      "statistics_sampled": false,
+      "statistics_sample_size": 18940,
+      "worst_plot_window": {
+        "window_index": 4,
+        "region_start": 12288,
+        "region_end_exclusive": 15360,
+        "source_start": 12288,
+        "source_end_exclusive": 15360,
+        "base_count": 3072,
+        "sum_bits": 6056.244140625,
+        "mean_bpb": 1.9714336395263672,
+        "model": "geco22",
+        "plot_window_bases": 3072
+      },
+      "window_summary_preview": [
+        {
+          "window_index": 0,
+          "source_start": 0,
+          "source_end_exclusive": 3072,
+          "base_count": 3072,
+          "mean_bpb": 1.952145
+        },
+        {
+          "window_index": 1,
+          "source_start": 3072,
+          "source_end_exclusive": 6144,
+          "base_count": 3072,
+          "mean_bpb": 1.967
+        },
+        {
+          "window_index": 2,
+          "source_start": 6144,
+          "source_end_exclusive": 9216,
+          "base_count": 3072,
+          "mean_bpb": 1.95474
+        },
+        {
+          "window_index": 3,
+          "source_start": 9216,
+          "source_end_exclusive": 12288,
+          "base_count": 3072,
+          "mean_bpb": 1.964076
+        },
+        {
+          "window_index": 4,
+          "source_start": 12288,
+          "source_end_exclusive": 15360,
+          "base_count": 3072,
+          "mean_bpb": 1.971434
+        },
+        {
+          "window_index": 5,
+          "source_start": 15360,
+          "source_end_exclusive": 18432,
+          "base_count": 3072,
+          "mean_bpb": 1.958389
+        },
+        {
+          "window_index": 6,
+          "source_start": 18432,
+          "source_end_exclusive": 21504,
+          "base_count": 508,
+          "mean_bpb": 1.940418
+        }
+      ],
+      "window_count": 7,
+      "adapter_wall_seconds": 0.0,
+      "metadata": {
+        "adapter_name": "geco22",
+        "adapter_class": "Geco2RegionAdapter",
+        "alphabet": "ACGTN",
+        "token_size": 1,
+        "valid_base_count": 18940,
+        "filtered_out_bases": 0,
+        "trimmed_tail_bases": 0,
+        "model_window_bases": 3072,
+        "model_forward_seconds": 0.0,
+        "softmax_seconds": 0.0,
+        "factorization_seconds": 0.0,
+        "data_transfer_seconds": 0.0,
+        "geco2_binary": "/home/Liang_junnan/miniconda3/bin/GeCo2",
+        "geco2_level": 1,
+        "geco2_level_source": "dnacorpus_paper:BuEb",
+        "geco2_profile_mode": "estimate",
+        "geco2_pseudo_window_bases": 3072,
+        "continuous_compressed_bytes": 4686,
+        "continuous_bits_per_base": 1.9793030623020063,
+        "geco2_compression_seconds": 0.08453329000622034,
+        "geco2_wall_seconds": 0.08916947798570618,
+        "geco2_note": "Full-source GeCo2 was run once with -e; per-base BPB comes from the .iae file.",
+        "source_full_result_json": "outputs/dna_megabyte_large_opengenome2_9/full_bpb_probe_dnacorpus/BuEb/region_bpb.json",
+        "source_full_model": "geco22"
+      }
+    },
+    "megabyte1": {
+      "model": "megabyte1",
+      "artifact_npz": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/models/megabyte1/bpb.npz",
+      "summary_json": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/models/megabyte1/summary.json",
+      "record_dtype": "float16",
+      "base_count": 18939,
+      "offset_start": 0,
+      "offsets_stored": false,
+      "model_window_bases": 3072,
+      "total_bits": 36640.070557,
+      "total_bpb": 1.934636,
+      "statistics": {
+        "min": 0.254883,
+        "mean": 1.934636,
+        "median": 1.879883,
+        "p90": 2.535156,
+        "p95": 2.724609,
+        "p99": 3.210938,
+        "max": 6.234375
+      },
+      "statistics_sampled": false,
+      "statistics_sample_size": 18939,
+      "worst_plot_window": {
+        "window_index": 1,
+        "region_start": 3072,
+        "region_end_exclusive": 6144,
+        "source_start": 3072,
+        "source_end_exclusive": 6144,
+        "base_count": 3072,
+        "sum_bits": 6018.45556640625,
+        "mean_bpb": 1.9591326713562012,
+        "model": "megabyte1",
+        "plot_window_bases": 3072
+      },
+      "window_summary_preview": [
+        {
+          "window_index": 0,
+          "source_start": 0,
+          "source_end_exclusive": 3072,
+          "base_count": 3072,
+          "mean_bpb": 1.899129
+        },
+        {
+          "window_index": 1,
+          "source_start": 3072,
+          "source_end_exclusive": 6144,
+          "base_count": 3072,
+          "mean_bpb": 1.959133
+        },
+        {
+          "window_index": 2,
+          "source_start": 6144,
+          "source_end_exclusive": 9216,
+          "base_count": 3072,
+          "mean_bpb": 1.929415
+        },
+        {
+          "window_index": 3,
+          "source_start": 9216,
+          "source_end_exclusive": 12288,
+          "base_count": 3072,
+          "mean_bpb": 1.950088
+        },
+        {
+          "window_index": 4,
+          "source_start": 12288,
+          "source_end_exclusive": 15360,
+          "base_count": 3072,
+          "mean_bpb": 1.941501
+        },
+        {
+          "window_index": 5,
+          "source_start": 15360,
+          "source_end_exclusive": 18432,
+          "base_count": 3072,
+          "mean_bpb": 1.939363
+        },
+        {
+          "window_index": 6,
+          "source_start": 18432,
+          "source_end_exclusive": 21504,
+          "base_count": 507,
+          "mean_bpb": 1.869131
+        }
+      ],
+      "window_count": 7,
+      "adapter_wall_seconds": 0.0,
+      "metadata": {
+        "adapter_name": "megabyte1",
+        "adapter_class": "MegabyteProbabilityAdapter",
+        "alphabet": "ACGTN",
+        "token_size": 3,
+        "valid_base_count": 18939,
+        "filtered_out_bases": 1,
+        "trimmed_tail_bases": 1,
+        "model_window_bases": 3072,
+        "model_forward_seconds": 0.030858168000122532,
+        "softmax_seconds": 3.7802994484081864e-05,
+        "factorization_seconds": 0.1446091840043664,
+        "data_transfer_seconds": 9.066701750271022e-05,
+        "chunk_bases": 3145728,
+        "full_source_wall_seconds": 0.19008891901466995,
+        "source_full_result_json": "outputs/dna_megabyte_large_opengenome2_9/full_bpb_probe_dnacorpus/BuEb/region_bpb.json",
+        "source_full_model": "megabyte1"
+      }
+    },
+    "nc_prefix_current": {
+      "model": "nc_prefix_current",
+      "artifact_npz": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/models/nc_prefix_current/bpb.npz",
+      "summary_json": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/models/nc_prefix_current/summary.json",
+      "record_dtype": "float16",
+      "base_count": 18940,
+      "offset_start": 0,
+      "offsets_stored": false,
+      "model_window_bases": 3072,
+      "total_bits": 37476.333249,
+      "total_bpb": 1.978687,
+      "statistics": {
+        "min": 0.156273,
+        "mean": 1.978687,
+        "median": 1.988347,
+        "p90": 2.231838,
+        "p95": 2.329587,
+        "p99": 2.577868,
+        "max": 4.553456
+      },
+      "statistics_sampled": false,
+      "statistics_sample_size": 18940,
+      "worst_plot_window": {
+        "window_index": 4,
+        "region_start": 12288,
+        "region_end_exclusive": 15360,
+        "source_start": 12288,
+        "source_end_exclusive": 15360,
+        "base_count": 3072,
+        "sum_bits": 6110.442324433422,
+        "mean_bpb": 1.9890762774848378,
+        "model": "nc_prefix_current",
+        "plot_window_bases": 3072
+      },
+      "window_summary_preview": [
+        {
+          "window_index": 0,
+          "source_start": 0,
+          "source_end_exclusive": 3072,
+          "base_count": 3072,
+          "mean_bpb": 1.979027
+        },
+        {
+          "window_index": 1,
+          "source_start": 3072,
+          "source_end_exclusive": 6144,
+          "base_count": 3072,
+          "mean_bpb": 1.977881
+        },
+        {
+          "window_index": 2,
+          "source_start": 6144,
+          "source_end_exclusive": 9216,
+          "base_count": 3072,
+          "mean_bpb": 1.973891
+        },
+        {
+          "window_index": 3,
+          "source_start": 9216,
+          "source_end_exclusive": 12288,
+          "base_count": 3072,
+          "mean_bpb": 1.976643
+        },
+        {
+          "window_index": 4,
+          "source_start": 12288,
+          "source_end_exclusive": 15360,
+          "base_count": 3072,
+          "mean_bpb": 1.989076
+        },
+        {
+          "window_index": 5,
+          "source_start": 15360,
+          "source_end_exclusive": 18432,
+          "base_count": 3072,
+          "mean_bpb": 1.977961
+        },
+        {
+          "window_index": 6,
+          "source_start": 18432,
+          "source_end_exclusive": 21504,
+          "base_count": 508,
+          "mean_bpb": 1.964435
+        }
+      ],
+      "window_count": 7,
+      "adapter_wall_seconds": 1.814529,
+      "metadata": {
+        "backend": "fast_cpp",
+        "preset": "nc_prefix",
+        "algorithm": "geco2_level10_per_window_weights",
+        "geco2_level": 10,
+        "base_count": 18940,
+        "window_bases": 3072,
+        "window_count": 7,
+        "depth_count": 3072,
+        "max_window_len": 3072,
+        "alphabet": "ACGT",
+        "model_count": 7,
+        "predictor_count": 8,
+        "models": [
+          {
+            "label": "ctx1",
+            "context_len": 1,
+            "alpha_den": 1,
+            "gamma": 0.9,
+            "ir": false,
+            "edits": 0,
+            "edit_alpha_den": 0,
+            "edit_gamma": 0.0,
+            "dense": true,
+            "hash_slots": 1,
+            "ir_updates": 0,
+            "edit_hits": 0,
+            "edit_fails": 0
+          },
+          {
+            "label": "ctx3",
+            "context_len": 3,
+            "alpha_den": 1,
+            "gamma": 0.9,
+            "ir": false,
+            "edits": 0,
+            "edit_alpha_den": 0,
+            "edit_gamma": 0.0,
+            "dense": true,
+            "hash_slots": 1,
+            "ir_updates": 0,
+            "edit_hits": 0,
+            "edit_fails": 0
+          },
+          {
+            "label": "ctx6",
+            "context_len": 6,
+            "alpha_den": 1,
+            "gamma": 0.82,
+            "ir": true,
+            "edits": 0,
+            "edit_alpha_den": 0,
+            "edit_gamma": 0.0,
+            "dense": true,
+            "hash_slots": 1,
+            "ir_updates": 18940,
+            "edit_hits": 0,
+            "edit_fails": 0
+          },
+          {
+            "label": "ctx9",
+            "context_len": 9,
+            "alpha_den": 10,
+            "gamma": 0.9,
+            "ir": false,
+            "edits": 0,
+            "edit_alpha_den": 0,
+            "edit_gamma": 0.0,
+            "dense": true,
+            "hash_slots": 1,
+            "ir_updates": 0,
+            "edit_hits": 0,
+            "edit_fails": 0
+          },
+          {
+            "label": "ctx11",
+            "context_len": 11,
+            "alpha_den": 10,
+            "gamma": 0.9,
+            "ir": false,
+            "edits": 0,
+            "edit_alpha_den": 0,
+            "edit_gamma": 0.0,
+            "dense": true,
+            "hash_slots": 1,
+            "ir_updates": 0,
+            "edit_hits": 0,
+            "edit_fails": 0
+          },
+          {
+            "label": "ctx13",
+            "context_len": 13,
+            "alpha_den": 10,
+            "gamma": 0.9,
+            "ir": true,
+            "edits": 0,
+            "edit_alpha_den": 20,
+            "edit_gamma": 0.94,
+            "dense": true,
+            "hash_slots": 1,
+            "ir_updates": 18940,
+            "edit_hits": 0,
+            "edit_fails": 0
+          },
+          {
+            "label": "ctx17",
+            "context_len": 17,
+            "alpha_den": 100,
+            "gamma": 0.89,
+            "ir": true,
+            "edits": 5,
+            "edit_alpha_den": 10,
+            "edit_gamma": 0.9,
+            "dense": false,
+            "hash_slots": 8,
+            "ir_updates": 18940,
+            "edit_hits": 12,
+            "edit_fails": 42
+          }
+        ],
+        "predictors": [
+          {
+            "label": "ctx1",
+            "model_index": 0,
+            "edit": false,
+            "alpha_den": 1,
+            "gamma": 0.9,
+            "queries": 18940,
+            "hits": 18927,
+            "hit_rate": 0.9993136219640971
+          },
+          {
+            "label": "ctx3",
+            "model_index": 1,
+            "edit": false,
+            "alpha_den": 1,
+            "gamma": 0.9,
+            "queries": 18940,
+            "hits": 18865,
+            "hit_rate": 0.9960401267159451
+          },
+          {
+            "label": "ctx6",
+            "model_index": 2,
+            "edit": false,
+            "alpha_den": 1,
+            "gamma": 0.82,
+            "queries": 18940,
+            "hits": 16942,
+            "hit_rate": 0.8945089757127772
+          },
+          {
+            "label": "ctx9",
+            "model_index": 3,
+            "edit": false,
+            "alpha_den": 10,
+            "gamma": 0.9,
+            "queries": 18940,
+            "hits": 1211,
+            "hit_rate": 0.06393875395987328
+          },
+          {
+            "label": "ctx11",
+            "model_index": 4,
+            "edit": false,
+            "alpha_den": 10,
+            "gamma": 0.9,
+            "queries": 18940,
+            "hits": 123,
+            "hit_rate": 0.0064941921858500526
+          },
+          {
+            "label": "ctx13",
+            "model_index": 5,
+            "edit": false,
+            "alpha_den": 10,
+            "gamma": 0.9,
+            "queries": 18940,
+            "hits": 45,
+            "hit_rate": 0.002375923970432946
+          },
+          {
+            "label": "ctx17",
+            "model_index": 6,
+            "edit": false,
+            "alpha_den": 100,
+            "gamma": 0.89,
+            "queries": 18940,
+            "hits": 12,
+            "hit_rate": 0.0006335797254487857
+          },
+          {
+            "label": "ctx17_edit5",
+            "model_index": 6,
+            "edit": true,
+            "alpha_den": 10,
+            "gamma": 0.9,
+            "queries": 18940,
+            "hits": 40,
+            "hit_rate": 0.0021119324181626186
+          }
+        ],
+        "disable_edit_experts": false,
+        "disable_ir": false,
+        "emit_order": "depth_major_nonoverlap_windows",
+        "updates": "depth-major GECO2-style order: all predictions at a depth precede counter updates at that depth",
+        "fusion_mode": "geco2_per_window_weight_power_times_model_probability_depth_major_shared_counters",
+        "weight_scope": "per_window_local_weights",
+        "weight_history_summary": "mean of per-window weights",
+        "context_key_mode": "geco2_acgt_2bit_full_context_zero_padded",
+        "reverse_complement_update": true,
+        "edit_experts": true,
+        "edit_counter_sharing": "edit predictors query the owning base model counter table",
+        "dense_context_rule": "ctx < 15",
+        "dense_counter_mode": "uint16_default_max_count_halving",
+        "hash_bucket_count": 33554471,
+        "hash_counter_mode": "geco2_4bit_packed_counter_halve_on_15",
+        "hash_replacement": "geco2_style_bucket_cursor_oldest_replacement",
+        "mixed_float_bits": 37476.32692211862,
+        "mixed_float_bits_per_base": 1.9786867435120707,
+        "geco2_quantized_bits": 37476.333249464325,
+        "geco2_quantized_bits_per_base": 1.9786870775852337,
+        "theoretical_bits": 37476.333249464325,
+        "theoretical_bits_per_base": 1.9786870775852337,
+        "final_order_weights": {
+          "ctx1": 0.12388837863585264,
+          "ctx3": 0.1152923479919054,
+          "ctx6": 0.2991690428491251,
+          "ctx9": 0.06294468393315518,
+          "ctx11": 0.08687059768334324,
+          "ctx13": 0.09234383545880975,
+          "ctx17": 0.12139969032415421,
+          "ctx17_edit5": 0.09809142312365449
+        },
+        "expert_hit_rates": {
+          "ctx1": 0.9993136219640971,
+          "ctx3": 0.9960401267159451,
+          "ctx6": 0.8945089757127772,
+          "ctx9": 0.06393875395987328,
+          "ctx11": 0.0064941921858500526,
+          "ctx13": 0.002375923970432946,
+          "ctx17": 0.0006335797254487857,
+          "ctx17_edit5": 0.0021119324181626186
+        },
+        "weight_history": [
+          {
+            "depth": 0,
+            "weights": {
+              "ctx1": 0.125,
+              "ctx3": 0.125,
+              "ctx6": 0.125,
+              "ctx9": 0.125,
+              "ctx11": 0.125,
+              "ctx13": 0.125,
+              "ctx17": 0.125,
+              "ctx17_edit5": 0.125
+            }
+          },
+          {
+            "depth": 96,
+            "weights": {
+              "ctx1": 0.13210387812240626,
+              "ctx3": 0.1326172976526015,
+              "ctx6": 0.24822287475897076,
+              "ctx9": 0.10373752674048523,
+              "ctx11": 0.0904819256877623,
+              "ctx13": 0.0904819256877623,
+              "ctx17": 0.11188420894195264,
+              "ctx17_edit5": 0.09047036240805899
+            }
+          },
+          {
+            "depth": 192,
+            "weights": {
+              "ctx1": 0.11713882138113885,
+              "ctx3": 0.07784475079805812,
+              "ctx6": 0.28056535741568617,
+              "ctx9": 0.10189095217911963,
+              "ctx11": 0.09681906876955229,
+              "ctx13": 0.10077377248534677,
+              "ctx17": 0.12419249877735795,
+              "ctx17_edit5": 0.10077477819374017
+            }
+          },
+          {
+            "depth": 288,
+            "weights": {
+              "ctx1": 0.1350616490326957,
+              "ctx3": 0.12344066495186631,
+              "ctx6": 0.2697229225149106,
+              "ctx9": 0.08911344892524083,
+              "ctx11": 0.0904464667203645,
+              "ctx13": 0.09044660302478712,
+              "ctx17": 0.11132164177856305,
+              "ctx17_edit5": 0.09044660305157194
+            }
+          },
+          {
+            "depth": 384,
+            "weights": {
+              "ctx1": 0.15336791185026652,
+              "ctx3": 0.18600993238914926,
+              "ctx6": 0.19497031589227487,
+              "ctx9": 0.08656958990956307,
+              "ctx11": 0.08938768079803674,
+              "ctx13": 0.08924340797543892,
+              "ctx17": 0.11106348037537035,
+              "ctx17_edit5": 0.08938768080990027
+            }
+          },
+          {
+            "depth": 480,
+            "weights": {
+              "ctx1": 0.1550241023115983,
+              "ctx3": 0.08556475464242046,
+              "ctx6": 0.28449634258157436,
+              "ctx9": 0.06436835535769472,
+              "ctx11": 0.09684875592264015,
+              "ctx13": 0.09684875219349942,
+              "ctx17": 0.12000018106793187,
+              "ctx17_edit5": 0.09684875592264068
+            }
+          },
+          {
+            "depth": 576,
+            "weights": {
+              "ctx1": 0.12949662309998405,
+              "ctx3": 0.15225239376773197,
+              "ctx6": 0.3272521749525184,
+              "ctx9": 0.06625623619698051,
+              "ctx11": 0.07760753967242631,
+              "ctx13": 0.07250264945027422,
+              "ctx17": 0.09700662794360672,
+              "ctx17_edit5": 0.07762575491647782
+            }
+          },
+          {
+            "depth": 672,
+            "weights": {
+              "ctx1": 0.121889034933901,
+              "ctx3": 0.08740814737457168,
+              "ctx6": 0.2598459474104367,
+              "ctx9": 0.09484420621810888,
+              "ctx11": 0.10435491900817584,
+              "ctx13": 0.09924508791423223,
+              "ctx17": 0.1280444637603369,
+              "ctx17_edit5": 0.10436819338023676
+            }
+          },
+          {
+            "depth": 768,
+            "weights": {
+              "ctx1": 0.1516468715040007,
+              "ctx3": 0.12506098740730062,
+              "ctx6": 0.2767163999969709,
+              "ctx9": 0.07019268671671985,
+              "ctx11": 0.08986149341967842,
+              "ctx13": 0.08487350346490893,
+              "ctx17": 0.11165144855950723,
+              "ctx17_edit5": 0.08999660893091345
+            }
+          },
+          {
+            "depth": 864,
+            "weights": {
+              "ctx1": 0.12443602333490389,
+              "ctx3": 0.1508498774198266,
+              "ctx6": 0.20462312770015156,
+              "ctx9": 0.09549295588598619,
+              "ctx11": 0.10146257309222496,
+              "ctx13": 0.09633947495189846,
+              "ctx17": 0.12533338719710532,
+              "ctx17_edit5": 0.10146258041790299
+            }
+          },
+          {
+            "depth": 960,
+            "weights": {
+              "ctx1": 0.12415691462445869,
+              "ctx3": 0.10480587107442448,
+              "ctx6": 0.2547573513192167,
+              "ctx9": 0.08772333708253197,
+              "ctx11": 0.10236063019953694,
+              "ctx13": 0.097237524733865,
+              "ctx17": 0.1265977407660967,
+              "ctx17_edit5": 0.10236063019986952
+            }
+          },
+          {
+            "depth": 1056,
+            "weights": {
+              "ctx1": 0.1655711681381375,
+              "ctx3": 0.17641206749128058,
+              "ctx6": 0.20948785066883174,
+              "ctx9": 0.07494285526720156,
+              "ctx11": 0.08947432636884198,
+              "ctx13": 0.08435122090283746,
+              "ctx17": 0.11028618479402715,
+              "ctx17_edit5": 0.08947432636884199
+            }
+          },
+          {
+            "depth": 1152,
+            "weights": {
+              "ctx1": 0.12782401042710875,
+              "ctx3": 0.11547837841654753,
+              "ctx6": 0.19615686626457712,
+              "ctx9": 0.09568742217201494,
+              "ctx11": 0.11133898927658666,
+              "ctx13": 0.10621588381058213,
+              "ctx17": 0.1359594603559963,
+              "ctx17_edit5": 0.11133898927658666
+            }
+          },
+          {
+            "depth": 1248,
+            "weights": {
+              "ctx1": 0.130085881968968,
+              "ctx3": 0.11442117469567502,
+              "ctx6": 0.2596360450612063,
+              "ctx9": 0.05515458975008355,
+              "ctx11": 0.10506246358736748,
+              "ctx13": 0.09994415332354245,
+              "ctx17": 0.1306284328236102,
+              "ctx17_edit5": 0.10506725878954697
+            }
+          },
+          {
+            "depth": 1344,
+            "weights": {
+              "ctx1": 0.10362058984874793,
+              "ctx3": 0.13215980801787328,
+              "ctx6": 0.28884348343343447,
+              "ctx9": 0.08675136633543239,
+              "ctx11": 0.08961109550648585,
+              "ctx13": 0.09113528828997952,
+              "ctx17": 0.11710663218722307,
+              "ctx17_edit5": 0.09077173638082338
+            }
+          },
+          {
+            "depth": 1440,
+            "weights": {
+              "ctx1": 0.12961144569111924,
+              "ctx3": 0.1293286684461651,
+              "ctx6": 0.3747839635209082,
+              "ctx9": 0.07602558332358286,
+              "ctx11": 0.06281846725039227,
+              "ctx13": 0.06651673735024095,
+              "ctx17": 0.08927554751291912,
+              "ctx17_edit5": 0.07163958690467222
+            }
+          },
+          {
+            "depth": 1536,
+            "weights": {
+              "ctx1": 0.11526695037072528,
+              "ctx3": 0.13576853555545584,
+              "ctx6": 0.29785773227133705,
+              "ctx9": 0.06767004972417968,
+              "ctx11": 0.09161552512350035,
+              "ctx13": 0.08653924014601491,
+              "ctx17": 0.11361962120582372,
+              "ctx17_edit5": 0.09166234560296317
+            }
+          },
+          {
+            "depth": 1632,
+            "weights": {
+              "ctx1": 0.09845690799164551,
+              "ctx3": 0.09659134581359553,
+              "ctx6": 0.3314844126515881,
+              "ctx9": 0.07018209939873292,
+              "ctx11": 0.09283848443213301,
+              "ctx13": 0.09275378600138628,
+              "ctx17": 0.1198160722435283,
+              "ctx17_edit5": 0.0978768914673903
+            }
+          },
+          {
+            "depth": 1728,
+            "weights": {
+              "ctx1": 0.14208917920834005,
+              "ctx3": 0.14248505173079537,
+              "ctx6": 0.23923793506423796,
+              "ctx9": 0.08699345983179993,
+              "ctx11": 0.08835705774527587,
+              "ctx13": 0.08939314582342218,
+              "ctx17": 0.116927919306702,
+              "ctx17_edit5": 0.09451625128942671
+            }
+          },
+          {
+            "depth": 1824,
+            "weights": {
+              "ctx1": 0.11451578944205186,
+              "ctx3": 0.11730525434417159,
+              "ctx6": 0.3331070466879759,
+              "ctx9": 0.0697379761920818,
+              "ctx11": 0.08716119630892664,
+              "ctx13": 0.08210230113348334,
+              "ctx17": 0.10884502929182102,
+              "ctx17_edit5": 0.08722540659948785
+            }
+          },
+          {
+            "depth": 1920,
+            "weights": {
+              "ctx1": 0.11598123614504907,
+              "ctx3": 0.13442998427391037,
+              "ctx6": 0.3085134300150538,
+              "ctx9": 0.0638323423866594,
+              "ctx11": 0.08897310142433458,
+              "ctx13": 0.08568525586943765,
+              "ctx17": 0.11177628855011298,
+              "ctx17_edit5": 0.09080836133544216
+            }
+          },
+          {
+            "depth": 2016,
+            "weights": {
+              "ctx1": 0.12755371791338257,
+              "ctx3": 0.12962441911472536,
+              "ctx6": 0.3203019700859318,
+              "ctx9": 0.07829733033902231,
+              "ctx11": 0.07591801324566172,
+              "ctx13": 0.07905897605352383,
+              "ctx17": 0.10506349172822411,
+              "ctx17_edit5": 0.08418208151952834
+            }
+          },
+          {
+            "depth": 2112,
+            "weights": {
+              "ctx1": 0.15714800493489814,
+              "ctx3": 0.19107490778373246,
+              "ctx6": 0.2915593364865484,
+              "ctx9": 0.054643202641349906,
+              "ctx11": 0.07287690987040499,
+              "ctx13": 0.06815343275594536,
+              "ctx17": 0.0912676673051707,
+              "ctx17_edit5": 0.07327653822194989
+            }
+          },
+          {
+            "depth": 2208,
+            "weights": {
+              "ctx1": 0.12338805584587223,
+              "ctx3": 0.10277434902442462,
+              "ctx6": 0.26167425314932835,
+              "ctx9": 0.07240367138809334,
+              "ctx11": 0.10503967684572166,
+              "ctx13": 0.10061451901206077,
+              "ctx17": 0.12932135645831871,
+              "ctx17_edit5": 0.10478411827618032
+            }
+          },
+          {
+            "depth": 2304,
+            "weights": {
+              "ctx1": 0.11024274241543632,
+              "ctx3": 0.12493887897911672,
+              "ctx6": 0.26923735305449475,
+              "ctx9": 0.09169435750623647,
+              "ctx11": 0.10041511815758396,
+              "ctx13": 0.09221726410861779,
+              "ctx17": 0.11735490243781137,
+              "ctx17_edit5": 0.09389938334070258
+            }
+          },
+          {
+            "depth": 2400,
+            "weights": {
+              "ctx1": 0.1297982669391225,
+              "ctx3": 0.0971805248824759,
+              "ctx6": 0.24848713396863323,
+              "ctx9": 0.07969466194665861,
+              "ctx11": 0.10657327117940006,
+              "ctx13": 0.10144596445774441,
+              "ctx17": 0.13025032454712798,
+              "ctx17_edit5": 0.1065698520788373
+            }
+          },
+          {
+            "depth": 2496,
+            "weights": {
+              "ctx1": 0.15006673027806225,
+              "ctx3": 0.13978897862642453,
+              "ctx6": 0.3038505689297522,
+              "ctx9": 0.0452683169804859,
+              "ctx11": 0.0850146634927025,
+              "ctx13": 0.08153125461418291,
+              "ctx17": 0.10782460588736638,
+              "ctx17_edit5": 0.08665488119102335
+            }
+          },
+          {
+            "depth": 2592,
+            "weights": {
+              "ctx1": 0.15303988018933073,
+              "ctx3": 0.1595909537924762,
+              "ctx6": 0.2868492186614414,
+              "ctx9": 0.04889448263050111,
+              "ctx11": 0.07970028132121572,
+              "ctx13": 0.0793672476894383,
+              "ctx17": 0.10668951019443895,
+              "ctx17_edit5": 0.0858684255211575
+            }
+          },
+          {
+            "depth": 2688,
+            "weights": {
+              "ctx1": 0.10046508199239282,
+              "ctx3": 0.08504772005114078,
+              "ctx6": 0.3401960207713481,
+              "ctx9": 0.06313416611519453,
+              "ctx11": 0.09819193479140963,
+              "ctx13": 0.09315126449225741,
+              "ctx17": 0.12153935345462873,
+              "ctx17_edit5": 0.09827445833162804
+            }
+          },
+          {
+            "depth": 2784,
+            "weights": {
+              "ctx1": 0.11210850370310659,
+              "ctx3": 0.11864398594447365,
+              "ctx6": 0.43591367649069623,
+              "ctx9": 0.03675546614532364,
+              "ctx11": 0.07163081580695232,
+              "ctx13": 0.06521843568134249,
+              "ctx17": 0.08881228583136096,
+              "ctx17_edit5": 0.0709168303967441
+            }
+          },
+          {
+            "depth": 2880,
+            "weights": {
+              "ctx1": 0.13271479936472777,
+              "ctx3": 0.1280150491161551,
+              "ctx6": 0.3209648415724266,
+              "ctx9": 0.05463620311548686,
+              "ctx11": 0.0870442149331045,
+              "ctx13": 0.08195178483308492,
+              "ctx17": 0.10758968264529434,
+              "ctx17_edit5": 0.0870834244197199
+            }
+          },
+          {
+            "depth": 2976,
+            "weights": {
+              "ctx1": 0.13721804898998333,
+              "ctx3": 0.14607085169785466,
+              "ctx6": 0.30490101091698013,
+              "ctx9": 0.041088508978941576,
+              "ctx11": 0.0887391674248269,
+              "ctx13": 0.08361559667510872,
+              "ctx17": 0.10962764669771859,
+              "ctx17_edit5": 0.08873916861858613
+            }
+          },
+          {
+            "depth": 3072,
+            "weights": {
+              "ctx1": 0.12388837863585264,
+              "ctx3": 0.1152923479919054,
+              "ctx6": 0.2991690428491251,
+              "ctx9": 0.06294468393315518,
+              "ctx11": 0.08687059768334324,
+              "ctx13": 0.09234383545880975,
+              "ctx17": 0.12139969032415421,
+              "ctx17_edit5": 0.09809142312365449
+            }
+          }
+        ],
+        "compute_seconds": 1.566083122,
+        "codec": "nc_prefix",
+        "min_windows": 6,
+        "min_required_bases": 18432,
+        "return_probabilities": false,
+        "species": "BuEb",
+        "region_start": 0,
+        "region_bases": 18940,
+        "model_window_bases": 3072,
+        "wrapper_compute_seconds": 1.8145289959975344
+      }
+    }
+  },
+  "model_count": 3,
+  "outputs": {
+    "json": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/region_bpb_combined.json",
+    "clear_curve_png": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/region_bpb_combined_curve_clear.png",
+    "clear_window_mean_csv": "outputs/nc_prefix_current_vs_geco2_megabyte_dnacorpus_long_seed12345/BuEb/region_bpb_combined_window_means_clear.csv",
+    "clear_top_smooth_windows": 64
+  }
+}
