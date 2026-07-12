@@ -166,32 +166,57 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
         self.assertIsNotNone(with_arithmetic["arithmetic_bits_per_base"])
         self.assertEqual(with_arithmetic["emitted_arithmetic_symbol_count"], 64)
 
-    def test_native_split_encoder_requires_predict_then_update(self) -> None:
-        encoder = FusedNcPrefixStreamingEncoder(
+    def test_native_token_step_matches_three_base_steps(self) -> None:
+        token_encoder = FusedNcPrefixStreamingEncoder(
             window_count=2,
-            window_bases=4,
+            window_bases=6,
             hash_bucket_count=1024,
             arithmetic_frequency_total=65536,
             fusion_eta=0.05,
             initial_lm_weight=0.5,
-            encode_arithmetic=False,
+            encode_arithmetic=True,
             collect_diagnostics=True,
         )
-        lm_probs = torch.full((2, 4), 0.25, dtype=torch.float32)
-        targets = torch.tensor([0, 1], dtype=torch.int16)
+        base_encoder = FusedNcPrefixStreamingEncoder(
+            window_count=2,
+            window_bases=6,
+            hash_bucket_count=1024,
+            arithmetic_frequency_total=65536,
+            fusion_eta=0.05,
+            initial_lm_weight=0.5,
+            encode_arithmetic=True,
+            collect_diagnostics=True,
+        )
+        lm_probs = torch.tensor(
+            [
+                [[0.55, 0.20, 0.15, 0.10], [0.20, 0.50, 0.20, 0.10], [0.15, 0.20, 0.50, 0.15]],
+                [[0.10, 0.25, 0.45, 0.20], [0.30, 0.20, 0.20, 0.30], [0.40, 0.15, 0.15, 0.30]],
+            ],
+            dtype=torch.float32,
+        )
+        targets = torch.tensor([[0, 1, 2], [2, 3, 0]], dtype=torch.int16)
 
-        predicted = encoder.predict_base_step(2)
-        self.assertEqual(predicted["active_windows"], 2)
-        with self.assertRaisesRegex(RuntimeError, "predict_base_step"):
-            encoder.predict_base_step(2)
+        token_result = token_encoder.encode_token_step(lm_probs, targets)
+        self.assertEqual(token_result["active_windows"], 2)
+        self.assertEqual(token_result["token_merge_size"], 3)
+        for base_offset in range(3):
+            base_encoder.encode_base_step(lm_probs[:, base_offset, :], targets[:, base_offset])
 
-        updated = encoder.fuse_encode_update_base_step(lm_probs, targets)
-        self.assertEqual(updated["active_windows"], 2)
-        with self.assertRaisesRegex(RuntimeError, "requires a pending"):
-            encoder.fuse_encode_update_base_step(lm_probs, targets)
-
-        finished = encoder.finish()
-        self.assertEqual(finished["base_count"], 2)
+        token_finished = token_encoder.finish()
+        base_finished = base_encoder.finish()
+        self.assertEqual(token_finished["base_count"], 6)
+        self.assertEqual(base_finished["base_count"], 6)
+        self.assertEqual(token_finished["arithmetic_coded_bytes"], base_finished["arithmetic_coded_bytes"])
+        self.assertAlmostEqual(
+            token_finished["fused_theoretical_bits_per_base"],
+            base_finished["fused_theoretical_bits_per_base"],
+            places=12,
+        )
+        self.assertAlmostEqual(
+            token_finished["fusion_final_mean_lm_weight"],
+            base_finished["fusion_final_mean_lm_weight"],
+            places=12,
+        )
 
     def test_nc_only_diagnostic_matches_standalone_nc_prefix(self) -> None:
         torch.manual_seed(777)
@@ -225,7 +250,7 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
         self.assertTrue(np.isfinite(fused["nc_prefix_only_theoretical_bits_per_base"]))
         self.assertAlmostEqual(fused["nc_prefix_only_theoretical_bits_per_base"], expected, places=10)
 
-    def test_streaming_v2_matches_matrix_debug_fused_bits(self) -> None:
+    def test_streaming_token_strict_reports_token_native_backend(self) -> None:
         torch.manual_seed(888)
         config = self._small_megabyte_config(token_merge_size=2)
         model = build_model(config.model).eval()
@@ -244,31 +269,58 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
         streaming = compress_fused_lm_nc_prefix_payload(
             **common,
             batch_size="auto",
-            pipeline_mode="streaming_v2",
+            pipeline_mode="streaming_token_strict",
         )
-        streaming_v3 = compress_fused_lm_nc_prefix_payload(
-            **common,
+        self.assertEqual(streaming["pipeline_mode"], "streaming_token_strict")
+        self.assertTrue(streaming["decoder_realistic"])
+        self.assertFalse(streaming["encoder_overlap_enabled"])
+        self.assertEqual(streaming["nc_prefix_backend"], "streaming_token_native")
+        self.assertEqual(streaming["nc_prefix_metadata"]["pipeline_mode"], "streaming_token")
+        self.assertEqual(streaming["core_base_count"], 64)
+        self.assertGreater(streaming["nc_prefix_metadata"]["native_token_steps"], 0)
+
+    def test_streaming_token_supports_merge_sizes_one_two_three(self) -> None:
+        for merge_size in (1, 2, 3):
+            torch.manual_seed(900 + merge_size)
+            config = self._small_megabyte_config(token_merge_size=merge_size)
+            model = build_model(config.model).eval()
+            payload = ("ACGT" * 24).encode("ascii")
+            result = compress_fused_lm_nc_prefix_payload(
+                model=model,
+                config=config,
+                payload=payload,
+                device=torch.device("cpu"),
+                dtype_name="float32",
+                batch_size="auto",
+                nc_prefix_window_bases=8 * merge_size,
+                nc_prefix_min_windows=1,
+                nc_prefix_hash_bucket_count=1024,
+                encode_arithmetic=False,
+                pipeline_mode="streaming_token_strict",
+            )
+            self.assertEqual(result["token_merge_size"], merge_size)
+            self.assertEqual(result["pipeline_mode"], "streaming_token_strict")
+            self.assertTrue(np.isfinite(result["core_theoretical_bits_per_base"]))
+
+    def test_retired_fused_pipeline_modes_are_rejected(self) -> None:
+        torch.manual_seed(901)
+        config = self._small_megabyte_config(token_merge_size=2)
+        model = build_model(config.model).eval()
+        common = dict(
+            model=model,
+            config=config,
+            payload=("ACGT" * 16).encode("ascii"),
+            device=torch.device("cpu"),
+            dtype_name="float32",
             batch_size="auto",
-            pipeline_mode="streaming_v3",
+            nc_prefix_window_bases=16,
+            nc_prefix_min_windows=1,
+            nc_prefix_hash_bucket_count=1024,
+            encode_arithmetic=False,
         )
-        matrix = compress_fused_lm_nc_prefix_payload(
-            **common,
-            batch_size=4,
-            pipeline_mode="matrix_debug",
-        )
-        self.assertAlmostEqual(
-            streaming["core_theoretical_bits_per_base"],
-            matrix["core_theoretical_bits_per_base"],
-            places=8,
-        )
-        self.assertAlmostEqual(
-            streaming_v3["core_theoretical_bits_per_base"],
-            matrix["core_theoretical_bits_per_base"],
-            places=8,
-        )
-        self.assertEqual(streaming_v3["pipeline_mode"], "streaming_v3")
-        self.assertIsNotNone(streaming_v3["nc_predict_seconds"])
-        self.assertIsNotNone(streaming_v3["fusion_update_seconds"])
+        for mode in ("streaming_token", "streaming_v2", "streaming_v3", "matrix_debug"):
+            with self.assertRaisesRegex(ValueError, "pipeline_mode"):
+                compress_fused_lm_nc_prefix_payload(**common, pipeline_mode=mode)
 
 
 if __name__ == "__main__":

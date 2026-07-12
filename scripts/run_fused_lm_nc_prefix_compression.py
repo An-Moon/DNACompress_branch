@@ -41,9 +41,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--batch-size",
         default="auto",
-        help="Window batch size. streaming_v2 default 'auto' means all windows in one batch.",
+        help="Window batch size. token streaming default 'auto' means all windows in one batch.",
     )
-    parser.add_argument("--pipeline-mode", choices=("streaming_v2", "streaming_v3", "matrix_debug"), default="streaming_v2")
+    parser.add_argument(
+        "--pipeline-mode",
+        choices=("streaming_token_encode_overlap", "streaming_token_strict"),
+        default="streaming_token_encode_overlap",
+    )
     parser.add_argument("--nc-prefix-window-bases", type=int)
     parser.add_argument("--nc-prefix-min-windows", type=int, default=8192)
     parser.add_argument("--nc-prefix-hash-bucket-count", type=int, default=0)

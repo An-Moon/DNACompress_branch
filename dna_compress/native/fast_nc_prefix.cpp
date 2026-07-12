@@ -907,125 +907,9 @@ class FusedNcPrefixStreamingEncoder {
     initialized_seconds_ = 0.0;
   }
 
-  py::dict predict_base_step(int64_t active_count) {
-    if (finished_) {
-      throw std::runtime_error("cannot encode after finish()");
-    }
-    if (depth_ >= window_bases_) {
-      throw std::runtime_error("received more base steps than window_bases");
-    }
-    if (prediction_ready_) {
-      throw std::runtime_error("predict_base_step() called before fuse/update consumed the previous prediction");
-    }
-    if (active_count < 0 || active_count > window_count_) {
-      throw std::runtime_error("active window count exceeds encoder window_count");
-    }
-
-    const auto started = Clock::now();
-    {
-      py::gil_scoped_release release;
-      predict_pipeline_step(active_count);
-    }
-    const double elapsed = elapsed_seconds(started, Clock::now());
-    encode_seconds_ += elapsed;
-    nc_predict_seconds_ += elapsed;
-    prediction_ready_ = true;
-    predicted_active_count_ = active_count;
-    py::dict result;
-    result["active_windows"] = active_count;
-    result["depth"] = depth_;
-    return result;
-  }
-
-  py::dict fuse_encode_update_base_step(const at::Tensor &lm_probabilities, const at::Tensor &target_symbols) {
-    if (finished_) {
-      throw std::runtime_error("cannot encode after finish()");
-    }
-    if (!prediction_ready_) {
-      throw std::runtime_error("fuse_encode_update_base_step() requires a pending predict_base_step()");
-    }
-    if (lm_probabilities.device().is_cuda() || target_symbols.device().is_cuda()) {
-      throw std::runtime_error("fused streaming encoder expects CPU tensors");
-    }
-    if (lm_probabilities.dim() != 2 || lm_probabilities.size(1) != 4 || target_symbols.dim() != 1 ||
-        target_symbols.size(0) != lm_probabilities.size(0)) {
-      throw std::runtime_error("lm_probabilities must be [active_windows,4] and target_symbols [active_windows]");
-    }
-    const int64_t active_count = lm_probabilities.size(0);
-    if (active_count < 0 || active_count > window_count_) {
-      throw std::runtime_error("active window count exceeds encoder window_count");
-    }
-    if (active_count != predicted_active_count_) {
-      throw std::runtime_error("fuse/update active window count does not match pending prediction");
-    }
-    at::Tensor lm = lm_probabilities.contiguous();
-    at::Tensor targets = target_symbols.contiguous();
-    if (lm.scalar_type() != at::kFloat && lm.scalar_type() != at::kDouble) {
-      throw std::runtime_error("lm_probabilities must be float32 or float64");
-    }
-    if (targets.scalar_type() != at::kLong &&
-        targets.scalar_type() != at::kInt &&
-        targets.scalar_type() != at::kShort) {
-      throw std::runtime_error("target_symbols must be int16, int32, or int64");
-    }
-
-    const auto started = Clock::now();
-    double step_fused_bits = 0.0;
-    double step_lm_bits = 0.0;
-    double step_nc_bits = 0.0;
-    int64_t emitted = 0;
-
-    auto body = [&]<typename prob_t, typename target_t>(const prob_t *lm_ptr, const target_t *target_ptr) {
-      fuse_update_pipeline_step(
-          active_count,
-          lm_ptr,
-          target_ptr,
-          step_fused_bits,
-          step_lm_bits,
-          step_nc_bits,
-          emitted,
-          4,
-          1);
-    };
-
-    {
-      py::gil_scoped_release release;
-      if (lm.scalar_type() == at::kFloat && targets.scalar_type() == at::kShort) {
-        body(lm.data_ptr<float>(), targets.data_ptr<int16_t>());
-      } else if (lm.scalar_type() == at::kFloat && targets.scalar_type() == at::kInt) {
-        body(lm.data_ptr<float>(), targets.data_ptr<int32_t>());
-      } else if (lm.scalar_type() == at::kFloat && targets.scalar_type() == at::kLong) {
-        body(lm.data_ptr<float>(), targets.data_ptr<int64_t>());
-      } else if (lm.scalar_type() == at::kDouble && targets.scalar_type() == at::kShort) {
-        body(lm.data_ptr<double>(), targets.data_ptr<int16_t>());
-      } else if (lm.scalar_type() == at::kDouble && targets.scalar_type() == at::kInt) {
-        body(lm.data_ptr<double>(), targets.data_ptr<int32_t>());
-      } else {
-        body(lm.data_ptr<double>(), targets.data_ptr<int64_t>());
-      }
-    }
-
-    prediction_ready_ = false;
-    predicted_active_count_ = 0;
-    record_encoded_base(active_count, step_fused_bits, step_lm_bits, step_nc_bits, emitted);
-    const double elapsed = elapsed_seconds(started, Clock::now());
-    encode_seconds_ += elapsed;
-    fusion_update_seconds_ += elapsed;
-    py::dict result;
-    result["active_windows"] = active_count;
-    result["fused_bits"] = step_fused_bits;
-    result["lm_bits"] = step_lm_bits;
-    result["nc_bits"] = step_nc_bits;
-    result["emitted_count"] = emitted;
-    return result;
-  }
-
   py::dict encode_base_step(const at::Tensor &lm_probabilities, const at::Tensor &target_symbols) {
     if (finished_) {
       throw std::runtime_error("cannot encode after finish()");
-    }
-    if (prediction_ready_) {
-      throw std::runtime_error("encode_base_step() cannot run while a split prediction is pending");
     }
     if (depth_ >= window_bases_) {
       throw std::runtime_error("received more base steps than window_bases");
@@ -1103,9 +987,6 @@ class FusedNcPrefixStreamingEncoder {
   py::dict encode_token_step(const at::Tensor &lm_probabilities, const at::Tensor &target_symbols) {
     if (finished_) {
       throw std::runtime_error("cannot encode after finish()");
-    }
-    if (prediction_ready_) {
-      throw std::runtime_error("encode_token_step() cannot run while a split prediction is pending");
     }
     if (lm_probabilities.device().is_cuda() || target_symbols.device().is_cuda()) {
       throw std::runtime_error("fused streaming encoder expects CPU tensors");
@@ -1204,9 +1085,6 @@ class FusedNcPrefixStreamingEncoder {
     if (finished_) {
       throw std::runtime_error("finish() was already called");
     }
-    if (prediction_ready_) {
-      throw std::runtime_error("finish() cannot run while a split prediction is pending");
-    }
     finished_ = true;
     const auto started = Clock::now();
     py::list streams;
@@ -1262,15 +1140,18 @@ class FusedNcPrefixStreamingEncoder {
     metadata["pipeline_scratch_bytes"] = static_cast<int64_t>(pipeline_scratch_bytes());
     metadata["fusion_eta"] = fusion_eta_;
     metadata["arithmetic_frequency_total"] = arithmetic_frequency_total_;
+    const double predict_seconds =
+        pipeline_address_prepare_seconds_ + pipeline_low_lookup_seconds_ + pipeline_high_lookup_seconds_;
+    const double update_seconds = pipeline_update_prepare_seconds_ + pipeline_update_commit_seconds_ +
+        pipeline_edit_state_update_seconds_ + pipeline_context_update_seconds_;
     metadata["native_encode_seconds"] = encode_seconds_;
     metadata["native_token_steps"] = native_token_steps_;
     metadata["token_encode_seconds"] = token_encode_seconds_;
-    metadata["native_nc_predict_seconds"] = nc_predict_seconds_;
-    metadata["native_fusion_update_seconds"] = fusion_update_seconds_;
-    metadata["predict_seconds"] = pipeline_address_prepare_seconds_ + pipeline_low_lookup_seconds_ + pipeline_high_lookup_seconds_;
+    metadata["native_nc_predict_seconds"] = predict_seconds;
+    metadata["native_fusion_update_seconds"] = pipeline_fusion_seconds_ + update_seconds;
+    metadata["predict_seconds"] = predict_seconds;
     metadata["fusion_encode_seconds"] = pipeline_fusion_seconds_;
-    metadata["update_seconds"] = pipeline_update_prepare_seconds_ + pipeline_update_commit_seconds_ +
-        pipeline_edit_state_update_seconds_ + pipeline_context_update_seconds_;
+    metadata["update_seconds"] = update_seconds;
     metadata["pipeline_address_prepare_seconds"] = pipeline_address_prepare_seconds_;
     metadata["pipeline_low_lookup_seconds"] = pipeline_low_lookup_seconds_;
     metadata["pipeline_high_lookup_seconds"] = pipeline_high_lookup_seconds_;
@@ -1314,8 +1195,6 @@ class FusedNcPrefixStreamingEncoder {
   bool encode_arithmetic_ = true;
   bool collect_diagnostics_ = true;
   bool finished_ = false;
-  bool prediction_ready_ = false;
-  int64_t predicted_active_count_ = 0;
   std::vector<StrictPredictor> predictors_;
   std::vector<StrictModel> models_;
   size_t predictor_count_ = 0;
@@ -1348,8 +1227,6 @@ class FusedNcPrefixStreamingEncoder {
   double encode_seconds_ = 0.0;
   double finish_seconds_ = 0.0;
   double initialized_seconds_ = 0.0;
-  double nc_predict_seconds_ = 0.0;
-  double fusion_update_seconds_ = 0.0;
   int64_t native_token_steps_ = 0;
   double token_encode_seconds_ = 0.0;
   double pipeline_address_prepare_seconds_ = 0.0;
@@ -1700,15 +1577,18 @@ class FusedNcPrefixStreamingEncoder {
       pipeline_fusion_seconds_ += elapsed_seconds(fusion_started, Clock::now());
     }
 
-    update_nc_counters_and_contexts_pipeline(active_count, target_ptr);
+    update_nc_counters_and_contexts_pipeline(active_count, target_ptr, target_window_stride);
   }
 
   template <typename target_t>
-  void update_nc_counters_and_contexts_pipeline(int64_t active_count, const target_t *target_ptr) {
+  void update_nc_counters_and_contexts_pipeline(
+      int64_t active_count,
+      const target_t *target_ptr,
+      int64_t target_window_stride) {
     const auto prepare_started = Clock::now();
     StrictModel &ctx17_model = models_[static_cast<size_t>(pipeline_ctx17_model_index_)];
     for (int64_t window_id = 0; window_id < active_count; ++window_id) {
-      const uint8_t target = static_cast<uint8_t>(target_ptr[window_id]);
+      const uint8_t target = static_cast<uint8_t>(target_ptr[window_id * target_window_stride]);
       uint64_t &ir_key = ctx17_model.pidx_ir[static_cast<size_t>(window_id)];
       ir_key = (ir_key >> 2) +
           (static_cast<uint64_t>(complement_symbol(target)) * ctx17_model.multiplier);
@@ -1739,7 +1619,7 @@ class FusedNcPrefixStreamingEncoder {
       }
 
       for (int64_t window_id = begin; window_id < end; ++window_id) {
-        const uint8_t target = static_cast<uint8_t>(target_ptr[window_id]);
+        const uint8_t target = static_cast<uint8_t>(target_ptr[window_id * target_window_stride]);
         for (StrictModel &model : models_) {
           const uint64_t key = model.pidx[static_cast<size_t>(window_id)];
           if (model.context_len == 17) {
@@ -1766,7 +1646,7 @@ class FusedNcPrefixStreamingEncoder {
 
     const auto edit_started = Clock::now();
     for (int64_t window_id = 0; window_id < active_count; ++window_id) {
-      const uint8_t target = static_cast<uint8_t>(target_ptr[window_id]);
+      const uint8_t target = static_cast<uint8_t>(target_ptr[window_id * target_window_stride]);
       for (size_t model_index = 0; model_index < models_.size(); ++model_index) {
         StrictModel &model = models_[model_index];
         if (model.edits == 0) {
@@ -1797,7 +1677,7 @@ class FusedNcPrefixStreamingEncoder {
 
     const auto context_started = Clock::now();
     for (int64_t window_id = 0; window_id < active_count; ++window_id) {
-      const uint8_t target = static_cast<uint8_t>(target_ptr[window_id]);
+      const uint8_t target = static_cast<uint8_t>(target_ptr[window_id * target_window_stride]);
       for (StrictModel &model : models_) {
         const uint8_t old = old_symbol(window_id, model.context_len);
         uint64_t &key = model.pidx[static_cast<size_t>(window_id)];
@@ -2863,8 +2743,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           py::arg("encode_arithmetic"),
           py::arg("collect_diagnostics") = true)
       .def("encode_base_step", &FusedNcPrefixStreamingEncoder::encode_base_step)
-      .def("predict_base_step", &FusedNcPrefixStreamingEncoder::predict_base_step)
-      .def("fuse_encode_update_base_step", &FusedNcPrefixStreamingEncoder::fuse_encode_update_base_step)
+      .def("encode_token_step", &FusedNcPrefixStreamingEncoder::encode_token_step)
       .def("finish", &FusedNcPrefixStreamingEncoder::finish)
       .def("metadata", &FusedNcPrefixStreamingEncoder::metadata);
   m.def(

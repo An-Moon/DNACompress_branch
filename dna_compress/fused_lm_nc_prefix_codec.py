@@ -603,7 +603,7 @@ def _compress_fused_matrix_backed_payload(
     return metrics
 
 
-def _compress_fused_streaming_v2_payload(
+def _compress_fused_streaming_token_payload(
     *,
     model: torch.nn.Module,
     config: ExperimentConfig,
@@ -621,12 +621,14 @@ def _compress_fused_streaming_v2_payload(
     encode_arithmetic: bool = True,
     collect_diagnostics: bool = True,
     include_codec_baselines: bool = True,
-    pipeline_mode: str = "streaming_v2",
+    pipeline_mode: str = "streaming_token_encode_overlap",
 ) -> dict[str, Any]:
     if not (0.0 <= float(fusion_initial_lm_weight) <= 1.0):
         raise ValueError("fusion_initial_lm_weight must be in [0, 1]")
     if not (0.0 <= float(fusion_eta) < 1.0):
         raise ValueError("fusion_eta must be in [0, 1)")
+    if pipeline_mode not in {"streaming_token_encode_overlap", "streaming_token_strict"}:
+        raise ValueError("pipeline_mode must be 'streaming_token_encode_overlap' or 'streaming_token_strict'")
     alphabet = normalize_alphabet("ACGT")
     token_merge_size = int(config.data.token_merge_size)
     lm_seq_length = int(getattr(model.config, "T_MAX", config.model.seq_length))
@@ -666,7 +668,7 @@ def _compress_fused_streaming_v2_payload(
         raise ValueError(
             f"{pipeline_mode} requires batch_size == window_count. "
             f"Got batch_size={resolved_batch_size}, window_count={window_count}. "
-            "Use matrix_debug for chunked debug runs."
+            "Use batch_size=auto or an explicit value equal to window_count."
         )
 
     arithmetic_metadata = resolve_arithmetic_coding_metadata(
@@ -697,71 +699,19 @@ def _compress_fused_streaming_v2_payload(
     native_encode_seconds_observed = 0.0
     cpu_wait_for_gpu_seconds = 0.0
     gpu_queue_wait_seconds = 0.0
-    async_jobs = 0
+    token_jobs = 0
     chunk_tokens = tokens_cpu.to(device, non_blocking=True)
     stepper = MegabyteBatchedDecodeStepper(model, batch_size=window_count, device=device, dtype_name=dtype_name)
-    use_async_pipeline = device.type == "cuda"
-    use_split_pipeline = pipeline_mode == "streaming_v3"
+    use_encode_overlap = pipeline_mode == "streaming_token_encode_overlap" and device.type == "cuda"
     worker_error: list[BaseException] = []
     worker_stats = {"native_seconds": 0.0, "wait_seconds": 0.0, "jobs": 0}
-    split_stats = {
-        "nc_predict_seconds": 0.0,
-        "nc_predict_wait_seconds": 0.0,
-        "lm_wait_seconds": 0.0,
-        "fusion_update_seconds": 0.0,
-        "jobs": 0,
-        "pipeline_depth_lag_max": 0,
-    }
     work_queue: Queue[Any] | None = None
     worker: threading.Thread | None = None
 
-    if use_async_pipeline and use_split_pipeline:
-        work_queue = Queue(maxsize=max(1, 2 * int(token_merge_size)))
+    if use_encode_overlap:
+        work_queue = Queue(maxsize=2)
 
-        class _SplitJob:
-            def __init__(self, active_count: int) -> None:
-                self.active_count = int(active_count)
-                self.lm_ready = threading.Event()
-                self.cuda_event: Any | None = None
-                self.lm_probs_cpu: torch.Tensor | None = None
-                self.targets: torch.Tensor | None = None
-
-        def _split_cpu_worker() -> None:
-            assert work_queue is not None
-            try:
-                while True:
-                    item = work_queue.get()
-                    try:
-                        if item is None:
-                            return
-                        job = item
-                        predict_started = perf_counter()
-                        native_encoder.predict_base_step(job.active_count)
-                        split_stats["nc_predict_seconds"] += perf_counter() - predict_started
-
-                        wait_started = perf_counter()
-                        job.lm_ready.wait()
-                        if job.cuda_event is not None:
-                            job.cuda_event.synchronize()
-                        split_stats["lm_wait_seconds"] += perf_counter() - wait_started
-                        if job.lm_probs_cpu is None or job.targets is None:
-                            raise RuntimeError("streaming_v3 job reached fusion without LM probabilities")
-
-                        fusion_started = perf_counter()
-                        native_encoder.fuse_encode_update_base_step(job.lm_probs_cpu, job.targets)
-                        split_stats["fusion_update_seconds"] += perf_counter() - fusion_started
-                        split_stats["jobs"] += 1
-                    finally:
-                        work_queue.task_done()
-            except BaseException as error:  # pragma: no cover - exercised by integration failures
-                worker_error.append(error)
-
-        worker = threading.Thread(target=_split_cpu_worker, name="fused-nc-prefix-v3-worker", daemon=True)
-        worker.start()
-    elif use_async_pipeline:
-        work_queue = Queue(maxsize=max(1, 2 * int(token_merge_size)))
-
-        def _cpu_worker() -> None:
+        def _token_cpu_worker() -> None:
             assert work_queue is not None
             try:
                 while True:
@@ -774,7 +724,7 @@ def _compress_fused_streaming_v2_payload(
                         event.synchronize()
                         worker_stats["wait_seconds"] += perf_counter() - wait_started
                         native_started_inner = perf_counter()
-                        native_encoder.encode_base_step(lm_probs_cpu, targets)
+                        native_encoder.encode_token_step(lm_probs_cpu, targets)
                         worker_stats["native_seconds"] += perf_counter() - native_started_inner
                         worker_stats["jobs"] += 1
                     finally:
@@ -782,26 +732,12 @@ def _compress_fused_streaming_v2_payload(
             except BaseException as error:  # pragma: no cover - exercised by integration failures
                 worker_error.append(error)
 
-        worker = threading.Thread(target=_cpu_worker, name="fused-nc-prefix-cpu-worker", daemon=True)
+        worker = threading.Thread(target=_token_cpu_worker, name="fused-nc-prefix-token-overlap-worker", daemon=True)
         worker.start()
 
     for token_step in range(tokens_per_window):
         active_token_mask = valid_lengths_cpu > token_step
         active_count = int(active_token_mask.sum().item())
-        split_jobs: list[Any] = []
-        if use_split_pipeline and use_async_pipeline and active_count > 0:
-            assert work_queue is not None
-            for _ in range(token_merge_size):
-                job = _SplitJob(active_count)
-                queue_started = perf_counter()
-                work_queue.put(job)
-                gpu_queue_wait_seconds += perf_counter() - queue_started
-                split_stats["pipeline_depth_lag_max"] = max(
-                    int(split_stats["pipeline_depth_lag_max"]),
-                    int(work_queue.qsize()),
-                )
-                split_jobs.append(job)
-
         model_started = perf_counter()
         logits = stepper.next_logits()
         _sync(device)
@@ -827,48 +763,41 @@ def _compress_fused_streaming_v2_payload(
         if active_count <= 0:
             stepper.accept_symbols(chunk_tokens[:, token_step])
             continue
-        for base_offset, lm_probs_gpu in enumerate(base_probability_steps):
-            transfer_started = perf_counter()
-            if use_async_pipeline:
-                lm_probs_cpu = torch.empty((active_count, 4), dtype=torch.float32, pin_memory=True)
-                lm_probs_cpu.copy_(lm_probs_gpu[:active_count].detach().float(), non_blocking=True)
-                event = torch.cuda.Event()
-                event.record(torch.cuda.current_stream(device))
-            else:
-                lm_probs_cpu = lm_probs_gpu[:active_count].detach().float().cpu().contiguous()
-                _sync(device)
-                event = None
-            lm_transfer_seconds += perf_counter() - transfer_started
-            targets = base_symbols_cpu[:active_count, token_step, base_offset].to(torch.int16).contiguous()
-            if use_split_pipeline:
-                if use_async_pipeline:
-                    job = split_jobs[base_offset]
-                    job.cuda_event = event
-                    job.lm_probs_cpu = lm_probs_cpu
-                    job.targets = targets
-                    job.lm_ready.set()
-                else:
-                    predict_started = perf_counter()
-                    native_encoder.predict_base_step(active_count)
-                    split_stats["nc_predict_seconds"] += perf_counter() - predict_started
-                    fusion_started = perf_counter()
-                    native_encoder.fuse_encode_update_base_step(lm_probs_cpu, targets)
-                    split_stats["fusion_update_seconds"] += perf_counter() - fusion_started
-                    split_stats["jobs"] += 1
-            elif use_async_pipeline:
-                assert work_queue is not None
-                queue_started = perf_counter()
-                work_queue.put((event, lm_probs_cpu, targets))
-                gpu_queue_wait_seconds += perf_counter() - queue_started
-                async_jobs += 1
-            else:
-                native_started = perf_counter()
-                native_encoder.encode_base_step(lm_probs_cpu, targets)
-                native_encode_seconds_observed += perf_counter() - native_started
+
+        transfer_started = perf_counter()
+        lm_probs_gpu = torch.stack(base_probability_steps, dim=1)[:active_count].detach().float()
+        if device.type == "cuda":
+            lm_probs_cpu = torch.empty(
+                (active_count, token_merge_size, 4),
+                dtype=torch.float32,
+                pin_memory=True,
+            )
+            lm_probs_cpu.copy_(lm_probs_gpu, non_blocking=True)
+            event = torch.cuda.Event()
+            event.record(torch.cuda.current_stream(device))
+            if not use_encode_overlap:
+                event.synchronize()
+        else:
+            lm_probs_cpu = lm_probs_gpu.cpu().contiguous()
+            _sync(device)
+            event = None
+        lm_transfer_seconds += perf_counter() - transfer_started
+
+        targets = base_symbols_cpu[:active_count, token_step, :].to(torch.int16).contiguous()
+        if use_encode_overlap:
+            assert work_queue is not None and event is not None
+            queue_started = perf_counter()
+            work_queue.put((event, lm_probs_cpu, targets))
+            gpu_queue_wait_seconds += perf_counter() - queue_started
+        else:
+            native_started = perf_counter()
+            native_encoder.encode_token_step(lm_probs_cpu, targets)
+            native_encode_seconds_observed += perf_counter() - native_started
+            token_jobs += 1
 
         stepper.accept_symbols(chunk_tokens[:, token_step])
 
-    if use_async_pipeline and not use_split_pipeline:
+    if use_encode_overlap:
         assert work_queue is not None
         work_queue.join()
         work_queue.put(None)
@@ -876,28 +805,10 @@ def _compress_fused_streaming_v2_payload(
         assert worker is not None
         worker.join()
         if worker_error:
-            raise RuntimeError("fused CPU worker failed") from worker_error[0]
+            raise RuntimeError("fused token overlap worker failed") from worker_error[0]
         native_encode_seconds_observed = float(worker_stats["native_seconds"])
         cpu_wait_for_gpu_seconds = float(worker_stats["wait_seconds"])
-        async_jobs = int(worker_stats["jobs"])
-    if use_async_pipeline and use_split_pipeline:
-        assert work_queue is not None
-        drain_started = perf_counter()
-        work_queue.join()
-        split_stats["nc_predict_wait_seconds"] += perf_counter() - drain_started
-        work_queue.put(None)
-        work_queue.join()
-        assert worker is not None
-        worker.join()
-        if worker_error:
-            raise RuntimeError("fused streaming_v3 worker failed") from worker_error[0]
-        native_encode_seconds_observed = float(split_stats["nc_predict_seconds"]) + float(
-            split_stats["fusion_update_seconds"]
-        )
-        async_jobs = int(split_stats["jobs"])
-    elif use_split_pipeline:
-        native_encode_seconds_observed += float(split_stats["nc_predict_seconds"])
-        async_jobs = int(split_stats["jobs"])
+        token_jobs = int(worker_stats["jobs"])
 
     _sync(device)
     encode_wall_seconds = perf_counter() - encode_started
@@ -914,9 +825,11 @@ def _compress_fused_streaming_v2_payload(
     metrics: dict[str, Any] = {
         "codec": "fused_lm_nc_prefix",
         "pipeline_mode": pipeline_mode,
-        "decodable_design": "depth_major_streaming_v3_split_native_nc_fusion_arithmetic"
-        if use_split_pipeline
-        else "depth_major_streaming_native_nc_fusion_arithmetic",
+        "decodable_design": "encoder_only_lm_token_ahead_overlap_native_ordered_commit"
+        if use_encode_overlap
+        else "decoder_realistic_token_synchronous_native_ordered_commit",
+        "decoder_realistic": not bool(use_encode_overlap),
+        "encoder_overlap_enabled": bool(use_encode_overlap),
         "encode_arithmetic": bool(encode_arithmetic),
         "alphabet": alphabet,
         "sample_bases": int(sample_bases),
@@ -966,22 +879,22 @@ def _compress_fused_streaming_v2_payload(
         "native_fused_encode_seconds_observed": float(native_encode_seconds_observed),
         "native_fused_encode_seconds": float(native_result["encode_seconds"]),
         "native_finish_seconds": float(native_result["finish_seconds"]),
-        "streaming_async_enabled": bool(use_async_pipeline),
-        "streaming_async_jobs": int(async_jobs),
+        "streaming_async_enabled": bool(use_encode_overlap),
+        "streaming_async_jobs": int(token_jobs),
         "streaming_cpu_wait_for_gpu_seconds": float(cpu_wait_for_gpu_seconds),
         "streaming_gpu_queue_wait_seconds": float(gpu_queue_wait_seconds),
-        "streaming_ring_buffer_depth_tokens": 2,
-        "nc_predict_wait_seconds": float(split_stats["nc_predict_wait_seconds"]) if use_split_pipeline else None,
-        "lm_wait_seconds": float(split_stats["lm_wait_seconds"]) if use_split_pipeline else None,
-        "fusion_update_seconds": float(split_stats["fusion_update_seconds"]) if use_split_pipeline else None,
-        "nc_predict_seconds": float(split_stats["nc_predict_seconds"]) if use_split_pipeline else None,
-        "pipeline_depth_lag_max": int(split_stats["pipeline_depth_lag_max"]) if use_split_pipeline else 0,
+        "streaming_ring_buffer_depth_tokens": 2 if use_encode_overlap else 0,
+        "nc_predict_wait_seconds": None,
+        "lm_wait_seconds": None,
+        "fusion_update_seconds": None,
+        "nc_predict_seconds": None,
+        "pipeline_depth_lag_max": 0,
         "nc_prefix_prepare_seconds": 0.0,
-        "nc_prefix_predict_seconds": float(split_stats["nc_predict_seconds"]) if use_split_pipeline else None,
-        "fusion_seconds": float(split_stats["fusion_update_seconds"]) if use_split_pipeline else None,
+        "nc_prefix_predict_seconds": None,
+        "fusion_seconds": None,
         "arithmetic_quantize_seconds": None,
         "arithmetic_range_seconds": None,
-        "nc_prefix_backend": "streaming_v3_split_native" if use_split_pipeline else "streaming_v2_native",
+        "nc_prefix_backend": "streaming_token_native",
         "nc_prefix_metadata": native_result["model_metadata"],
         **arithmetic_metadata,
         **memory_stats(device, prefix="compression_"),
@@ -1006,12 +919,12 @@ def compress_fused_lm_nc_prefix_payload(
     arithmetic_frequency_total: int | None = None,
     arithmetic_target_uniform_mass: float = 0.01,
     encode_arithmetic: bool = True,
-    pipeline_mode: str = "streaming_v2",
+    pipeline_mode: str = "streaming_token_encode_overlap",
     collect_diagnostics: bool = True,
     include_codec_baselines: bool = True,
 ) -> dict[str, Any]:
-    if pipeline_mode in {"streaming_v2", "streaming_v3"}:
-        return _compress_fused_streaming_v2_payload(
+    if pipeline_mode in {"streaming_token_encode_overlap", "streaming_token_strict"}:
+        return _compress_fused_streaming_token_payload(
             model=model,
             config=config,
             payload=payload,
@@ -1030,26 +943,10 @@ def compress_fused_lm_nc_prefix_payload(
             include_codec_baselines=include_codec_baselines,
             pipeline_mode=pipeline_mode,
         )
-    if pipeline_mode == "matrix_debug":
-        if batch_size == "auto":
-            raise ValueError("matrix_debug requires an explicit integer batch_size")
-        return _compress_fused_matrix_backed_payload(
-            model=model,
-            config=config,
-            payload=payload,
-            device=device,
-            dtype_name=dtype_name,
-            batch_size=int(batch_size),
-            nc_prefix_window_bases=nc_prefix_window_bases,
-            nc_prefix_min_windows=nc_prefix_min_windows,
-            nc_prefix_hash_bucket_count=nc_prefix_hash_bucket_count,
-            fusion_eta=fusion_eta,
-            fusion_initial_lm_weight=fusion_initial_lm_weight,
-            arithmetic_frequency_total=arithmetic_frequency_total,
-            arithmetic_target_uniform_mass=arithmetic_target_uniform_mass,
-            encode_arithmetic=encode_arithmetic,
-        )
-    raise ValueError("pipeline_mode must be 'streaming_v2', 'streaming_v3', or 'matrix_debug'")
+    raise ValueError(
+        "pipeline_mode must be 'streaming_token_encode_overlap' or 'streaming_token_strict'; "
+        "streaming_v2, streaming_v3, and matrix_debug are retired"
+    )
 
 
 def load_megabyte_model_for_fusion(

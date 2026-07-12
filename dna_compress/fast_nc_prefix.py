@@ -28,7 +28,7 @@ def load_fast_nc_prefix_extension():
         from torch.utils.cpp_extension import load
 
         _EXTENSION = load(
-            name="dna_compress_fast_nc_prefix_fused_streaming_v2",
+            name="dna_compress_fast_nc_prefix_fused_streaming_token_v1",
             sources=[str(_extension_source_path())],
             extra_cflags=["-O3", "-march=native", "-ffast-math", "-funroll-loops"],
             with_cuda=False,
@@ -129,22 +129,14 @@ class FusedNcPrefixStreamingEncoder:
             raise ValueError("streaming fused encoder expects CPU tensors")
         return dict(self._encoder.encode_base_step(lm_probabilities.contiguous(), target_symbols.contiguous()))
 
-    def predict_base_step(self, active_count: int) -> dict[str, Any]:
-        return dict(self._encoder.predict_base_step(int(active_count)))
-
-    def fuse_encode_update_base_step(self, lm_probabilities, target_symbols) -> dict[str, Any]:
+    def encode_token_step(self, lm_probabilities, target_symbols) -> dict[str, Any]:
         if not isinstance(lm_probabilities, torch.Tensor):
             lm_probabilities = torch.as_tensor(lm_probabilities)
         if not isinstance(target_symbols, torch.Tensor):
             target_symbols = torch.as_tensor(target_symbols)
         if lm_probabilities.device.type != "cpu" or target_symbols.device.type != "cpu":
             raise ValueError("streaming fused encoder expects CPU tensors")
-        return dict(
-            self._encoder.fuse_encode_update_base_step(
-                lm_probabilities.contiguous(),
-                target_symbols.contiguous(),
-            )
-        )
+        return dict(self._encoder.encode_token_step(lm_probabilities.contiguous(), target_symbols.contiguous()))
 
     def finish(self) -> dict[str, Any]:
         return dict(self._encoder.finish())
