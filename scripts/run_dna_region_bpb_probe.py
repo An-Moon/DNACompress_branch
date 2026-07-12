@@ -1391,6 +1391,7 @@ def build_region_adapters(args: argparse.Namespace) -> list[Any]:
                     alphabet=str(args.alphabet),
                     backend=str(getattr(args, "nc_prefix_backend", "auto")),
                     min_windows=int(args.nc_prefix_min_windows),
+                    hash_bucket_count=int(getattr(args, "nc_prefix_hash_bucket_count", 0)),
                 )
             )
             continue
@@ -1934,6 +1935,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--nc-prefix-backend", choices=("auto", "fast_cpp"), default="auto")
     parser.add_argument("--backend", dest="nc_prefix_backend", choices=("auto", "fast_cpp"), help=argparse.SUPPRESS)
     parser.add_argument("--nc-prefix-min-windows", type=int, default=DEFAULT_NC_PREFIX_MIN_WINDOWS)
+    parser.add_argument("--nc-prefix-hash-bucket-count", type=int, default=0, help="ctx17 hash bucket count. Use 0 for the GECO2 default.")
 
     parser.add_argument("--plot-window-bases", type=int)
     parser.add_argument("--smooth-window-bases", type=int, default=512)

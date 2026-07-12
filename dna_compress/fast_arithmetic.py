@@ -46,7 +46,7 @@ def load_fast_arithmetic_extension():
         from torch.utils.cpp_extension import load
 
         _EXTENSION = load(
-            name="dna_compress_fast_arithmetic",
+            name="dna_compress_fast_arithmetic_step_v1",
             sources=[str(_extension_source_path())],
             extra_cflags=["-O3"],
             with_cuda=False,
@@ -303,6 +303,27 @@ class BatchedStreamingArithmeticEncoder:
             _as_cpu_symbol_tensor(highs),
             _as_cpu_symbol_tensor(totals),
             lengths.contiguous(),
+        )
+        return EncodeTimings(
+            quantize_seconds=0.0,
+            range_seconds=float(result["range_seconds"]),
+            emitted_count=int(result["emitted_count"]),
+        )
+
+    def encode_interval_step(self, lows, highs, totals, active) -> EncodeTimings:
+        if not isinstance(active, torch.Tensor):
+            active = torch.as_tensor(active)
+        if active.device.type != "cpu":
+            raise ValueError("active mask must already be on CPU")
+        if active.dim() != 1:
+            raise ValueError("active mask must be a 1D tensor")
+        if active.dtype not in {torch.bool, torch.uint8, torch.int32, torch.int64}:
+            active = active.to(torch.bool)
+        result = self._encoder.encode_interval_step(
+            _as_cpu_symbol_tensor(lows),
+            _as_cpu_symbol_tensor(highs),
+            _as_cpu_symbol_tensor(totals),
+            active.contiguous(),
         )
         return EncodeTimings(
             quantize_seconds=0.0,

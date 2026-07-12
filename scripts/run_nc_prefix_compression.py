@@ -51,6 +51,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--nc-prefix-backend", choices=("auto", "fast_cpp"), default="auto")
     parser.add_argument("--backend", dest="nc_prefix_backend", choices=("auto", "fast_cpp"), help=argparse.SUPPRESS)
     parser.add_argument("--nc-prefix-min-windows", type=int, default=DEFAULT_NC_PREFIX_MIN_WINDOWS)
+    parser.add_argument("--nc-prefix-hash-bucket-count", type=int, default=0, help="ctx17 hash bucket count. Use 0 for the GECO2 default.")
     parser.add_argument("--arithmetic-frequency-total", type=int)
     parser.add_argument("--arithmetic-target-uniform-mass", type=float, default=0.01)
     parser.add_argument("--skip-arithmetic", action="store_true", help="Only evaluate model probabilities/bpb; do not emit the arithmetic-coded byte stream.")
@@ -125,6 +126,7 @@ def main() -> None:
         alphabet=alphabet,
         backend=str(args.nc_prefix_backend),
         min_windows=int(args.nc_prefix_min_windows),
+        hash_bucket_count=int(args.nc_prefix_hash_bucket_count),
     )
     parameters = {
         "dataset": args.dataset,
@@ -143,6 +145,9 @@ def main() -> None:
             "min_windows": int(args.nc_prefix_min_windows),
             "min_required_bases": int(args.nc_prefix_min_windows) * int(args.nc_prefix_window_bases),
             "algorithm": "geco2_level10_per_window_weights",
+            "update_mode": "cache_pipeline",
+            "profile_mode": "normal",
+            "hash_bucket_count": int(args.nc_prefix_hash_bucket_count),
         },
         "arithmetic_frequency_total": args.arithmetic_frequency_total,
         "arithmetic_target_uniform_mass": float(args.arithmetic_target_uniform_mass),
@@ -162,6 +167,8 @@ def main() -> None:
             arithmetic_target_uniform_mass=float(args.arithmetic_target_uniform_mass),
             encode_arithmetic=not bool(args.skip_arithmetic),
         )
+        model_metadata = dict(compression["model_metadata"])
+        timing = dict(model_metadata.get("timing") or {})
         row = {
             "dataset": source_info["dataset"],
             "source": source_info["source"],
@@ -186,13 +193,42 @@ def main() -> None:
             "backend": str(args.nc_prefix_backend),
             "min_windows": int(args.nc_prefix_min_windows),
             "min_required_bases": int(args.nc_prefix_min_windows) * int(args.nc_prefix_window_bases),
-            "window_count": int(compression["model_metadata"]["window_count"]),
+            "update_mode": "cache_pipeline",
+            "hash_bucket_count": int(args.nc_prefix_hash_bucket_count),
+            "window_count": int(model_metadata["window_count"]),
+            "model_compute_seconds": model_metadata.get("compute_seconds"),
+            "timing_setup_seconds": timing.get("setup_seconds"),
+            "timing_prediction_and_weight_seconds": timing.get("prediction_and_weight_seconds"),
+            "timing_pipeline_address_prepare_seconds": timing.get("pipeline_address_prepare_seconds"),
+            "timing_pipeline_low_lookup_seconds": timing.get("pipeline_low_lookup_seconds"),
+            "timing_pipeline_high_lookup_seconds": timing.get("pipeline_high_lookup_seconds"),
+            "timing_pipeline_fusion_seconds": timing.get("pipeline_fusion_seconds"),
+            "timing_pipeline_update_prepare_seconds": timing.get("pipeline_update_prepare_seconds"),
+            "timing_pipeline_update_commit_seconds": timing.get("pipeline_update_commit_seconds"),
+            "timing_base_counter_update_seconds": timing.get("base_counter_update_seconds"),
+            "timing_edit_state_update_seconds": timing.get("edit_state_update_seconds"),
+            "timing_context_state_update_seconds": timing.get("context_state_update_seconds"),
+            "timing_weight_snapshot_seconds": timing.get("weight_snapshot_seconds"),
+            "timing_timed_stage_seconds": timing.get("timed_stage_seconds"),
+            "timing_untimed_seconds": timing.get("untimed_seconds"),
             "algorithm": "geco2_level10_per_window_weights",
+            "cache_pipeline": bool(model_metadata.get("cache_pipeline", False)),
+            "pipeline_block_windows": model_metadata.get("pipeline_block_windows"),
+            "pipeline_scratch_bytes": model_metadata.get("pipeline_scratch_bytes"),
+            "artifact_tensor_bytes": model_metadata.get("artifact_tensor_bytes"),
+            "edit_state_bytes": model_metadata.get("edit_state_bytes"),
+            "hash_bucket_bytes": model_metadata.get("hash_bucket_bytes"),
+            "hash_bucket_count_effective": model_metadata.get("hash_bucket_count"),
+            "hash_bucket_count_requested": model_metadata.get("hash_bucket_count_requested"),
+            "large_table_alignment_bytes": model_metadata.get("large_table_alignment_bytes"),
+            "large_table_allocator": model_metadata.get("large_table_allocator"),
+            "populate_tables_requested": model_metadata.get("populate_tables_requested"),
+            "process_peak_rss_bytes": model_metadata.get("process_peak_rss_bytes"),
             "encode_arithmetic": not bool(args.skip_arithmetic),
         }
         rows.append(row)
         model_metadata_path = output_dir / f"{str(source_info['source']).replace('/', '_')}_model_metadata.json"
-        _write_json(model_metadata_path, dict(compression["model_metadata"]))
+        _write_json(model_metadata_path, model_metadata)
 
     per_source_csv = output_dir / "nc_prefix_per_source.csv"
     write_csv(per_source_csv, rows)

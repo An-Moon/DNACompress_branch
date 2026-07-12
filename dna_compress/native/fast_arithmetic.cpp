@@ -735,6 +735,86 @@ class BatchedFastArithmeticEncoder {
     return result;
   }
 
+  py::dict encode_interval_step(
+      const at::Tensor &lows,
+      const at::Tensor &highs,
+      const at::Tensor &totals,
+      const at::Tensor &active) {
+    if (lows.device().is_cuda() || highs.device().is_cuda() || totals.device().is_cuda() || active.device().is_cuda()) {
+      throw std::runtime_error("interval step tensors must be on CPU");
+    }
+    if (lows.dim() != 1 || highs.dim() != 1 || totals.dim() != 1 || active.dim() != 1 ||
+        highs.sizes() != lows.sizes() || totals.sizes() != lows.sizes() || active.sizes() != lows.sizes()) {
+      throw std::runtime_error("interval step tensors must be 1D tensors with equal shapes");
+    }
+    if (lows.size(0) != static_cast<int64_t>(encoders_.size())) {
+      throw std::runtime_error("interval step row count must match batched encoder stream count");
+    }
+    at::Tensor low_tensor = lows.contiguous();
+    at::Tensor high_tensor = highs.contiguous();
+    at::Tensor total_tensor = totals.contiguous();
+    at::Tensor active_tensor = active.contiguous();
+    const int64_t rows = low_tensor.size(0);
+    const auto range_start = Clock::now();
+    int64_t emitted = 0;
+
+    const auto is_active = [&](int64_t row) -> bool {
+      if (active_tensor.scalar_type() == at::kBool) {
+        return active_tensor.data_ptr<bool>()[row];
+      }
+      if (active_tensor.scalar_type() == at::kByte) {
+        return active_tensor.data_ptr<uint8_t>()[row] != 0;
+      }
+      if (active_tensor.scalar_type() == at::kInt) {
+        return active_tensor.data_ptr<int32_t>()[row] != 0;
+      }
+      if (active_tensor.scalar_type() == at::kLong) {
+        return active_tensor.data_ptr<int64_t>()[row] != 0;
+      }
+      throw std::runtime_error("active must be bool, uint8, int32, or int64");
+    };
+
+    const auto encode_impl = [&](auto *low_ptr, auto *high_ptr, auto *total_ptr) {
+      for (int64_t row = 0; row < rows; ++row) {
+        if (!is_active(row)) {
+          continue;
+        }
+        const int64_t low_i64 = static_cast<int64_t>(low_ptr[row]);
+        const int64_t high_i64 = static_cast<int64_t>(high_ptr[row]);
+        const int64_t total_i64 = static_cast<int64_t>(total_ptr[row]);
+        if (!(0 <= low_i64 && low_i64 < high_i64 && high_i64 <= total_i64)) {
+          throw std::runtime_error("invalid arithmetic interval step");
+        }
+        if (total_i64 <= 0 || total_i64 > static_cast<int64_t>((uint64_t{1} << 30) + 2)) {
+          throw std::runtime_error("interval step total is outside the supported 32-bit arithmetic range");
+        }
+        encoders_[static_cast<size_t>(row)].update(Interval{
+            static_cast<uint32_t>(low_i64),
+            static_cast<uint32_t>(high_i64),
+            static_cast<uint32_t>(total_i64)});
+        ++emitted;
+      }
+    };
+
+    if (low_tensor.scalar_type() == at::kLong &&
+        high_tensor.scalar_type() == at::kLong &&
+        total_tensor.scalar_type() == at::kLong) {
+      encode_impl(low_tensor.data_ptr<int64_t>(), high_tensor.data_ptr<int64_t>(), total_tensor.data_ptr<int64_t>());
+    } else if (low_tensor.scalar_type() == at::kInt &&
+               high_tensor.scalar_type() == at::kInt &&
+               total_tensor.scalar_type() == at::kInt) {
+      encode_impl(low_tensor.data_ptr<int32_t>(), high_tensor.data_ptr<int32_t>(), total_tensor.data_ptr<int32_t>());
+    } else {
+      throw std::runtime_error("interval step tensors must all be int32 or all be int64");
+    }
+
+    const auto range_end = Clock::now();
+    py::dict result;
+    result["range_seconds"] = elapsed_seconds(range_start, range_end);
+    result["emitted_count"] = emitted;
+    return result;
+  }
+
   std::vector<py::bytes> finish() {
     std::vector<py::bytes> streams;
     streams.reserve(encoders_.size());
@@ -1299,6 +1379,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       .def(py::init<int64_t>(), py::arg("stream_count"))
       .def("encode_interval_matrix", &BatchedFastArithmeticEncoder::encode_interval_matrix)
       .def("encode_interval_matrix_with_lengths", &BatchedFastArithmeticEncoder::encode_interval_matrix_with_lengths)
+      .def("encode_interval_step", &BatchedFastArithmeticEncoder::encode_interval_step)
       .def("finish", &BatchedFastArithmeticEncoder::finish)
       .def("size", &BatchedFastArithmeticEncoder::size);
 

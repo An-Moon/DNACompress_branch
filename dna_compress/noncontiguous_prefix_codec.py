@@ -8,7 +8,11 @@ import numpy as np
 
 from .compression import resolve_arithmetic_coding_metadata
 from .fast_arithmetic import StreamingArithmeticEncoder
-from .fast_nc_prefix import NC_PREFIX_BACKENDS, compute_fast_nc_prefix, resolve_nc_prefix_backend
+from .fast_nc_prefix import (
+    NC_PREFIX_BACKENDS,
+    compute_fast_nc_prefix,
+    resolve_nc_prefix_backend,
+)
 from .fusion_compression import ProbabilityAdapter, UnitProbabilityResult
 from .tokenization import normalize_alphabet
 
@@ -22,6 +26,7 @@ class NoncontiguousPrefixConfig:
     alphabet: str = "ACGT"
     backend: str = "auto"
     min_windows: int = DEFAULT_NC_PREFIX_MIN_WINDOWS
+    hash_bucket_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -52,11 +57,14 @@ def _validate_config(config: NoncontiguousPrefixConfig) -> NoncontiguousPrefixCo
         raise ValueError(f"backend must be one of: {', '.join(NC_PREFIX_BACKENDS)}")
     if int(config.min_windows) <= 0:
         raise ValueError("min_windows must be positive")
+    if int(config.hash_bucket_count) < 0:
+        raise ValueError("hash_bucket_count must be non-negative; use 0 for GECO2 default")
     return NoncontiguousPrefixConfig(
         window_bases=int(config.window_bases),
         alphabet=alphabet,
         backend=backend,
         min_windows=int(config.min_windows),
+        hash_bucket_count=int(config.hash_bucket_count),
     )
 
 
@@ -65,6 +73,7 @@ def compute_noncontiguous_prefix_probabilities(
     config: NoncontiguousPrefixConfig | None = None,
     *,
     return_probabilities: bool = True,
+    summary_only: bool = False,
 ) -> NoncontiguousPrefixResult:
     cfg = _validate_config(config or NoncontiguousPrefixConfig())
     base_to_symbol = {base: index for index, base in enumerate(cfg.alphabet)}
@@ -90,6 +99,8 @@ def compute_noncontiguous_prefix_probabilities(
         window_bases=cfg.window_bases,
         vocab_size=vocab_size,
         return_probabilities=return_probabilities,
+        summary_only=summary_only,
+        hash_bucket_count=cfg.hash_bucket_count,
     )
     probabilities = fast_result["probabilities"].cpu().numpy()
     bpb_values = fast_result["bpb"].cpu().numpy()
@@ -103,6 +114,8 @@ def compute_noncontiguous_prefix_probabilities(
             "min_windows": int(cfg.min_windows),
             "min_required_bases": int(min_required_bases),
             "return_probabilities": bool(return_probabilities),
+            "summary_only": bool(summary_only),
+            "hash_bucket_count_config": int(cfg.hash_bucket_count),
         }
     )
     return NoncontiguousPrefixResult(
@@ -124,7 +137,12 @@ def compress_noncontiguous_prefix_sequence(
 ) -> dict[str, Any]:
     started = perf_counter()
     cfg = _validate_config(config or NoncontiguousPrefixConfig())
-    result = compute_noncontiguous_prefix_probabilities(sequence, cfg, return_probabilities=encode_arithmetic)
+    result = compute_noncontiguous_prefix_probabilities(
+        sequence,
+        cfg,
+        return_probabilities=encode_arithmetic,
+        summary_only=not encode_arithmetic,
+    )
     if encode_arithmetic:
         vocab_size = result.probabilities.shape[1]
         arithmetic_metadata = resolve_arithmetic_coding_metadata(
@@ -164,7 +182,7 @@ def compress_noncontiguous_prefix_sequence(
             "arithmetic_encode_seconds": None,
         }
     elapsed = perf_counter() - started
-    base_count = int(result.target_symbols.shape[0])
+    base_count = int(result.metadata["base_count"])
     theoretical_bits = float(result.metadata["theoretical_bits"])
     return {
         "codec": "nc_prefix",
@@ -194,6 +212,7 @@ class NoncontiguousPrefixProbabilityAdapter(ProbabilityAdapter):
         alphabet: str = "ACGT",
         backend: str = "auto",
         min_windows: int = DEFAULT_NC_PREFIX_MIN_WINDOWS,
+        hash_bucket_count: int = 0,
     ) -> None:
         self.name = name
         self.token_size = 1
@@ -204,6 +223,7 @@ class NoncontiguousPrefixProbabilityAdapter(ProbabilityAdapter):
                 alphabet=self.alphabet,
                 backend=backend,
                 min_windows=min_windows,
+                hash_bucket_count=hash_bucket_count,
             )
         )
 
