@@ -1,0 +1,28 @@
+{
+  "dataset": "dnacorpus",
+  "dataset_dir": "datasets/DNACorpus",
+  "input_dir": null,
+  "source": null,
+  "species": [
+    "AgPh"
+  ],
+  "alphabet": "ACGT",
+  "region_start": null,
+  "region_bases": 0,
+  "random_region": false,
+  "seed": 12345,
+  "nc_prefix": {
+    "window_bases": 8192,
+    "backend": "auto",
+    "min_windows": 1,
+    "min_required_bases": 8192,
+    "algorithm": "geco2_level_per_window_weights",
+    "geco2_level": 2,
+    "update_mode": "cache_pipeline",
+    "profile_mode": "normal",
+    "hash_bucket_count": 0
+  },
+  "arithmetic_frequency_total": null,
+  "arithmetic_target_uniform_mass": 0.01,
+  "encode_arithmetic": true
+}

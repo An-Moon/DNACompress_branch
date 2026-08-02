@@ -1,0 +1,11 @@
+{
+  "codec": "nc_prefix",
+  "source_count": 1,
+  "total_bases": 26403087,
+  "total_theoretical_bits_per_base": 1.568468759662274,
+  "total_arithmetic_bits_per_base": 1.5684775041645698,
+  "encode_arithmetic": true,
+  "wall_seconds": 18.974856301999807,
+  "parameters_json": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/EnIn/parameters.json",
+  "per_source_csv": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/EnIn/nc_prefix_per_source.csv"
+}

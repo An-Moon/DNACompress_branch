@@ -95,6 +95,29 @@ class NoncontiguousPrefixCodecTests(unittest.TestCase):
         self.assertEqual(custom.metadata["hash_bucket_count_requested"], 1024)
         self.assertEqual(custom.metadata["hash_bucket_count"], 1024)
 
+    def test_geco2_level_presets_report_expected_model_specs(self) -> None:
+        sequence = ("ACGTGCAATTCG" * 64)[:640]
+        level5 = compute_noncontiguous_prefix_probabilities(
+            sequence,
+            NoncontiguousPrefixConfig(window_bases=8, alphabet="ACGT", min_windows=1, backend="fast_cpp", hash_bucket_count=1024, geco2_level=5),
+            return_probabilities=False,
+            summary_only=True,
+        )
+        self.assertEqual(level5.metadata["geco2_level"], 5)
+        self.assertEqual([item["context_len"] for item in level5.metadata["models"]], [4, 6, 13])
+        self.assertEqual(level5.metadata["models"][-1]["hash_slots"], 1)
+        self.assertEqual(level5.metadata["models"][-1]["edits"], 2)
+
+        level12 = compute_noncontiguous_prefix_probabilities(
+            sequence,
+            NoncontiguousPrefixConfig(window_bases=8, alphabet="ACGT", min_windows=1, backend="fast_cpp", hash_bucket_count=1024, geco2_level=12),
+            return_probabilities=False,
+            summary_only=True,
+        )
+        self.assertEqual(level12.metadata["geco2_level"], 12)
+        self.assertEqual([item["context_len"] for item in level12.metadata["models"]], [1, 3, 6, 9, 11, 13, 17])
+        self.assertEqual(level12.metadata["models"][-1]["hash_slots"], 20)
+
     def test_fine_timing_is_opt_in(self) -> None:
         sequence = "ACGTACGTACGT"
         config = NoncontiguousPrefixConfig(window_bases=4, alphabet="ACGT", min_windows=1, backend="fast_cpp")
@@ -121,6 +144,11 @@ class NoncontiguousPrefixCodecTests(unittest.TestCase):
             compute_noncontiguous_prefix_probabilities(
                 "ACGT",
                 NoncontiguousPrefixConfig(window_bases=4, alphabet="ACGT", min_windows=1, hash_bucket_count=-1),
+            )
+        with self.assertRaises(ValueError):
+            compute_noncontiguous_prefix_probabilities(
+                "ACGT",
+                NoncontiguousPrefixConfig(window_bases=4, alphabet="ACGT", min_windows=1, geco2_level=13),
             )
         adapter = NoncontiguousPrefixProbabilityAdapter(alphabet="ACGT", min_windows=1)
         with self.assertRaises(ValueError):

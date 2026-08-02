@@ -1,0 +1,78 @@
+{
+  "comparison_csv": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon_evo2_vs_carbon_nc_region_fusion_comparison.csv",
+  "small_region_threshold_excluded_from_weighted": 1000,
+  "regions": [
+    {
+      "region_class": "intergenic",
+      "base_count": 224051567,
+      "carbon3b": 1.5524775047877668,
+      "evo2_7b": 1.5425827507518695,
+      "nc_prefix": 1.645402384390769,
+      "carbon_evo2_fused": 1.5236510920713475,
+      "carbon_nc_fused": 1.4991515225600536,
+      "carbon_evo2_minus_carbon_nc_bpb": 0.02449956951129395,
+      "carbon_evo2_minus_carbon_bpb": -0.02882641271641928,
+      "carbon_nc_minus_carbon_bpb": -0.05332598222771323
+    },
+    {
+      "region_class": "intron",
+      "base_count": 180585260,
+      "carbon3b": 1.6075951600604987,
+      "evo2_7b": 1.6144992960700784,
+      "nc_prefix": 1.7183108529820752,
+      "carbon_evo2_fused": 1.5897062118741916,
+      "carbon_nc_fused": 1.584491243051054,
+      "carbon_evo2_minus_carbon_nc_bpb": 0.005214968823137545,
+      "carbon_evo2_minus_carbon_bpb": -0.017888948186307152,
+      "carbon_nc_minus_carbon_bpb": -0.023103917009444697
+    },
+    {
+      "region_class": "exon_non_cds",
+      "base_count": 13040639,
+      "carbon3b": 1.6869716285204188,
+      "evo2_7b": 1.6864910160372169,
+      "nc_prefix": 1.8188793025160066,
+      "carbon_evo2_fused": 1.653672966477206,
+      "carbon_nc_fused": 1.658436384190161,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.004763417712954965,
+      "carbon_evo2_minus_carbon_bpb": -0.033298662043212746,
+      "carbon_nc_minus_carbon_bpb": -0.02853524433025778
+    },
+    {
+      "region_class": "rna",
+      "base_count": 42526032,
+      "carbon3b": 1.5044227659278409,
+      "evo2_7b": 1.5061679583733252,
+      "nc_prefix": 1.6734532823078256,
+      "carbon_evo2_fused": 1.4858080051592464,
+      "carbon_nc_fused": 1.483457024959694,
+      "carbon_evo2_minus_carbon_nc_bpb": 0.002350980199552488,
+      "carbon_evo2_minus_carbon_bpb": -0.018614760768594474,
+      "carbon_nc_minus_carbon_bpb": -0.020965740968146962
+    },
+    {
+      "region_class": "cds",
+      "base_count": 26283010,
+      "carbon3b": 1.1398812604099253,
+      "evo2_7b": 1.017486364170749,
+      "nc_prefix": 1.8759878849312224,
+      "carbon_evo2_fused": 0.9803294710333715,
+      "carbon_nc_fused": 1.1271228380590272,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.1467933670256557,
+      "carbon_evo2_minus_carbon_bpb": -0.1595517893765538,
+      "carbon_nc_minus_carbon_bpb": -0.01275842235089808
+    },
+    {
+      "region_class": "repeat_mobile_existing",
+      "base_count": 65233,
+      "carbon3b": 1.2085272920070675,
+      "evo2_7b": 0.3408893917421132,
+      "nc_prefix": 0.7838983171790469,
+      "carbon_evo2_fused": 0.3392988970543608,
+      "carbon_nc_fused": 0.6415280177620529,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.30222912070769214,
+      "carbon_evo2_minus_carbon_bpb": -0.8692283949527068,
+      "carbon_nc_minus_carbon_bpb": -0.5669992742450146
+    }
+  ]
+}

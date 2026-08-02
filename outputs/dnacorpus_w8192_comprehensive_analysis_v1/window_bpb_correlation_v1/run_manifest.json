@@ -1,0 +1,1043 @@
+{
+  "corrected_supplement_species": [
+    "EnIn",
+    "HePy",
+    "PlFa",
+    "ScPo"
+  ],
+  "corrected_trace_roots": {
+    "carbon3b": "/home/Liang_junnan/DNACompress/outputs/carbon3b_corrected_supplement_w8192_full_forward_target_traces_position_major/traces",
+    "evo2_7b": "/home/Liang_junnan/DNACompress/outputs/evo2_7b_corrected_supplement_w8192_full_forward_bs12_target_traces_position_major/traces",
+    "nc_prefix": "/home/Liang_junnan/DNACompress/outputs/nc_prefix_dnacorpus_corrected_supplement_w8192_target_traces_position_major/traces"
+  },
+  "elapsed_seconds": 94.05288298497908,
+  "model_labels": {
+    "carbon3b": "Carbon 3B",
+    "evo2_7b": "Evo2 7B",
+    "nc_prefix": "nc_prefix"
+  },
+  "output_dir": "/home/Liang_junnan/DNACompress/outputs/dnacorpus_w8192_comprehensive_analysis_v1/window_bpb_correlation_v1",
+  "pairs": [
+    {
+      "model_a": "carbon3b",
+      "model_b": "nc_prefix",
+      "pair_key": "carbon3b__nc_prefix",
+      "pair_label": "Carbon 3B vs nc_prefix"
+    },
+    {
+      "model_a": "evo2_7b",
+      "model_b": "nc_prefix",
+      "pair_key": "evo2_7b__nc_prefix",
+      "pair_label": "Evo2 7B vs nc_prefix"
+    },
+    {
+      "model_a": "carbon3b",
+      "model_b": "evo2_7b",
+      "pair_key": "carbon3b__evo2_7b",
+      "pair_label": "Carbon 3B vs Evo2 7B"
+    }
+  ],
+  "rebuild_cache": false,
+  "repo_root": "/home/Liang_junnan/DNACompress",
+  "scopes": [
+    "all17",
+    "main13_excluding_corrected_supplement"
+  ],
+  "script": "/home/Liang_junnan/DNACompress/outputs/dnacorpus_w8192_comprehensive_analysis_v1/tmp_window_bpb_correlation.py",
+  "species_order": [
+    "HoSa",
+    "GaGa",
+    "AnCa",
+    "DaRe",
+    "OrSa",
+    "DrMe",
+    "EnIn",
+    "ScPo",
+    "WaMe",
+    "PlFa",
+    "EsCo",
+    "HaHi",
+    "HePy",
+    "AeCa",
+    "YeMi",
+    "AgPh",
+    "BuEb"
+  ],
+  "species_summaries": {
+    "AeCa": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.6199345655772992,
+          "mean_window_bpb": 1.6208394513134388,
+          "std_window_bpb": 0.1114126677994323,
+          "valid_windows": 195
+        },
+        "evo2_7b": {
+          "full_bpb": 1.4924601795040147,
+          "mean_window_bpb": 1.4933377297011334,
+          "std_window_bpb": 0.13496094945203874,
+          "valid_windows": 195
+        },
+        "nc_prefix": {
+          "full_bpb": 1.910865123477936,
+          "mean_window_bpb": 1.910862950522738,
+          "std_window_bpb": 0.0329367301827977,
+          "valid_windows": 195
+        }
+      },
+      "nonempty_windows": 195,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 1591049,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 1591049,
+            "full_bpb": 1.6199345655772992,
+            "load_seconds": 0.08649204100947827,
+            "row_count": 1591049,
+            "window_bases": 8192,
+            "window_count": 195
+          },
+          "evo2_7b": {
+            "core_base_count": 1591049,
+            "full_bpb": 1.4924601795040147,
+            "load_seconds": 0.06437405000906438,
+            "row_count": 1591049,
+            "window_bases": 8192,
+            "window_count": 195
+          },
+          "nc_prefix": {
+            "core_base_count": 1591049,
+            "full_bpb": 1.910865123477936,
+            "load_seconds": 0.06546215497655794,
+            "row_count": 1591049,
+            "window_bases": 8192,
+            "window_count": 195
+          }
+        },
+        "row_count": 1591049,
+        "window_bases": 8192,
+        "window_count": 195
+      },
+      "window_count": 195
+    },
+    "AgPh": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.8203309654853668,
+          "mean_window_bpb": 1.8082673592982184,
+          "std_window_bpb": 0.04989608603448667,
+          "valid_windows": 6
+        },
+        "evo2_7b": {
+          "full_bpb": 1.3213613187473006,
+          "mean_window_bpb": 1.3444264218911295,
+          "std_window_bpb": 0.15370877924766016,
+          "valid_windows": 6
+        },
+        "nc_prefix": {
+          "full_bpb": 1.941196622077699,
+          "mean_window_bpb": 1.939740218293988,
+          "std_window_bpb": 0.007036581588138237,
+          "valid_windows": 6
+        }
+      },
+      "nonempty_windows": 6,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 43970,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 43970,
+            "full_bpb": 1.8203309654853668,
+            "load_seconds": 0.0028261099942028522,
+            "row_count": 43970,
+            "window_bases": 8192,
+            "window_count": 6
+          },
+          "evo2_7b": {
+            "core_base_count": 43970,
+            "full_bpb": 1.3213613187473006,
+            "load_seconds": 0.001987803028896451,
+            "row_count": 43970,
+            "window_bases": 8192,
+            "window_count": 6
+          },
+          "nc_prefix": {
+            "core_base_count": 43970,
+            "full_bpb": 1.941196622077699,
+            "load_seconds": 0.0020512249902822077,
+            "row_count": 43970,
+            "window_bases": 8192,
+            "window_count": 6
+          }
+        },
+        "row_count": 43970,
+        "window_bases": 8192,
+        "window_count": 6
+      },
+      "window_count": 6
+    },
+    "AnCa": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.4821611031344826,
+          "mean_window_bpb": 1.4821732406170045,
+          "std_window_bpb": 0.2190874390304195,
+          "valid_windows": 17358
+        },
+        "evo2_7b": {
+          "full_bpb": 1.4888062672962283,
+          "mean_window_bpb": 1.4888116491510863,
+          "std_window_bpb": 0.19359979765646607,
+          "valid_windows": 17358
+        },
+        "nc_prefix": {
+          "full_bpb": 1.556559379219964,
+          "mean_window_bpb": 1.5565607857387873,
+          "std_window_bpb": 0.24834968575154645,
+          "valid_windows": 17358
+        }
+      },
+      "nonempty_windows": 17358,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 142189675,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 142189675,
+            "full_bpb": 1.4821611031344826,
+            "load_seconds": 7.345005779003259,
+            "row_count": 142189675,
+            "window_bases": 8192,
+            "window_count": 17358
+          },
+          "evo2_7b": {
+            "core_base_count": 142189675,
+            "full_bpb": 1.4888062672962283,
+            "load_seconds": 5.440526697027963,
+            "row_count": 142189675,
+            "window_bases": 8192,
+            "window_count": 17358
+          },
+          "nc_prefix": {
+            "core_base_count": 142189675,
+            "full_bpb": 1.556559379219964,
+            "load_seconds": 5.757883037033025,
+            "row_count": 142189675,
+            "window_bases": 8192,
+            "window_count": 17358
+          }
+        },
+        "row_count": 142189675,
+        "window_bases": 8192,
+        "window_count": 17358
+      },
+      "window_count": 17358
+    },
+    "BuEb": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.9277192540692547,
+          "mean_window_bpb": 1.9263658302460958,
+          "std_window_bpb": 0.014495800095458495,
+          "valid_windows": 3
+        },
+        "evo2_7b": {
+          "full_bpb": 1.91752209118082,
+          "mean_window_bpb": 1.9166240424596281,
+          "std_window_bpb": 0.012911094286504922,
+          "valid_windows": 3
+        },
+        "nc_prefix": {
+          "full_bpb": 1.9599469325961165,
+          "mean_window_bpb": 1.9585151624432946,
+          "std_window_bpb": 0.003459668406373271,
+          "valid_windows": 3
+        }
+      },
+      "nonempty_windows": 3,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 18940,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 18940,
+            "full_bpb": 1.9277192540692547,
+            "load_seconds": 0.0015240679495036602,
+            "row_count": 18940,
+            "window_bases": 8192,
+            "window_count": 3
+          },
+          "evo2_7b": {
+            "core_base_count": 18940,
+            "full_bpb": 1.91752209118082,
+            "load_seconds": 0.001074843981768936,
+            "row_count": 18940,
+            "window_bases": 8192,
+            "window_count": 3
+          },
+          "nc_prefix": {
+            "core_base_count": 18940,
+            "full_bpb": 1.9599469325961165,
+            "load_seconds": 0.001143905974458903,
+            "row_count": 18940,
+            "window_bases": 8192,
+            "window_count": 3
+          }
+        },
+        "row_count": 18940,
+        "window_bases": 8192,
+        "window_count": 3
+      },
+      "window_count": 3
+    },
+    "DaRe": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.35094306590309,
+          "mean_window_bpb": 1.350942302738647,
+          "std_window_bpb": 0.2166038239789394,
+          "valid_windows": 7638
+        },
+        "evo2_7b": {
+          "full_bpb": 1.416678402280909,
+          "mean_window_bpb": 1.4166701514092972,
+          "std_window_bpb": 0.19303603569500974,
+          "valid_windows": 7638
+        },
+        "nc_prefix": {
+          "full_bpb": 1.4742879641589137,
+          "mean_window_bpb": 1.4742804091004593,
+          "std_window_bpb": 0.28076851320235796,
+          "valid_windows": 7638
+        }
+      },
+      "nonempty_windows": 7638,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 62565020,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 62565020,
+            "full_bpb": 1.35094306590309,
+            "load_seconds": 3.300923278031405,
+            "row_count": 62565020,
+            "window_bases": 8192,
+            "window_count": 7638
+          },
+          "evo2_7b": {
+            "core_base_count": 62565020,
+            "full_bpb": 1.416678402280909,
+            "load_seconds": 2.384187476010993,
+            "row_count": 62565020,
+            "window_bases": 8192,
+            "window_count": 7638
+          },
+          "nc_prefix": {
+            "core_base_count": 62565020,
+            "full_bpb": 1.4742879641589137,
+            "load_seconds": 2.532182778988499,
+            "row_count": 62565020,
+            "window_bases": 8192,
+            "window_count": 7638
+          }
+        },
+        "row_count": 62565020,
+        "window_bases": 8192,
+        "window_count": 7638
+      },
+      "window_count": 7638
+    },
+    "DrMe": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.6961821757648479,
+          "mean_window_bpb": 1.6962087881646073,
+          "std_window_bpb": 0.1864422557863976,
+          "valid_windows": 3929
+        },
+        "evo2_7b": {
+          "full_bpb": 1.6722110600499636,
+          "mean_window_bpb": 1.672222051676809,
+          "std_window_bpb": 0.18458196787990788,
+          "valid_windows": 3929
+        },
+        "nc_prefix": {
+          "full_bpb": 1.8613661167881657,
+          "mean_window_bpb": 1.8613368004340654,
+          "std_window_bpb": 0.1431999878598445,
+          "valid_windows": 3929
+        }
+      },
+      "nonempty_windows": 3929,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 32181429,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 32181429,
+            "full_bpb": 1.6961821757648479,
+            "load_seconds": 1.6717659209971316,
+            "row_count": 32181429,
+            "window_bases": 8192,
+            "window_count": 3929
+          },
+          "evo2_7b": {
+            "core_base_count": 32181429,
+            "full_bpb": 1.6722110600499636,
+            "load_seconds": 1.2240054669673555,
+            "row_count": 32181429,
+            "window_bases": 8192,
+            "window_count": 3929
+          },
+          "nc_prefix": {
+            "core_base_count": 32181429,
+            "full_bpb": 1.8613661167881657,
+            "load_seconds": 1.2935543099883944,
+            "row_count": 32181429,
+            "window_bases": 8192,
+            "window_count": 3929
+          }
+        },
+        "row_count": 32181429,
+        "window_bases": 8192,
+        "window_count": 3929
+      },
+      "window_count": 3929
+    },
+    "EnIn": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.7019902313276472,
+          "mean_window_bpb": 1.7019946183551593,
+          "std_window_bpb": 0.08222372084037116,
+          "valid_windows": 4944
+        },
+        "evo2_7b": {
+          "full_bpb": 1.6664483566073751,
+          "mean_window_bpb": 1.666453835935251,
+          "std_window_bpb": 0.08457985294891195,
+          "valid_windows": 4944
+        },
+        "nc_prefix": {
+          "full_bpb": 1.4027163866456023,
+          "mean_window_bpb": 1.4026602039965497,
+          "std_window_bpb": 0.40384426761547254,
+          "valid_windows": 4944
+        }
+      },
+      "nonempty_windows": 4944,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 40496007,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 40496007,
+            "full_bpb": 1.7019902313276472,
+            "load_seconds": 1.530442998977378,
+            "row_count": 40496007,
+            "window_bases": 8192,
+            "window_count": 4944
+          },
+          "evo2_7b": {
+            "core_base_count": 40496007,
+            "full_bpb": 1.6664483566073751,
+            "load_seconds": 1.5514130769879557,
+            "row_count": 40496007,
+            "window_bases": 8192,
+            "window_count": 4944
+          },
+          "nc_prefix": {
+            "core_base_count": 40496007,
+            "full_bpb": 1.4027163866456023,
+            "load_seconds": 1.6224187539773993,
+            "row_count": 40496007,
+            "window_bases": 8192,
+            "window_count": 4944
+          }
+        },
+        "row_count": 40496007,
+        "window_bases": 8192,
+        "window_count": 4944
+      },
+      "window_count": 4944
+    },
+    "EsCo": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.1718664556422507,
+          "mean_window_bpb": 1.1719570277717606,
+          "std_window_bpb": 0.24923138414191676,
+          "valid_windows": 567
+        },
+        "evo2_7b": {
+          "full_bpb": 0.7727940272274673,
+          "mean_window_bpb": 0.7728609774402043,
+          "std_window_bpb": 0.23038811667610645,
+          "valid_windows": 567
+        },
+        "nc_prefix": {
+          "full_bpb": 1.8962380432202752,
+          "mean_window_bpb": 1.8962670494785936,
+          "std_window_bpb": 0.11690381571041492,
+          "valid_windows": 567
+        }
+      },
+      "nonempty_windows": 567,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 4641652,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 4641652,
+            "full_bpb": 1.1718664556422507,
+            "load_seconds": 0.25334897998254746,
+            "row_count": 4641652,
+            "window_bases": 8192,
+            "window_count": 567
+          },
+          "evo2_7b": {
+            "core_base_count": 4641652,
+            "full_bpb": 0.7727940272274673,
+            "load_seconds": 0.190687263966538,
+            "row_count": 4641652,
+            "window_bases": 8192,
+            "window_count": 567
+          },
+          "nc_prefix": {
+            "core_base_count": 4641652,
+            "full_bpb": 1.8962380432202752,
+            "load_seconds": 0.18863371899351478,
+            "row_count": 4641652,
+            "window_bases": 8192,
+            "window_count": 567
+          }
+        },
+        "row_count": 4641652,
+        "window_bases": 8192,
+        "window_count": 567
+      },
+      "window_count": 567
+    },
+    "GaGa": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.7565044813787853,
+          "mean_window_bpb": 1.7564816879289902,
+          "std_window_bpb": 0.1370766704192011,
+          "valid_windows": 18132
+        },
+        "evo2_7b": {
+          "full_bpb": 1.7449407511602981,
+          "mean_window_bpb": 1.7449171482685002,
+          "std_window_bpb": 0.13075005666707526,
+          "valid_windows": 18132
+        },
+        "nc_prefix": {
+          "full_bpb": 1.8256031147530767,
+          "mean_window_bpb": 1.8255973893803301,
+          "std_window_bpb": 0.1476473565780247,
+          "valid_windows": 18132
+        }
+      },
+      "nonempty_windows": 18132,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 148532294,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 148532294,
+            "full_bpb": 1.7565044813787853,
+            "load_seconds": 7.541668419027701,
+            "row_count": 148532294,
+            "window_bases": 8192,
+            "window_count": 18132
+          },
+          "evo2_7b": {
+            "core_base_count": 148532294,
+            "full_bpb": 1.7449407511602981,
+            "load_seconds": 5.543801298015751,
+            "row_count": 148532294,
+            "window_bases": 8192,
+            "window_count": 18132
+          },
+          "nc_prefix": {
+            "core_base_count": 148532294,
+            "full_bpb": 1.8256031147530767,
+            "load_seconds": 5.777804356999695,
+            "row_count": 148532294,
+            "window_bases": 8192,
+            "window_count": 18132
+          }
+        },
+        "row_count": 148532294,
+        "window_bases": 8192,
+        "window_count": 18132
+      },
+      "window_count": 18132
+    },
+    "HaHi": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.461911903224991,
+          "mean_window_bpb": 1.4620130176515493,
+          "std_window_bpb": 0.17642389731522182,
+          "valid_windows": 475
+        },
+        "evo2_7b": {
+          "full_bpb": 1.190829879226061,
+          "mean_window_bpb": 1.1909547360098047,
+          "std_window_bpb": 0.219987384167811,
+          "valid_windows": 475
+        },
+        "nc_prefix": {
+          "full_bpb": 1.859065527718485,
+          "mean_window_bpb": 1.8590976393250251,
+          "std_window_bpb": 0.06369778296277599,
+          "valid_windows": 475
+        }
+      },
+      "nonempty_windows": 475,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 3890005,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 3890005,
+            "full_bpb": 1.461911903224991,
+            "load_seconds": 0.20841813698643818,
+            "row_count": 3890005,
+            "window_bases": 8192,
+            "window_count": 475
+          },
+          "evo2_7b": {
+            "core_base_count": 3890005,
+            "full_bpb": 1.190829879226061,
+            "load_seconds": 0.15698106598574668,
+            "row_count": 3890005,
+            "window_bases": 8192,
+            "window_count": 475
+          },
+          "nc_prefix": {
+            "core_base_count": 3890005,
+            "full_bpb": 1.859065527718485,
+            "load_seconds": 0.15695504401810467,
+            "row_count": 3890005,
+            "window_bases": 8192,
+            "window_count": 475
+          }
+        },
+        "row_count": 3890005,
+        "window_bases": 8192,
+        "window_count": 475
+      },
+      "window_count": 475
+    },
+    "HePy": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.4551387108326874,
+          "mean_window_bpb": 1.4550767403773235,
+          "std_window_bpb": 0.12493621971434386,
+          "valid_windows": 204
+        },
+        "evo2_7b": {
+          "full_bpb": 1.2857018656217416,
+          "mean_window_bpb": 1.2857161457896082,
+          "std_window_bpb": 0.14514681513085614,
+          "valid_windows": 204
+        },
+        "nc_prefix": {
+          "full_bpb": 1.8026780485316154,
+          "mean_window_bpb": 1.8026665088601754,
+          "std_window_bpb": 0.11630053830285923,
+          "valid_windows": 204
+        }
+      },
+      "nonempty_windows": 204,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 1667850,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 1667850,
+            "full_bpb": 1.4551387108326874,
+            "load_seconds": 0.06843885802663863,
+            "row_count": 1667850,
+            "window_bases": 8192,
+            "window_count": 204
+          },
+          "evo2_7b": {
+            "core_base_count": 1667850,
+            "full_bpb": 1.2857018656217416,
+            "load_seconds": 0.06894389499211684,
+            "row_count": 1667850,
+            "window_bases": 8192,
+            "window_count": 204
+          },
+          "nc_prefix": {
+            "core_base_count": 1667850,
+            "full_bpb": 1.8026780485316154,
+            "load_seconds": 0.06998894899152219,
+            "row_count": 1667850,
+            "window_bases": 8192,
+            "window_count": 204
+          }
+        },
+        "row_count": 1667850,
+        "window_bases": 8192,
+        "window_count": 204
+      },
+      "window_count": 204
+    },
+    "HoSa": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.4294143541399293,
+          "mean_window_bpb": 1.4294135875590774,
+          "std_window_bpb": 0.29138901106016907,
+          "valid_windows": 23164
+        },
+        "evo2_7b": {
+          "full_bpb": 1.429470345925092,
+          "mean_window_bpb": 1.4294686032076562,
+          "std_window_bpb": 0.28015125202267205,
+          "valid_windows": 23164
+        },
+        "nc_prefix": {
+          "full_bpb": 1.6403478390254347,
+          "mean_window_bpb": 1.6403486554760187,
+          "std_window_bpb": 0.283229205987744,
+          "valid_windows": 23164
+        }
+      },
+      "nonempty_windows": 23164,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 189752667,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 189752667,
+            "full_bpb": 1.4294143541399293,
+            "load_seconds": 9.772033913002815,
+            "row_count": 189752667,
+            "window_bases": 8192,
+            "window_count": 23164
+          },
+          "evo2_7b": {
+            "core_base_count": 189752667,
+            "full_bpb": 1.429470345925092,
+            "load_seconds": 7.113780529005453,
+            "row_count": 189752667,
+            "window_bases": 8192,
+            "window_count": 23164
+          },
+          "nc_prefix": {
+            "core_base_count": 189752667,
+            "full_bpb": 1.6403478390254347,
+            "load_seconds": 7.427050643018447,
+            "row_count": 189752667,
+            "window_bases": 8192,
+            "window_count": 23164
+          }
+        },
+        "row_count": 189752667,
+        "window_bases": 8192,
+        "window_count": 23164
+      },
+      "window_count": 23164
+    },
+    "OrSa": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.5942965463313044,
+          "mean_window_bpb": 1.5942764316220572,
+          "std_window_bpb": 0.19191720710904864,
+          "valid_windows": 5282
+        },
+        "evo2_7b": {
+          "full_bpb": 1.5329368490755257,
+          "mean_window_bpb": 1.532920776909035,
+          "std_window_bpb": 0.1989560059560132,
+          "valid_windows": 5282
+        },
+        "nc_prefix": {
+          "full_bpb": 1.6020771255895818,
+          "mean_window_bpb": 1.6021351176859977,
+          "std_window_bpb": 0.39953432054208093,
+          "valid_windows": 5282
+        }
+      },
+      "nonempty_windows": 5282,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 43262523,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 43262523,
+            "full_bpb": 1.5942965463313044,
+            "load_seconds": 2.2598372449865565,
+            "row_count": 43262523,
+            "window_bases": 8192,
+            "window_count": 5282
+          },
+          "evo2_7b": {
+            "core_base_count": 43262523,
+            "full_bpb": 1.5329368490755257,
+            "load_seconds": 1.6561352700227872,
+            "row_count": 43262523,
+            "window_bases": 8192,
+            "window_count": 5282
+          },
+          "nc_prefix": {
+            "core_base_count": 43262523,
+            "full_bpb": 1.6020771255895818,
+            "load_seconds": 1.7397075949702412,
+            "row_count": 43262523,
+            "window_bases": 8192,
+            "window_count": 5282
+          }
+        },
+        "row_count": 43262523,
+        "window_bases": 8192,
+        "window_count": 5282
+      },
+      "window_count": 5282
+    },
+    "PlFa": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.4139072280340026,
+          "mean_window_bpb": 1.413880556080068,
+          "std_window_bpb": 0.11697224335392545,
+          "valid_windows": 2848
+        },
+        "evo2_7b": {
+          "full_bpb": 1.3922759115732382,
+          "mean_window_bpb": 1.3921867822652294,
+          "std_window_bpb": 0.1224948591164119,
+          "valid_windows": 2848
+        },
+        "nc_prefix": {
+          "full_bpb": 1.5085020810191956,
+          "mean_window_bpb": 1.5084761962606386,
+          "std_window_bpb": 0.22457003324463687,
+          "valid_windows": 2848
+        }
+      },
+      "nonempty_windows": 2848,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 23326872,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 23326872,
+            "full_bpb": 1.4139072280340026,
+            "load_seconds": 0.8951758810435422,
+            "row_count": 23326872,
+            "window_bases": 8192,
+            "window_count": 2848
+          },
+          "evo2_7b": {
+            "core_base_count": 23326872,
+            "full_bpb": 1.3922759115732382,
+            "load_seconds": 0.8930524609750137,
+            "row_count": 23326872,
+            "window_bases": 8192,
+            "window_count": 2848
+          },
+          "nc_prefix": {
+            "core_base_count": 23326872,
+            "full_bpb": 1.5085020810191956,
+            "load_seconds": 0.934249784972053,
+            "row_count": 23326872,
+            "window_bases": 8192,
+            "window_count": 2848
+          }
+        },
+        "row_count": 23326872,
+        "window_bases": 8192,
+        "window_count": 2848
+      },
+      "window_count": 2848
+    },
+    "ScPo": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.6798997337962518,
+          "mean_window_bpb": 1.6798943546265088,
+          "std_window_bpb": 0.12230744222251633,
+          "valid_windows": 1537
+        },
+        "evo2_7b": {
+          "full_bpb": 1.6641981476181098,
+          "mean_window_bpb": 1.664190718765845,
+          "std_window_bpb": 0.12548690437338278,
+          "valid_windows": 1537
+        },
+        "nc_prefix": {
+          "full_bpb": 1.8588373611068552,
+          "mean_window_bpb": 1.8588378357356263,
+          "std_window_bpb": 0.23864267566889116,
+          "valid_windows": 1537
+        }
+      },
+      "nonempty_windows": 1537,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 12590851,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 12590851,
+            "full_bpb": 1.6798997337962518,
+            "load_seconds": 0.48255509097361937,
+            "row_count": 12590851,
+            "window_bases": 8192,
+            "window_count": 1537
+          },
+          "evo2_7b": {
+            "core_base_count": 12590851,
+            "full_bpb": 1.6641981476181098,
+            "load_seconds": 0.48830051498953253,
+            "row_count": 12590851,
+            "window_bases": 8192,
+            "window_count": 1537
+          },
+          "nc_prefix": {
+            "core_base_count": 12590851,
+            "full_bpb": 1.8588373611068552,
+            "load_seconds": 0.5055301699903794,
+            "row_count": 12590851,
+            "window_bases": 8192,
+            "window_count": 1537
+          }
+        },
+        "row_count": 12590851,
+        "window_bases": 8192,
+        "window_count": 1537
+      },
+      "window_count": 1537
+    },
+    "WaMe": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.7116795190549101,
+          "mean_window_bpb": 1.7116183319168996,
+          "std_window_bpb": 0.10714784083907902,
+          "valid_windows": 1117
+        },
+        "evo2_7b": {
+          "full_bpb": 1.6727701904859076,
+          "mean_window_bpb": 1.6727189272273653,
+          "std_window_bpb": 0.11460947172491984,
+          "valid_windows": 1117
+        },
+        "nc_prefix": {
+          "full_bpb": 1.9424551738471996,
+          "mean_window_bpb": 1.9422743831521443,
+          "std_window_bpb": 0.04785850253170959,
+          "valid_windows": 1117
+        }
+      },
+      "nonempty_windows": 1117,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 9144432,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 9144432,
+            "full_bpb": 1.7116795190549101,
+            "load_seconds": 0.4768220590194687,
+            "row_count": 9144432,
+            "window_bases": 8192,
+            "window_count": 1117
+          },
+          "evo2_7b": {
+            "core_base_count": 9144432,
+            "full_bpb": 1.6727701904859076,
+            "load_seconds": 0.35049178201006725,
+            "row_count": 9144432,
+            "window_bases": 8192,
+            "window_count": 1117
+          },
+          "nc_prefix": {
+            "core_base_count": 9144432,
+            "full_bpb": 1.9424551738471996,
+            "load_seconds": 0.36400336102815345,
+            "row_count": 9144432,
+            "window_bases": 8192,
+            "window_count": 1117
+          }
+        },
+        "row_count": 9144432,
+        "window_bases": 8192,
+        "window_count": 1117
+      },
+      "window_count": 1117
+    },
+    "YeMi": {
+      "model_summary": {
+        "carbon3b": {
+          "full_bpb": 1.7133479216412417,
+          "mean_window_bpb": 1.7133117523888917,
+          "std_window_bpb": 0.04802611394335729,
+          "valid_windows": 9
+        },
+        "evo2_7b": {
+          "full_bpb": 1.3912601965374432,
+          "mean_window_bpb": 1.3912063176158123,
+          "std_window_bpb": 0.1146446075004214,
+          "valid_windows": 9
+        },
+        "nc_prefix": {
+          "full_bpb": 1.8166345902484298,
+          "mean_window_bpb": 1.81663113186577,
+          "std_window_bpb": 0.01042240088119425,
+          "valid_windows": 9
+        }
+      },
+      "nonempty_windows": 9,
+      "stats": {
+        "cache_hit": false,
+        "core_base_count": 73689,
+        "models": {
+          "carbon3b": {
+            "core_base_count": 73689,
+            "full_bpb": 1.7133479216412417,
+            "load_seconds": 0.004124831000808626,
+            "row_count": 73689,
+            "window_bases": 8192,
+            "window_count": 9
+          },
+          "evo2_7b": {
+            "core_base_count": 73689,
+            "full_bpb": 1.3912601965374432,
+            "load_seconds": 0.003015274996869266,
+            "row_count": 73689,
+            "window_bases": 8192,
+            "window_count": 9
+          },
+          "nc_prefix": {
+            "core_base_count": 73689,
+            "full_bpb": 1.8166345902484298,
+            "load_seconds": 0.003074246982578188,
+            "row_count": 73689,
+            "window_bases": 8192,
+            "window_count": 9
+          }
+        },
+        "row_count": 73689,
+        "window_bases": 8192,
+        "window_count": 9
+      },
+      "window_count": 9
+    }
+  },
+  "trace_roots": {
+    "carbon3b": "/home/Liang_junnan/DNACompress/outputs/carbon3b_dnacorpus_w8192_target_traces_position_major/traces",
+    "evo2_7b": "/home/Liang_junnan/DNACompress/outputs/evo2_7b_dnacorpus_w8192_full_forward_bs12_target_traces_position_major/traces",
+    "nc_prefix": "/home/Liang_junnan/DNACompress/outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full_position_major/traces"
+  },
+  "verify_shard_checksum": false
+}

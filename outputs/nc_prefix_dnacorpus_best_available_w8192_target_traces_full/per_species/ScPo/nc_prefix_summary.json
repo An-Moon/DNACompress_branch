@@ -1,0 +1,11 @@
+{
+  "codec": "nc_prefix",
+  "source_count": 1,
+  "total_bases": 10652155,
+  "total_theoretical_bits_per_base": 1.892622247687573,
+  "total_arithmetic_bits_per_base": 1.8926266093574493,
+  "encode_arithmetic": true,
+  "wall_seconds": 8.674043472999983,
+  "parameters_json": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/ScPo/parameters.json",
+  "per_source_csv": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/ScPo/nc_prefix_per_source.csv"
+}

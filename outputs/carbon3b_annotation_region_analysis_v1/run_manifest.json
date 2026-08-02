@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "annotation_dir": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official",
+  "trace_root": "outputs/carbon3b_dnacorpus_w8192_target_traces/traces",
+  "output_dir": "outputs/carbon3b_annotation_region_analysis_v1",
+  "species": [
+    "HoSa",
+    "GaGa",
+    "DaRe",
+    "OrSa",
+    "DrMe",
+    "EsCo",
+    "AgPh",
+    "BuEb",
+    "YeMi",
+    "AeCa",
+    "HaHi"
+  ],
+  "build_only": false,
+  "aggregate_only": false,
+  "window_bases": 8192,
+  "results": {
+    "HoSa": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/HoSa.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/HoSa.json",
+      "elapsed_seconds": 21.15647688001627,
+      "bases_per_second": 8969010.675838673
+    },
+    "GaGa": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/GaGa.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/GaGa.json",
+      "elapsed_seconds": 16.622855287016137,
+      "bases_per_second": 8935426.040556122
+    },
+    "DaRe": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/DaRe.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/DaRe.json",
+      "elapsed_seconds": 7.524238726997282,
+      "bases_per_second": 8315129.5792242875
+    },
+    "OrSa": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/OrSa.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/OrSa.json",
+      "elapsed_seconds": 5.5231587949965615,
+      "bases_per_second": 7832931.227541672
+    },
+    "DrMe": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/DrMe.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/DrMe.json",
+      "elapsed_seconds": 4.022836984979222,
+      "bases_per_second": 7999685.078008752
+    },
+    "EsCo": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/EsCo.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/EsCo.json",
+      "elapsed_seconds": 0.5140811660094187,
+      "bases_per_second": 9029025.58370512
+    },
+    "AgPh": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/AgPh.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/AgPh.json",
+      "elapsed_seconds": 0.006714556977385655,
+      "bases_per_second": 6548458.840708197
+    },
+    "BuEb": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/BuEb.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/BuEb.json",
+      "elapsed_seconds": 0.002998842013766989,
+      "bases_per_second": 6315771.192030406
+    },
+    "YeMi": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/YeMi.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/YeMi.json",
+      "elapsed_seconds": 0.007917273993371055,
+      "bases_per_second": 9307370.196067238
+    },
+    "AeCa": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/AeCa.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/AeCa.json",
+      "elapsed_seconds": 0.18000307501642965,
+      "bases_per_second": 8839010.110548267
+    },
+    "HaHi": {
+      "annotation_index": "outputs/carbon3b_annotation_region_analysis_v1/annotation_interval_index/HaHi.npz",
+      "per_species_json": "outputs/carbon3b_annotation_region_analysis_v1/per_species/HaHi.json",
+      "elapsed_seconds": 0.43175495899049565,
+      "bases_per_second": 9009751.756170638
+    }
+  },
+  "skipped": []
+}

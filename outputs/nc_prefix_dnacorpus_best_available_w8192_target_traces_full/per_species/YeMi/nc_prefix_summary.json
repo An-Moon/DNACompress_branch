@@ -1,0 +1,11 @@
+{
+  "codec": "nc_prefix",
+  "source_count": 1,
+  "total_bases": 73689,
+  "total_theoretical_bits_per_base": 1.8166345907247634,
+  "total_arithmetic_bits_per_base": 1.8167161991613403,
+  "encode_arithmetic": true,
+  "wall_seconds": 0.6523046129996146,
+  "parameters_json": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/YeMi/parameters.json",
+  "per_source_csv": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/YeMi/nc_prefix_per_source.csv"
+}

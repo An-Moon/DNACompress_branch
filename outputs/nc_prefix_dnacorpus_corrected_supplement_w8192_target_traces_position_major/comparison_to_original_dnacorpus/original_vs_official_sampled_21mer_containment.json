@@ -1,0 +1,118 @@
+{
+  "k": 21,
+  "sample_step": 997,
+  "rows": [
+    {
+      "original": "HePy",
+      "official": "HePy",
+      "sampled_21mers": 1673,
+      "hits": 1673,
+      "containment_fraction": 1.0
+    },
+    {
+      "original": "ScPo",
+      "official": "HePy",
+      "sampled_21mers": 10685,
+      "hits": 0,
+      "containment_fraction": 0.0
+    },
+    {
+      "original": "PlFa",
+      "official": "HePy",
+      "sampled_21mers": 9014,
+      "hits": 1,
+      "containment_fraction": 0.00011093854004881296
+    },
+    {
+      "original": "EnIn",
+      "official": "HePy",
+      "sampled_21mers": 26483,
+      "hits": 0,
+      "containment_fraction": 0.0
+    },
+    {
+      "original": "HePy",
+      "official": "ScPo",
+      "sampled_21mers": 1673,
+      "hits": 0,
+      "containment_fraction": 0.0
+    },
+    {
+      "original": "ScPo",
+      "official": "ScPo",
+      "sampled_21mers": 10685,
+      "hits": 9282,
+      "containment_fraction": 0.8686944314459523
+    },
+    {
+      "original": "PlFa",
+      "official": "ScPo",
+      "sampled_21mers": 9014,
+      "hits": 1,
+      "containment_fraction": 0.00011093854004881296
+    },
+    {
+      "original": "EnIn",
+      "official": "ScPo",
+      "sampled_21mers": 26483,
+      "hits": 5,
+      "containment_fraction": 0.000188800362496696
+    },
+    {
+      "original": "HePy",
+      "official": "PlFa",
+      "sampled_21mers": 1673,
+      "hits": 1,
+      "containment_fraction": 0.0005977286312014345
+    },
+    {
+      "original": "ScPo",
+      "official": "PlFa",
+      "sampled_21mers": 10685,
+      "hits": 3,
+      "containment_fraction": 0.00028076743097800656
+    },
+    {
+      "original": "PlFa",
+      "official": "PlFa",
+      "sampled_21mers": 9014,
+      "hits": 5457,
+      "containment_fraction": 0.6053916130463723
+    },
+    {
+      "original": "EnIn",
+      "official": "PlFa",
+      "sampled_21mers": 26483,
+      "hits": 6,
+      "containment_fraction": 0.0002265604349960352
+    },
+    {
+      "original": "HePy",
+      "official": "EnIn",
+      "sampled_21mers": 1673,
+      "hits": 0,
+      "containment_fraction": 0.0
+    },
+    {
+      "original": "ScPo",
+      "official": "EnIn",
+      "sampled_21mers": 10685,
+      "hits": 3,
+      "containment_fraction": 0.00028076743097800656
+    },
+    {
+      "original": "PlFa",
+      "official": "EnIn",
+      "sampled_21mers": 9014,
+      "hits": 3,
+      "containment_fraction": 0.0003328156201464389
+    },
+    {
+      "original": "EnIn",
+      "official": "EnIn",
+      "sampled_21mers": 26483,
+      "hits": 21326,
+      "containment_fraction": 0.8052713061209078
+    }
+  ]
+}

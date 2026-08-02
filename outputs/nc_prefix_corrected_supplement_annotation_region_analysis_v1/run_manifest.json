@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "annotation_dir": "outputs/corrected_supplement_annotation_view_v1",
+  "trace_root": "outputs/nc_prefix_dnacorpus_corrected_supplement_w8192_target_traces_position_major/traces",
+  "fused_left_trace_root": null,
+  "fused_right_trace_root": null,
+  "fusion_eta": 0.05,
+  "fusion_initial_left_weight": 0.5,
+  "output_dir": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1",
+  "species": [
+    "HePy",
+    "ScPo",
+    "PlFa",
+    "EnIn"
+  ],
+  "build_only": false,
+  "aggregate_only": false,
+  "window_bases": 8192,
+  "results": {
+    "HePy": {
+      "annotation_index": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1/annotation_interval_index/HePy.npz",
+      "per_species_json": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1/per_species/HePy.json",
+      "elapsed_seconds": 0.15931860101409256,
+      "bases_per_second": 10468645.778859619
+    },
+    "ScPo": {
+      "annotation_index": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1/annotation_interval_index/ScPo.npz",
+      "per_species_json": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1/per_species/ScPo.json",
+      "elapsed_seconds": 1.0196714830235578,
+      "bases_per_second": 12347948.539921176
+    },
+    "PlFa": {
+      "annotation_index": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1/annotation_interval_index/PlFa.npz",
+      "per_species_json": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1/per_species/PlFa.json",
+      "elapsed_seconds": 1.8377348569920287,
+      "bases_per_second": 12693273.956930328
+    },
+    "EnIn": {
+      "annotation_index": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1/annotation_interval_index/EnIn.npz",
+      "per_species_json": "outputs/nc_prefix_corrected_supplement_annotation_region_analysis_v1/per_species/EnIn.json",
+      "elapsed_seconds": 3.228748633991927,
+      "bases_per_second": 12542322.611820037
+    }
+  },
+  "skipped": []
+}

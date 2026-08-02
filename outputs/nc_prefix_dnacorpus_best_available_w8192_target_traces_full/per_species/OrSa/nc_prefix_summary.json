@@ -1,0 +1,11 @@
+{
+  "codec": "nc_prefix",
+  "source_count": 1,
+  "total_bases": 43262523,
+  "total_theoretical_bits_per_base": 1.6020771257899085,
+  "total_arithmetic_bits_per_base": 1.602088347921826,
+  "encode_arithmetic": true,
+  "wall_seconds": 33.57608638900001,
+  "parameters_json": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/OrSa/parameters.json",
+  "per_source_csv": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/OrSa/nc_prefix_per_source.csv"
+}

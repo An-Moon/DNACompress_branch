@@ -52,6 +52,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--backend", dest="nc_prefix_backend", choices=("auto", "fast_cpp"), help=argparse.SUPPRESS)
     parser.add_argument("--nc-prefix-min-windows", type=int, default=DEFAULT_NC_PREFIX_MIN_WINDOWS)
     parser.add_argument("--nc-prefix-hash-bucket-count", type=int, default=0, help="ctx17 hash bucket count. Use 0 for the GECO2 default.")
+    parser.add_argument("--nc-prefix-geco2-level", type=int, default=10)
     parser.add_argument("--arithmetic-frequency-total", type=int)
     parser.add_argument("--arithmetic-target-uniform-mass", type=float, default=0.01)
     parser.add_argument("--skip-arithmetic", action="store_true", help="Only evaluate model probabilities/bpb; do not emit the arithmetic-coded byte stream.")
@@ -127,6 +128,7 @@ def main() -> None:
         backend=str(args.nc_prefix_backend),
         min_windows=int(args.nc_prefix_min_windows),
         hash_bucket_count=int(args.nc_prefix_hash_bucket_count),
+        geco2_level=int(args.nc_prefix_geco2_level),
     )
     parameters = {
         "dataset": args.dataset,
@@ -144,10 +146,12 @@ def main() -> None:
             "backend": str(args.nc_prefix_backend),
             "min_windows": int(args.nc_prefix_min_windows),
             "min_required_bases": int(args.nc_prefix_min_windows) * int(args.nc_prefix_window_bases),
-            "algorithm": "geco2_level10_per_window_weights",
+            "algorithm": "geco2_level_per_window_weights",
+            "geco2_level": int(args.nc_prefix_geco2_level),
             "update_mode": "cache_pipeline",
             "profile_mode": "normal",
             "hash_bucket_count": int(args.nc_prefix_hash_bucket_count),
+            "geco2_level": int(args.nc_prefix_geco2_level),
         },
         "arithmetic_frequency_total": args.arithmetic_frequency_total,
         "arithmetic_target_uniform_mass": float(args.arithmetic_target_uniform_mass),
@@ -211,7 +215,8 @@ def main() -> None:
             "timing_weight_snapshot_seconds": timing.get("weight_snapshot_seconds"),
             "timing_timed_stage_seconds": timing.get("timed_stage_seconds"),
             "timing_untimed_seconds": timing.get("untimed_seconds"),
-            "algorithm": "geco2_level10_per_window_weights",
+            "algorithm": "geco2_level_per_window_weights",
+            "geco2_level": int(args.nc_prefix_geco2_level),
             "cache_pipeline": bool(model_metadata.get("cache_pipeline", False)),
             "pipeline_block_windows": model_metadata.get("pipeline_block_windows"),
             "pipeline_scratch_bytes": model_metadata.get("pipeline_scratch_bytes"),

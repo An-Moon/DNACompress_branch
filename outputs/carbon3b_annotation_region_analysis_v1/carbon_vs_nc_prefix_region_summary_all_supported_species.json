@@ -1,0 +1,562 @@
+{
+  "species_count": 11,
+  "species": [
+    "AeCa",
+    "AgPh",
+    "BuEb",
+    "DaRe",
+    "DrMe",
+    "EsCo",
+    "GaGa",
+    "HaHi",
+    "HoSa",
+    "OrSa",
+    "YeMi"
+  ],
+  "region_class_count": 6,
+  "total_base_count": 486553238,
+  "carbon3b_weighted_bpb": 1.550004904499634,
+  "nc_prefix_weighted_bpb": 1.691904565975681,
+  "carbon_minus_nc_bpb": -0.14189966147604705,
+  "carbon_over_nc_ratio": 0.9161302213318298,
+  "rows": [
+    {
+      "species": "AeCa",
+      "region_class": "cds",
+      "base_count": 1384830,
+      "carbon3b_mean_bpb": 1.582548296043502,
+      "nc_prefix_mean_bpb": 1.9048461130827892,
+      "carbon_minus_nc_bpb": -0.32229781703928717,
+      "carbon_over_nc_ratio": 0.8308011262297285,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "AeCa",
+      "region_class": "intergenic",
+      "base_count": 191785,
+      "carbon3b_mean_bpb": 1.9141242951579143,
+      "nc_prefix_mean_bpb": 1.9649512071191924,
+      "carbon_minus_nc_bpb": -0.05082691196127809,
+      "carbon_over_nc_ratio": 0.974133244745657,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "AeCa",
+      "region_class": "repeat_mobile_existing",
+      "base_count": 4880,
+      "carbon3b_mean_bpb": 1.3887038324590646,
+      "nc_prefix_mean_bpb": 1.7130335381971415,
+      "carbon_minus_nc_bpb": -0.32432970573807696,
+      "carbon_over_nc_ratio": 0.8106693777406055,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "AeCa",
+      "region_class": "rna",
+      "base_count": 9554,
+      "carbon3b_mean_bpb": 1.2515921255943736,
+      "nc_prefix_mean_bpb": 1.7986424681097815,
+      "carbon_minus_nc_bpb": -0.5470503425154079,
+      "carbon_over_nc_ratio": 0.6958537607030314,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "AgPh",
+      "region_class": "cds",
+      "base_count": 39278,
+      "carbon3b_mean_bpb": 1.8184623556621955,
+      "nc_prefix_mean_bpb": 1.9420022188258634,
+      "carbon_minus_nc_bpb": -0.12353986316366794,
+      "carbon_over_nc_ratio": 0.9363853130722166,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "AgPh",
+      "region_class": "intergenic",
+      "base_count": 4692,
+      "carbon3b_mean_bpb": 1.835973603301737,
+      "nc_prefix_mean_bpb": 1.9344527539884808,
+      "carbon_minus_nc_bpb": -0.09847915068674373,
+      "carbon_over_nc_ratio": 0.9490919845503085,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "BuEb",
+      "region_class": "cds",
+      "base_count": 14516,
+      "carbon3b_mean_bpb": 1.9277007204227432,
+      "nc_prefix_mean_bpb": 1.9655774100001506,
+      "carbon_minus_nc_bpb": -0.03787668957740742,
+      "carbon_over_nc_ratio": 0.9807299934438072,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "BuEb",
+      "region_class": "exon_non_cds",
+      "base_count": 3743,
+      "carbon3b_mean_bpb": 1.9345499751058075,
+      "nc_prefix_mean_bpb": 1.9428416582606305,
+      "carbon_minus_nc_bpb": -0.008291683154822982,
+      "carbon_over_nc_ratio": 0.9957321878910882,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "BuEb",
+      "region_class": "intergenic",
+      "base_count": 681,
+      "carbon3b_mean_bpb": 1.890570422311957,
+      "nc_prefix_mean_bpb": 1.9339455109231254,
+      "carbon_minus_nc_bpb": -0.043375088611168344,
+      "carbon_over_nc_ratio": 0.9775717111127582,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DaRe",
+      "region_class": "cds",
+      "base_count": 2371006,
+      "carbon3b_mean_bpb": 1.0439376859549239,
+      "nc_prefix_mean_bpb": 1.7150213379056065,
+      "carbon_minus_nc_bpb": -0.6710836519506826,
+      "carbon_over_nc_ratio": 0.6087024475332687,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DaRe",
+      "region_class": "exon_non_cds",
+      "base_count": 1964189,
+      "carbon3b_mean_bpb": 1.5714324622365898,
+      "nc_prefix_mean_bpb": 1.662967253223114,
+      "carbon_minus_nc_bpb": -0.09153479098652406,
+      "carbon_over_nc_ratio": 0.9449569492068385,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DaRe",
+      "region_class": "intergenic",
+      "base_count": 22651647,
+      "carbon3b_mean_bpb": 1.3378725935735978,
+      "nc_prefix_mean_bpb": 1.4238112434357686,
+      "carbon_minus_nc_bpb": -0.08593864986217081,
+      "carbon_over_nc_ratio": 0.939641823831371,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DaRe",
+      "region_class": "intron",
+      "base_count": 33530241,
+      "carbon3b_mean_bpb": 1.3650656713490912,
+      "nc_prefix_mean_bpb": 1.488492787968746,
+      "carbon_minus_nc_bpb": -0.12342711661965478,
+      "carbon_over_nc_ratio": 0.9170791302334168,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DaRe",
+      "region_class": "rna",
+      "base_count": 2047937,
+      "carbon3b_mean_bpb": 1.4082505476162228,
+      "nc_prefix_mean_bpb": 1.3403520257833328,
+      "carbon_minus_nc_bpb": 0.06789852183289002,
+      "carbon_over_nc_ratio": 1.0506572307325075,
+      "lower_bpb": "nc_prefix"
+    },
+    {
+      "species": "DrMe",
+      "region_class": "cds",
+      "base_count": 5628389,
+      "carbon3b_mean_bpb": 1.1380145941682676,
+      "nc_prefix_mean_bpb": 1.9320830945257623,
+      "carbon_minus_nc_bpb": -0.7940685003574948,
+      "carbon_over_nc_ratio": 0.5890091359903948,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DrMe",
+      "region_class": "exon_non_cds",
+      "base_count": 1920823,
+      "carbon3b_mean_bpb": 1.8372184975982593,
+      "nc_prefix_mean_bpb": 1.8834398602002729,
+      "carbon_minus_nc_bpb": -0.046221362602013594,
+      "carbon_over_nc_ratio": 0.9754590716811639,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DrMe",
+      "region_class": "intergenic",
+      "base_count": 11411662,
+      "carbon3b_mean_bpb": 1.8089317570632684,
+      "nc_prefix_mean_bpb": 1.8177057450574772,
+      "carbon_minus_nc_bpb": -0.00877398799420881,
+      "carbon_over_nc_ratio": 0.9951730427116346,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DrMe",
+      "region_class": "intron",
+      "base_count": 12781456,
+      "carbon3b_mean_bpb": 1.8170553886937957,
+      "nc_prefix_mean_bpb": 1.867926983534699,
+      "carbon_minus_nc_bpb": -0.05087159484090331,
+      "carbon_over_nc_ratio": 0.9727657476500294,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "DrMe",
+      "region_class": "rna",
+      "base_count": 439099,
+      "carbon3b_mean_bpb": 1.7851887564091462,
+      "nc_prefix_mean_bpb": 1.8020573087262877,
+      "carbon_minus_nc_bpb": -0.01686855231714146,
+      "carbon_over_nc_ratio": 0.9906392808733345,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "EsCo",
+      "region_class": "cds",
+      "base_count": 3961156,
+      "carbon3b_mean_bpb": 1.085713286262605,
+      "nc_prefix_mean_bpb": 1.9216436754722346,
+      "carbon_minus_nc_bpb": -0.8359303892096295,
+      "carbon_over_nc_ratio": 0.5649919910338197,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "EsCo",
+      "region_class": "intergenic",
+      "base_count": 495049,
+      "carbon3b_mean_bpb": 1.8352884364431348,
+      "nc_prefix_mean_bpb": 1.9161209277340492,
+      "carbon_minus_nc_bpb": -0.08083249129091441,
+      "carbon_over_nc_ratio": 0.9578145146681819,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "EsCo",
+      "region_class": "intron",
+      "base_count": 84083,
+      "carbon3b_mean_bpb": 1.596917759895421,
+      "nc_prefix_mean_bpb": 1.8841125172440212,
+      "carbon_minus_nc_bpb": -0.2871947573486002,
+      "carbon_over_nc_ratio": 0.8475702726243264,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "EsCo",
+      "region_class": "repeat_mobile_existing",
+      "base_count": 51574,
+      "carbon3b_mean_bpb": 1.3370567032735123,
+      "nc_prefix_mean_bpb": 0.7510492321619178,
+      "carbon_minus_nc_bpb": 0.5860074711115946,
+      "carbon_over_nc_ratio": 1.7802517411871317,
+      "lower_bpb": "nc_prefix"
+    },
+    {
+      "species": "EsCo",
+      "region_class": "rna",
+      "base_count": 49790,
+      "carbon3b_mean_bpb": 0.5408289980570863,
+      "nc_prefix_mean_bpb": 0.8840436993415727,
+      "carbon_minus_nc_bpb": -0.3432147012844864,
+      "carbon_over_nc_ratio": 0.6117672672288604,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "GaGa",
+      "region_class": "cds",
+      "base_count": 2636753,
+      "carbon3b_mean_bpb": 0.8480373034236194,
+      "nc_prefix_mean_bpb": 1.8859948382566294,
+      "carbon_minus_nc_bpb": -1.03795753483301,
+      "carbon_over_nc_ratio": 0.44964985387103484,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "GaGa",
+      "region_class": "exon_non_cds",
+      "base_count": 2973437,
+      "carbon3b_mean_bpb": 1.7347747978354373,
+      "nc_prefix_mean_bpb": 1.8766331829346292,
+      "carbon_minus_nc_bpb": -0.1418583850991919,
+      "carbon_over_nc_ratio": 0.9244080375487352,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "GaGa",
+      "region_class": "intergenic",
+      "base_count": 72256287,
+      "carbon3b_mean_bpb": 1.7573207852692694,
+      "nc_prefix_mean_bpb": 1.8078306527542245,
+      "carbon_minus_nc_bpb": -0.05050986748495512,
+      "carbon_over_nc_ratio": 0.9720605094243736,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "GaGa",
+      "region_class": "intron",
+      "base_count": 64447716,
+      "carbon3b_mean_bpb": 1.7897625294903685,
+      "nc_prefix_mean_bpb": 1.8386689176353126,
+      "carbon_minus_nc_bpb": -0.04890638814494408,
+      "carbon_over_nc_ratio": 0.9734011992720027,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "GaGa",
+      "region_class": "rna",
+      "base_count": 6218101,
+      "carbon3b_mean_bpb": 1.7979362745169858,
+      "nc_prefix_mean_bpb": 1.8466928671478993,
+      "carbon_minus_nc_bpb": -0.048756592630913476,
+      "carbon_over_nc_ratio": 0.9735978876085578,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HaHi",
+      "region_class": "cds",
+      "base_count": 3381272,
+      "carbon3b_mean_bpb": 1.3949173788694018,
+      "nc_prefix_mean_bpb": 1.8454912126468448,
+      "carbon_minus_nc_bpb": -0.450573833777443,
+      "carbon_over_nc_ratio": 0.7558515420232103,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HaHi",
+      "region_class": "intergenic",
+      "base_count": 489616,
+      "carbon3b_mean_bpb": 1.942011145166667,
+      "nc_prefix_mean_bpb": 1.9777431813183015,
+      "carbon_minus_nc_bpb": -0.03573203615163445,
+      "carbon_over_nc_ratio": 0.9819329241080651,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HaHi",
+      "region_class": "intron",
+      "base_count": 4,
+      "carbon3b_mean_bpb": 2.440530059204701,
+      "nc_prefix_mean_bpb": 0.31827242886137597,
+      "carbon_minus_nc_bpb": 2.122257630343325,
+      "carbon_over_nc_ratio": 7.668053648051549,
+      "lower_bpb": "nc_prefix"
+    },
+    {
+      "species": "HaHi",
+      "region_class": "repeat_mobile_existing",
+      "base_count": 812,
+      "carbon3b_mean_bpb": 1.1517268780476642,
+      "nc_prefix_mean_bpb": 1.6149957269329116,
+      "carbon_minus_nc_bpb": -0.46326884888524744,
+      "carbon_over_nc_ratio": 0.7131454646229587,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HaHi",
+      "region_class": "rna",
+      "base_count": 18301,
+      "carbon3b_mean_bpb": 1.008952757932251,
+      "nc_prefix_mean_bpb": 1.2031626413681156,
+      "carbon_minus_nc_bpb": -0.19420988343586454,
+      "carbon_over_nc_ratio": 0.83858384830248,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HoSa",
+      "region_class": "cds",
+      "base_count": 1441170,
+      "carbon3b_mean_bpb": 0.8657970719578523,
+      "nc_prefix_mean_bpb": 1.8834368355949649,
+      "carbon_minus_nc_bpb": -1.0176397636371126,
+      "carbon_over_nc_ratio": 0.45968999628509066,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HoSa",
+      "region_class": "exon_non_cds",
+      "base_count": 3198055,
+      "carbon3b_mean_bpb": 1.526005334556653,
+      "nc_prefix_mean_bpb": 1.7815393406297422,
+      "carbon_minus_nc_bpb": -0.25553400607308907,
+      "carbon_over_nc_ratio": 0.856565611409534,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HoSa",
+      "region_class": "intergenic",
+      "base_count": 90339047,
+      "carbon3b_mean_bpb": 1.3909938351451288,
+      "nc_prefix_mean_bpb": 1.6005661452735167,
+      "carbon_minus_nc_bpb": -0.20957231012838795,
+      "carbon_over_nc_ratio": 0.8690636367967319,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HoSa",
+      "region_class": "intron",
+      "base_count": 61958107,
+      "carbon3b_mean_bpb": 1.4851897797295541,
+      "nc_prefix_mean_bpb": 1.6757658787343825,
+      "carbon_minus_nc_bpb": -0.19057609900482841,
+      "carbon_over_nc_ratio": 0.8862752241090143,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HoSa",
+      "region_class": "repeat_mobile_existing",
+      "base_count": 8779,
+      "carbon3b_mean_bpb": 0.3533003442839372,
+      "nc_prefix_mean_bpb": 0.4603966463856893,
+      "carbon_minus_nc_bpb": -0.10709630210175208,
+      "carbon_over_nc_ratio": 0.7673825321220216,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "HoSa",
+      "region_class": "rna",
+      "base_count": 32807509,
+      "carbon3b_mean_bpb": 1.445506570716832,
+      "nc_prefix_mean_bpb": 1.6588769398556478,
+      "carbon_minus_nc_bpb": -0.2133703691388158,
+      "carbon_over_nc_ratio": 0.8713766138931421,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "OrSa",
+      "region_class": "cds",
+      "base_count": 5361231,
+      "carbon3b_mean_bpb": 1.1523047205571681,
+      "nc_prefix_mean_bpb": 1.859221666372722,
+      "carbon_minus_nc_bpb": -0.7069169458155538,
+      "carbon_over_nc_ratio": 0.619778018618552,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "OrSa",
+      "region_class": "exon_non_cds",
+      "base_count": 2980392,
+      "carbon3b_mean_bpb": 1.7910035078214108,
+      "nc_prefix_mean_bpb": 1.862314885445402,
+      "carbon_minus_nc_bpb": -0.07131137762399109,
+      "carbon_over_nc_ratio": 0.9617082061786045,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "OrSa",
+      "region_class": "intergenic",
+      "base_count": 26201502,
+      "carbon3b_mean_bpb": 1.6028272435585276,
+      "nc_prefix_mean_bpb": 1.454835613642437,
+      "carbon_minus_nc_bpb": 0.1479916299160906,
+      "carbon_over_nc_ratio": 1.1017239532276555,
+      "lower_bpb": "nc_prefix"
+    },
+    {
+      "species": "OrSa",
+      "region_class": "intron",
+      "base_count": 7783657,
+      "carbon3b_mean_bpb": 1.7745472829956415,
+      "nc_prefix_mean_bpb": 1.8029504655491684,
+      "carbon_minus_nc_bpb": -0.028403182553526918,
+      "carbon_over_nc_ratio": 0.9842462768133369,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "OrSa",
+      "region_class": "rna",
+      "base_count": 935741,
+      "carbon3b_mean_bpb": 1.7618957378439035,
+      "nc_prefix_mean_bpb": 1.7519025259708951,
+      "carbon_minus_nc_bpb": 0.00999321187300839,
+      "carbon_over_nc_ratio": 1.0057042054137517,
+      "lower_bpb": "nc_prefix"
+    },
+    {
+      "species": "YeMi",
+      "region_class": "cds",
+      "base_count": 63409,
+      "carbon3b_mean_bpb": 1.7237074794368095,
+      "nc_prefix_mean_bpb": 1.8303191822178602,
+      "carbon_minus_nc_bpb": -0.1066117027810507,
+      "carbon_over_nc_ratio": 0.941752398261015,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "species": "YeMi",
+      "region_class": "intergenic",
+      "base_count": 10280,
+      "carbon3b_mean_bpb": 1.6494481939893366,
+      "nc_prefix_mean_bpb": 1.7322254178562793,
+      "carbon_minus_nc_bpb": -0.08277722386694264,
+      "carbon_over_nc_ratio": 0.9522133649502824,
+      "lower_bpb": "carbon3b"
+    }
+  ],
+  "global_by_class": [
+    {
+      "region_class": "intergenic",
+      "base_count": 224052248,
+      "species_count": 11,
+      "carbon3b_weighted_bpb": 1.5524785324109167,
+      "nc_prefix_weighted_bpb": 1.645403261408835,
+      "carbon_minus_nc_bpb": -0.09292472899791826,
+      "carbon_over_nc_ratio": 0.9435246476183876,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "region_class": "intron",
+      "base_count": 180585264,
+      "species_count": 7,
+      "carbon3b_weighted_bpb": 1.6075951785101747,
+      "nc_prefix_weighted_bpb": 1.7183108219709418,
+      "carbon_minus_nc_bpb": -0.11071564346076701,
+      "carbon_over_nc_ratio": 0.9355671616304123,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "region_class": "exon_non_cds",
+      "base_count": 13040639,
+      "species_count": 6,
+      "carbon3b_weighted_bpb": 1.6869716285204188,
+      "nc_prefix_weighted_bpb": 1.8188793025160066,
+      "carbon_minus_nc_bpb": -0.13190767399558778,
+      "carbon_over_nc_ratio": 0.9274785996997583,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "region_class": "rna",
+      "base_count": 42526032,
+      "species_count": 8,
+      "carbon3b_weighted_bpb": 1.5044227659278409,
+      "nc_prefix_weighted_bpb": 1.6734532823078256,
+      "carbon_minus_nc_bpb": -0.16903051637998479,
+      "carbon_over_nc_ratio": 0.898992987634003,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "region_class": "cds",
+      "base_count": 26283010,
+      "species_count": 11,
+      "carbon3b_weighted_bpb": 1.1398812604099253,
+      "nc_prefix_weighted_bpb": 1.8759878849312224,
+      "carbon_minus_nc_bpb": -0.736106624521297,
+      "carbon_over_nc_ratio": 0.6076165361013063,
+      "lower_bpb": "carbon3b"
+    },
+    {
+      "region_class": "repeat_mobile_existing",
+      "base_count": 66045,
+      "species_count": 4,
+      "carbon3b_weighted_bpb": 1.2078289509345408,
+      "nc_prefix_weighted_bpb": 0.7941163669439063,
+      "carbon_minus_nc_bpb": 0.4137125839906345,
+      "carbon_over_nc_ratio": 1.5209722418677434,
+      "lower_bpb": "nc_prefix"
+    }
+  ],
+  "compare_csv": "outputs/carbon3b_annotation_region_analysis_v1/carbon_vs_nc_prefix_region_summary_all_supported_species.csv",
+  "global_csv": "outputs/carbon3b_annotation_region_analysis_v1/carbon_vs_nc_prefix_region_global_by_class_all_supported_species.csv",
+  "notes": [
+    "Supported species are those with both Carbon/nc_prefix traces and coordinate-verified official annotations.",
+    "repeat_mobile_existing uses only repeat/mobile features present in the official GFF3, not full RepeatMasker/TRF annotation."
+  ]
+}

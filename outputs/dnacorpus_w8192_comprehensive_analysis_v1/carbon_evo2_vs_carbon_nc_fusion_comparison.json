@@ -1,0 +1,183 @@
+{
+  "species_count": 13,
+  "total_bases": 637887345,
+  "excluded_from_this_comparison": [
+    "EnIn",
+    "HePy",
+    "PlFa",
+    "ScPo"
+  ],
+  "weighted_bpb": {
+    "carbon3b": 1.5371997193646425,
+    "evo2_7b": 1.5315769222693785,
+    "nc_prefix": 1.6653269185645014,
+    "carbon_evo2_fused": 1.5071045199259014,
+    "carbon_nc_fused": 1.4979922147771785
+  },
+  "weighted_delta_bpb": {
+    "carbon_evo2_minus_carbon": -0.03009519943874116,
+    "carbon_nc_minus_carbon": -0.03920750458746402,
+    "carbon_evo2_minus_carbon_nc": 0.009112305148722856
+  },
+  "comparison_csv": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon_evo2_vs_carbon_nc_fusion_comparison.csv",
+  "carbon_evo2_fusion_csv": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_position_major_v1/carbon3b_evo2_7b_fusion_summary.csv",
+  "carbon_nc_fusion_csv": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/carbon3b_nc_prefix_fusion_summary_excluding_corrected_supplement_species.csv",
+  "per_species": [
+    {
+      "species": "HoSa",
+      "sample_bases": 189752667,
+      "carbon3b_bpb": 1.4294143541399278,
+      "evo2_7b_bpb": 1.4294703459250915,
+      "nc_prefix_bpb": 1.6403478393029765,
+      "carbon_evo2_fused_bpb": 1.4107960201428398,
+      "carbon_nc_fused_bpb": 1.4209145336153566,
+      "carbon_evo2_minus_carbon_bpb": -0.01861833399708801,
+      "carbon_nc_minus_carbon_bpb": -0.008499820524571211,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.010118513472516799
+    },
+    {
+      "species": "GaGa",
+      "sample_bases": 148532294,
+      "carbon3b_bpb": 1.756504481378786,
+      "evo2_7b_bpb": 1.7449407511602981,
+      "nc_prefix_bpb": 1.8256031150564564,
+      "carbon_evo2_fused_bpb": 1.7381714209512118,
+      "carbon_nc_fused_bpb": 1.736914083233996,
+      "carbon_evo2_minus_carbon_bpb": -0.01833306042757421,
+      "carbon_nc_minus_carbon_bpb": -0.019590398144790022,
+      "carbon_evo2_minus_carbon_nc_bpb": 0.0012573377172158118
+    },
+    {
+      "species": "AnCa",
+      "sample_bases": 142189675,
+      "carbon3b_bpb": 1.4821611031344837,
+      "evo2_7b_bpb": 1.488806267296228,
+      "nc_prefix_bpb": 1.5565593795137986,
+      "carbon_evo2_fused_bpb": 1.456884754255683,
+      "carbon_nc_fused_bpb": 1.4317187628920194,
+      "carbon_evo2_minus_carbon_bpb": -0.025276348878800592,
+      "carbon_nc_minus_carbon_bpb": -0.0504423402424643,
+      "carbon_evo2_minus_carbon_nc_bpb": 0.02516599136366371
+    },
+    {
+      "species": "DaRe",
+      "sample_bases": 62565020,
+      "carbon3b_bpb": 1.3509430659030903,
+      "evo2_7b_bpb": 1.4166784022809091,
+      "nc_prefix_bpb": 1.4742879644182967,
+      "carbon_evo2_fused_bpb": 1.3272501618825034,
+      "carbon_nc_fused_bpb": 1.27203046285409,
+      "carbon_evo2_minus_carbon_bpb": -0.02369290402058688,
+      "carbon_nc_minus_carbon_bpb": -0.07891260304900038,
+      "carbon_evo2_minus_carbon_nc_bpb": 0.055219699028413505
+    },
+    {
+      "species": "OrSa",
+      "sample_bases": 43262523,
+      "carbon3b_bpb": 1.5942965463313044,
+      "evo2_7b_bpb": 1.5329368490755255,
+      "nc_prefix_bpb": 1.6020771257899085,
+      "carbon_evo2_fused_bpb": 1.5198881283135706,
+      "carbon_nc_fused_bpb": 1.4269679512910702,
+      "carbon_evo2_minus_carbon_bpb": -0.07440841801773379,
+      "carbon_nc_minus_carbon_bpb": -0.16732859504023412,
+      "carbon_evo2_minus_carbon_nc_bpb": 0.09292017702250033
+    },
+    {
+      "species": "DrMe",
+      "sample_bases": 32181429,
+      "carbon3b_bpb": 1.696182175764848,
+      "evo2_7b_bpb": 1.672211060049963,
+      "nc_prefix_bpb": 1.8613661170608848,
+      "carbon_evo2_fused_bpb": 1.6617630003634247,
+      "carbon_nc_fused_bpb": 1.6658017474121833,
+      "carbon_evo2_minus_carbon_bpb": -0.03441917540142336,
+      "carbon_nc_minus_carbon_bpb": -0.030380428352664746,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.0040387470487586175
+    },
+    {
+      "species": "WaMe",
+      "sample_bases": 9144432,
+      "carbon3b_bpb": 1.7116795190549097,
+      "evo2_7b_bpb": 1.6727701904859076,
+      "nc_prefix_bpb": 1.9424551740830287,
+      "carbon_evo2_fused_bpb": 1.6637696372876287,
+      "carbon_nc_fused_bpb": 1.7027595030788498,
+      "carbon_evo2_minus_carbon_bpb": -0.04790988176728095,
+      "carbon_nc_minus_carbon_bpb": -0.008920015976059847,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.0389898657912211
+    },
+    {
+      "species": "EsCo",
+      "sample_bases": 4641652,
+      "carbon3b_bpb": 1.1718664556422511,
+      "evo2_7b_bpb": 0.7727940272274678,
+      "nc_prefix_bpb": 1.8962380434785238,
+      "carbon_evo2_fused_bpb": 0.7780985608947338,
+      "carbon_nc_fused_bpb": 1.159249354876312,
+      "carbon_evo2_minus_carbon_bpb": -0.3937678947475173,
+      "carbon_nc_minus_carbon_bpb": -0.012617100765939027,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.38115079398157825
+    },
+    {
+      "species": "HaHi",
+      "sample_bases": 3890005,
+      "carbon3b_bpb": 1.4619119032249914,
+      "evo2_7b_bpb": 1.190829879226062,
+      "nc_prefix_bpb": 1.859065527959325,
+      "carbon_evo2_fused_bpb": 1.1966094379349141,
+      "carbon_nc_fused_bpb": 1.4558033526400471,
+      "carbon_evo2_minus_carbon_bpb": -0.2653024652900773,
+      "carbon_nc_minus_carbon_bpb": -0.006108550584944306,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.259193914705133
+    },
+    {
+      "species": "AeCa",
+      "sample_bases": 1591049,
+      "carbon3b_bpb": 1.6199345655772996,
+      "evo2_7b_bpb": 1.4924601795040147,
+      "nc_prefix_bpb": 1.9108651237227945,
+      "carbon_evo2_fused_bpb": 1.4973575295448014,
+      "carbon_nc_fused_bpb": 1.621414081129632,
+      "carbon_evo2_minus_carbon_bpb": -0.12257703603249825,
+      "carbon_nc_minus_carbon_bpb": 0.0014795155523323889,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.12405655158483064
+    },
+    {
+      "species": "YeMi",
+      "sample_bases": 73689,
+      "carbon3b_bpb": 1.7133479216412415,
+      "evo2_7b_bpb": 1.3912601965374432,
+      "nc_prefix_bpb": 1.8166345907247634,
+      "carbon_evo2_fused_bpb": 1.3957684748500179,
+      "carbon_nc_fused_bpb": 1.7158009621258388,
+      "carbon_evo2_minus_carbon_bpb": -0.31757944679122363,
+      "carbon_nc_minus_carbon_bpb": 0.0024530404845972686,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.3200324872758209
+    },
+    {
+      "species": "AgPh",
+      "sample_bases": 43970,
+      "carbon3b_bpb": 1.8203309654853672,
+      "evo2_7b_bpb": 1.3213613187473006,
+      "nc_prefix_bpb": 1.94119662258643,
+      "carbon_evo2_fused_bpb": 1.3245982259160505,
+      "carbon_nc_fused_bpb": 1.8279946279989825,
+      "carbon_evo2_minus_carbon_bpb": -0.49573273956931674,
+      "carbon_nc_minus_carbon_bpb": 0.007663662513615277,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.503396402082932
+    },
+    {
+      "species": "BuEb",
+      "sample_bases": 18940,
+      "carbon3b_bpb": 1.9277192540692547,
+      "evo2_7b_bpb": 1.91752209118082,
+      "nc_prefix_bpb": 1.959946932435798,
+      "carbon_evo2_fused_bpb": 1.9179957212917198,
+      "carbon_nc_fused_bpb": 1.9284571428467079,
+      "carbon_evo2_minus_carbon_bpb": -0.009723532777534905,
+      "carbon_nc_minus_carbon_bpb": 0.0007378887774531773,
+      "carbon_evo2_minus_carbon_nc_bpb": -0.010461421554988082
+    }
+  ]
+}

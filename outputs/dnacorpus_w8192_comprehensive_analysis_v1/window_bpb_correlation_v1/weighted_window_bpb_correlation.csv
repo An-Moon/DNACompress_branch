@@ -1,0 +1,7 @@
+scope,pair_key,pair_label,model_a,model_b,model_a_label,model_b_label,species_count,total_effective_windows,total_core_base_count,weighted_pearson_z_window_bpb_corr,weighted_pearson_raw_window_bpb_corr
+all17,carbon3b__nc_prefix,Carbon 3B vs nc_prefix,carbon3b,nc_prefix,Carbon 3B,nc_prefix,17,87408,715968925,0.7459695713069662,0.745969571306967
+all17,evo2_7b__nc_prefix,Evo2 7B vs nc_prefix,evo2_7b,nc_prefix,Evo2 7B,nc_prefix,17,87408,715968925,0.7288300071569682,0.7288300071569682
+all17,carbon3b__evo2_7b,Carbon 3B vs Evo2 7B,carbon3b,evo2_7b,Carbon 3B,Evo2 7B,17,87408,715968925,0.9824420038544697,0.9824420038544699
+main13_excluding_corrected_supplement,carbon3b__nc_prefix,Carbon 3B vs nc_prefix,carbon3b,nc_prefix,Carbon 3B,nc_prefix,13,77875,637887345,0.7819986832130447,0.7819986832130453
+main13_excluding_corrected_supplement,evo2_7b__nc_prefix,Evo2 7B vs nc_prefix,evo2_7b,nc_prefix,Evo2 7B,nc_prefix,13,77875,637887345,0.7655917322263428,0.7655917322263429
+main13_excluding_corrected_supplement,carbon3b__evo2_7b,Carbon 3B vs Evo2 7B,carbon3b,evo2_7b,Carbon 3B,Evo2 7B,13,77875,637887345,0.9824067197210758,0.9824067197210761

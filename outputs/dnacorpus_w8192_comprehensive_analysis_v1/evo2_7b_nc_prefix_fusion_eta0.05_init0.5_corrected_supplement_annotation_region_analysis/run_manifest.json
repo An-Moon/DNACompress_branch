@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "annotation_dir": "outputs/corrected_supplement_annotation_view_v1",
+  "trace_root": "/home/Liang_junnan/DNACompress/outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full_position_major/traces",
+  "fused_left_trace_root": "outputs/evo2_7b_corrected_supplement_w8192_full_forward_bs12_target_traces_position_major/traces",
+  "fused_right_trace_root": "outputs/nc_prefix_dnacorpus_corrected_supplement_w8192_target_traces_position_major/traces",
+  "fusion_eta": 0.05,
+  "fusion_initial_left_weight": 0.5,
+  "output_dir": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis",
+  "species": [
+    "HePy",
+    "ScPo",
+    "PlFa",
+    "EnIn"
+  ],
+  "build_only": false,
+  "aggregate_only": false,
+  "window_bases": 8192,
+  "results": {
+    "HePy": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis/annotation_interval_index/HePy.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis/per_species/HePy.json",
+      "elapsed_seconds": 0.7188540269853547,
+      "bases_per_second": 2320151.153627716
+    },
+    "ScPo": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis/annotation_interval_index/ScPo.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis/per_species/ScPo.json",
+      "elapsed_seconds": 5.153308734006714,
+      "bases_per_second": 2443255.711988087
+    },
+    "PlFa": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis/annotation_interval_index/PlFa.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis/per_species/PlFa.json",
+      "elapsed_seconds": 8.391848794010002,
+      "bases_per_second": 2779705.9471150665
+    },
+    "EnIn": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis/annotation_interval_index/EnIn.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_nc_prefix_fusion_eta0.05_init0.5_corrected_supplement_annotation_region_analysis/per_species/EnIn.json",
+      "elapsed_seconds": 14.496884502994362,
+      "bases_per_second": 2793428.270166287
+    }
+  },
+  "skipped": []
+}

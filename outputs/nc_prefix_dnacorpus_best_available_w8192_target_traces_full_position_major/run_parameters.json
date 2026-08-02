@@ -1,0 +1,22 @@
+{
+  "dataset_dir": "datasets/DNACorpus",
+  "output_dir": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full",
+  "source": null,
+  "nc_prefix_window_bases": 8192,
+  "nc_prefix_backend": "auto",
+  "nc_prefix_min_windows": 1,
+  "nc_prefix_hash_bucket_count": 0,
+  "nc_prefix_preset": "fixed",
+  "nc_prefix_geco2_level": 10,
+  "token_merge_size": 1,
+  "trace_dtype": "float32",
+  "shard_rows": 1000000,
+  "position_major_output_dir": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full_position_major",
+  "store_position_major_emit_position": false,
+  "arithmetic_frequency_total": null,
+  "arithmetic_target_uniform_mass": 0.01,
+  "skip_arithmetic": false,
+  "skip_existing": true,
+  "depth_major_output_dir": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full",
+  "analysis_trace_order": "position_major_v1"
+}

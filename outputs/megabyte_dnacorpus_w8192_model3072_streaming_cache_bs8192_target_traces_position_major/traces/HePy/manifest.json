@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "trace_kind": "target_probability",
+  "model_family": "megabyte",
+  "model_id": "outputs/dna_megabyte_large_opengenome2_11/best.pt",
+  "alphabet": "ACGT",
+  "unit_size": 1,
+  "source_sha256": "698d9feb3d7bd9e08d37accbefa7e693095fe8a98c3bc744916745b2869e7827",
+  "normalized_sequence_sha256": "698d9feb3d7bd9e08d37accbefa7e693095fe8a98c3bc744916745b2869e7827",
+  "core_base_count": 1667825,
+  "tail_base_count": 0,
+  "tail_sequence_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "target_symbols_sha256": "a796e12de76dd4c6db8c7ac606a65af0e2ce27955a9be31c68fa18ea91c972c3",
+  "emit_order_sha256": "4733f69e8200eb42c3903b649657ab007872b62b1afd5d69086c289c25b6a938",
+  "row_count": 1667825,
+  "dtype": "float32",
+  "shard_rows": 1000000,
+  "window_bases": 8192,
+  "token_merge_size": 1,
+  "emission_order": "position_major_v1",
+  "producer_config": {
+    "source_file": "datasets/DNACorpus/HePy",
+    "source_format": "raw",
+    "max_bases": null,
+    "model": "megabyte",
+    "run_dir": "outputs/dna_megabyte_large_opengenome2_11",
+    "checkpoint": "outputs/dna_megabyte_large_opengenome2_11/best.pt",
+    "checkpoint_metadata": {
+      "step": 7447500,
+      "best_val_bpb": 1.6386809738709998,
+      "epoch": 2,
+      "data_state": {
+        "schema_version": 1,
+        "train": {
+          "dataset_kind": "indexed_source_batch_stream",
+          "completed_global_steps": 7447500,
+          "batches_per_epoch": 6951890,
+          "current_epoch_index": 1,
+          "current_epoch": 2,
+          "current_batch_index_in_epoch": 495609,
+          "next_epoch_index": 1,
+          "next_epoch": 2,
+          "next_batch_index_in_epoch": 495610
+        }
+      }
+    },
+    "device": "cuda:0",
+    "dtype": "bfloat16",
+    "model_seconds": 9.820709657040425,
+    "factorize_seconds": 0.5325153168232646,
+    "probability_transfer_seconds": 0.19497623073402792,
+    "trace_generation_seconds": 12.493643606983824,
+    "batch_size": 8192,
+    "batch_count": 1,
+    "window_count": 543,
+    "tokens_per_window": 1024,
+    "model_window_tokens": 1024,
+    "model_window_bases": 3072,
+    "trace_window_bases": 8192,
+    "trace_token_merge_size": 1,
+    "model_token_merge_size": 3,
+    "includes_partial_final_model_token": true,
+    "lm_backend": "megabyte",
+    "lm_seq_length": 1024,
+    "lm_token_merge_size": 3,
+    "lm_token_alphabet": "ACGTN",
+    "model_uses_ascii_tokens": false,
+    "trace_order_conversion": {
+      "source_trace_dir": "outputs/megabyte_dnacorpus_w8192_model3072_streaming_cache_bs8192_target_traces/traces/HePy",
+      "source_emission_order": "fused_depth_major_v1",
+      "output_emission_order": "position_major_v1",
+      "store_emit_position": false
+    }
+  },
+  "shard_files": [
+    "shards/shard_000000.npz",
+    "shards/shard_000001.npz"
+  ],
+  "checksum_sha256": "68fdd528ef61ee6af0850468fadc0adaa9cb37a1ce0e2739f276125212239cbe"
+}

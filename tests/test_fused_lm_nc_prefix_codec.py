@@ -7,6 +7,8 @@ import torch
 
 from dna_compress.config import ExperimentConfig
 from dna_compress.fused_lm_nc_prefix_codec import (
+    CarbonStreamingBatch,
+    _carbon_conditional_log_probs_to_base_steps,
     _regular_log_probs_to_base_steps,
     compress_fused_lm_nc_prefix_payload,
 )
@@ -128,6 +130,86 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
         for actual, expected in zip(fast, generic):
             torch.testing.assert_close(actual, expected, atol=1e-6, rtol=1e-6)
 
+    def test_carbon_conditional_factorization_matches_kmer_joint(self) -> None:
+        class FakeCarbonTokenizer:
+            k = 6
+            dna_token_to_id = {}
+
+        bases = "ATCG"
+        token_id = 0
+        for a in bases:
+            for b in bases:
+                for c in bases:
+                    for d in bases:
+                        for e in bases:
+                            for f in bases:
+                                FakeCarbonTokenizer.dna_token_to_id[a + b + c + d + e + f] = token_id
+                                token_id += 1
+
+        torch.manual_seed(458)
+        logits = torch.randn(4, token_id)
+        target_base_symbols = torch.randint(0, 4, (4, 6), dtype=torch.long)
+        output_alphabet = "ACGT"
+        target_tokens = [
+            "".join(output_alphabet[int(symbol)] for symbol in row)
+            for row in target_base_symbols.tolist()
+        ]
+        target_ids = torch.tensor(
+            [FakeCarbonTokenizer.dna_token_to_id[token] for token in target_tokens],
+            dtype=torch.long,
+        )
+
+        steps = _carbon_conditional_log_probs_to_base_steps(
+            logits,
+            target_base_symbols,
+            tokenizer=FakeCarbonTokenizer(),
+            token_merge_size=6,
+            output_alphabet="ACGT",
+        )
+        regular = torch.log_softmax(logits.float(), dim=1).exp()
+        expected = regular[torch.arange(4), target_ids]
+        actual = torch.ones_like(expected)
+        rows = torch.arange(4)
+        for index, step in enumerate(steps):
+            actual = actual * step[rows, target_base_symbols[:, index]]
+
+        torch.testing.assert_close(actual, expected, atol=1e-6, rtol=1e-6)
+
+    def test_carbon_streaming_batch_starts_with_dna_and_advances_on_accept(self) -> None:
+        class Output:
+            def __init__(self, logits: torch.Tensor, past_key_values: object) -> None:
+                self.logits = logits
+                self.past_key_values = past_key_values
+
+        class FakeCarbonModel(torch.nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+                self.calls: list[torch.Tensor] = []
+
+            def forward(self, input_ids, past_key_values=None, use_cache=True, return_dict=True):
+                del use_cache, return_dict
+                self.calls.append(input_ids.detach().cpu().clone())
+                logits = torch.zeros((input_ids.shape[0], input_ids.shape[1], 16), dtype=torch.float32)
+                rows = torch.arange(input_ids.shape[0])
+                logits[rows, -1, input_ids[:, -1] % 16] = 10.0
+                return Output(logits, object() if past_key_values is None else past_key_values)
+
+        model = FakeCarbonModel()
+        batch = CarbonStreamingBatch(
+            model=model,
+            batch_size=2,
+            begin_token_id=5,
+            device=torch.device("cpu"),
+            dtype_name="float32",
+        )
+        self.assertEqual(model.calls[0].tolist(), [[5], [5]])
+        first = batch.next_logits()
+        self.assertTrue(torch.all(first.argmax(dim=1).eq(5)))
+        batch.accept_symbols(torch.tensor([7, 9], dtype=torch.long))
+        self.assertEqual(model.calls[1].tolist(), [[7], [9]])
+        second = batch.next_logits()
+        self.assertEqual(second.argmax(dim=1).tolist(), [7, 9])
+
     def test_fused_skip_arithmetic_matches_arithmetic_theoretical_bits(self) -> None:
         torch.manual_seed(321)
         config = self._small_megabyte_config(token_merge_size=2)
@@ -140,7 +222,7 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
             payload=payload,
             device=torch.device("cpu"),
             dtype_name="float32",
-            batch_size="auto",
+            batch_size=4,
             nc_prefix_window_bases=16,
             nc_prefix_min_windows=1,
             nc_prefix_hash_bucket_count=1024,
@@ -218,6 +300,28 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
             places=12,
         )
 
+    def test_native_token_step_supports_carbon_merge_size_six(self) -> None:
+        encoder = FusedNcPrefixStreamingEncoder(
+            window_count=2,
+            window_bases=12,
+            hash_bucket_count=1024,
+            arithmetic_frequency_total=65536,
+            fusion_eta=0.05,
+            initial_lm_weight=0.5,
+            encode_arithmetic=True,
+            collect_diagnostics=True,
+        )
+        lm_probs = torch.full((2, 6, 4), 0.25, dtype=torch.float32)
+        targets = torch.tensor(
+            [[0, 1, 2, 3, 0, 1], [3, 2, 1, 0, 3, 2]],
+            dtype=torch.int16,
+        )
+        result = encoder.encode_token_step(lm_probs, targets)
+        finished = encoder.finish()
+        self.assertEqual(result["token_merge_size"], 6)
+        self.assertEqual(result["emitted_count"], 12)
+        self.assertEqual(finished["base_count"], 12)
+
     def test_nc_only_diagnostic_matches_standalone_nc_prefix(self) -> None:
         torch.manual_seed(777)
         config = self._small_megabyte_config(token_merge_size=2)
@@ -229,10 +333,11 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
             payload=sequence.encode("ascii"),
             device=torch.device("cpu"),
             dtype_name="float32",
-            batch_size="auto",
+            batch_size=4,
             nc_prefix_window_bases=16,
             nc_prefix_min_windows=1,
             nc_prefix_hash_bucket_count=1024,
+            nc_prefix_geco2_level=5,
             encode_arithmetic=False,
         )
         standalone = compute_noncontiguous_prefix_probabilities(
@@ -242,6 +347,7 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
                 alphabet="ACGT",
                 min_windows=1,
                 hash_bucket_count=1024,
+                geco2_level=5,
             ),
             return_probabilities=True,
         )
@@ -275,9 +381,13 @@ class FusedLmNcPrefixCodecTests(unittest.TestCase):
         self.assertTrue(streaming["decoder_realistic"])
         self.assertFalse(streaming["encoder_overlap_enabled"])
         self.assertEqual(streaming["nc_prefix_backend"], "streaming_token_native")
-        self.assertEqual(streaming["nc_prefix_metadata"]["pipeline_mode"], "streaming_token")
+        self.assertEqual(
+            streaming["nc_prefix_metadata"]["batch_scope"],
+            "per_window_batch_independent_nc_prefix_state",
+        )
+        self.assertEqual(streaming["nc_prefix_metadata"]["batch_count"], 4)
         self.assertEqual(streaming["core_base_count"], 64)
-        self.assertGreater(streaming["nc_prefix_metadata"]["native_token_steps"], 0)
+        self.assertGreater(streaming["nc_prefix_metadata"]["chunk_summaries"][0]["streaming_async_jobs"], 0)
 
     def test_streaming_token_supports_merge_sizes_one_two_three(self) -> None:
         for merge_size in (1, 2, 3):

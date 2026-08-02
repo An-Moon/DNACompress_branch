@@ -28,7 +28,7 @@ def load_fast_nc_prefix_extension():
         from torch.utils.cpp_extension import load
 
         _EXTENSION = load(
-            name="dna_compress_fast_nc_prefix_fused_streaming_token_v1",
+            name="dna_compress_fast_nc_prefix_nc_geco2_levels_v3",
             sources=[str(_extension_source_path())],
             extra_cflags=["-O3", "-march=native", "-ffast-math", "-funroll-loops"],
             with_cuda=False,
@@ -55,9 +55,15 @@ def compute_fast_nc_prefix(
     return_probabilities: bool,
     summary_only: bool = False,
     hash_bucket_count: int = 0,
+    geco2_level: int = 10,
+    stream_arithmetic_total: int = 0,
 ) -> dict[str, Any]:
     if int(hash_bucket_count) < 0:
         raise ValueError("hash_bucket_count must be non-negative; use 0 for GECO2 default")
+    if int(geco2_level) < 1 or int(geco2_level) > 12:
+        raise ValueError("geco2_level must be in [1, 12]")
+    if int(stream_arithmetic_total) < 0:
+        raise ValueError("stream_arithmetic_total must be non-negative")
     extension = load_fast_nc_prefix_extension()
     symbol_tensor = torch.from_numpy(np.ascontiguousarray(symbols, dtype=np.int16))
     if hasattr(extension, "compute_nc_prefix_current"):
@@ -68,6 +74,8 @@ def compute_fast_nc_prefix(
             bool(return_probabilities),
             bool(summary_only),
             int(hash_bucket_count),
+            int(geco2_level),
+            int(stream_arithmetic_total),
         )
 
     order_tensor = torch.empty((0,), dtype=torch.int64)
@@ -83,7 +91,7 @@ def compute_fast_nc_prefix(
         bool(return_probabilities),
         bool(summary_only),
         2,
-        10,
+        int(geco2_level),
         False,
         False,
         0,
@@ -102,6 +110,7 @@ class FusedNcPrefixStreamingEncoder:
         window_count: int,
         window_bases: int,
         hash_bucket_count: int,
+        geco2_level: int = 10,
         arithmetic_frequency_total: int,
         fusion_eta: float,
         initial_lm_weight: float,
@@ -113,6 +122,7 @@ class FusedNcPrefixStreamingEncoder:
             int(window_count),
             int(window_bases),
             int(hash_bucket_count),
+            int(geco2_level),
             int(arithmetic_frequency_total),
             float(fusion_eta),
             float(initial_lm_weight),
@@ -137,6 +147,21 @@ class FusedNcPrefixStreamingEncoder:
         if lm_probabilities.device.type != "cpu" or target_symbols.device.type != "cpu":
             raise ValueError("streaming fused encoder expects CPU tensors")
         return dict(self._encoder.encode_token_step(lm_probabilities.contiguous(), target_symbols.contiguous()))
+
+    def encode_token_step_collect_targets(self, lm_probabilities, target_symbols) -> dict[str, Any]:
+        if not isinstance(lm_probabilities, torch.Tensor):
+            lm_probabilities = torch.as_tensor(lm_probabilities)
+        if not isinstance(target_symbols, torch.Tensor):
+            target_symbols = torch.as_tensor(target_symbols)
+        if lm_probabilities.device.type != "cpu" or target_symbols.device.type != "cpu":
+            raise ValueError("streaming fused encoder expects CPU tensors")
+        return dict(
+            self._encoder.encode_token_step(
+                lm_probabilities.contiguous(),
+                target_symbols.contiguous(),
+                True,
+            )
+        )
 
     def finish(self) -> dict[str, Any]:
         return dict(self._encoder.finish())

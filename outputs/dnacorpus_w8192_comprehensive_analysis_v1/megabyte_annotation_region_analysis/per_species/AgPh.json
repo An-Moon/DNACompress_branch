@@ -1,0 +1,380 @@
+{
+  "species": "AgPh",
+  "schema_version": 1,
+  "trace_dir": "outputs/megabyte_dnacorpus_w8192_model3072_streaming_cache_bs8192_target_traces_position_major/traces/AgPh",
+  "trace_manifest": {
+    "schema_version": 1,
+    "trace_kind": "target_probability",
+    "model_family": "megabyte",
+    "model_id": "outputs/dna_megabyte_large_opengenome2_11/best.pt",
+    "alphabet": "ACGT",
+    "unit_size": 1,
+    "source_sha256": "e0d46111e565dd90f0bd35a7543f81119bd2f713cda6cae91c5fde956ab79e56",
+    "normalized_sequence_sha256": "e0d46111e565dd90f0bd35a7543f81119bd2f713cda6cae91c5fde956ab79e56",
+    "core_base_count": 43970,
+    "tail_base_count": 0,
+    "tail_sequence_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target_symbols_sha256": "f64944f8fe2a177d84258a83ab869074c597505ae4d40ae64fd72d583507dfba",
+    "emit_order_sha256": "6bbddc297494b1ccc6bef4fc0aba083d508d254fef0efe9ad01985640aefb924",
+    "row_count": 43970,
+    "dtype": "float32",
+    "shard_rows": 1000000,
+    "window_bases": 8192,
+    "token_merge_size": 1,
+    "emission_order": "position_major_v1",
+    "producer_config": {
+      "source_file": "datasets/DNACorpus/AgPh",
+      "source_format": "raw",
+      "max_bases": null,
+      "model": "megabyte",
+      "run_dir": "outputs/dna_megabyte_large_opengenome2_11",
+      "checkpoint": "outputs/dna_megabyte_large_opengenome2_11/best.pt",
+      "checkpoint_metadata": {
+        "step": 7447500,
+        "best_val_bpb": 1.6386809738709998,
+        "epoch": 2,
+        "data_state": {
+          "schema_version": 1,
+          "train": {
+            "dataset_kind": "indexed_source_batch_stream",
+            "completed_global_steps": 7447500,
+            "batches_per_epoch": 6951890,
+            "current_epoch_index": 1,
+            "current_epoch": 2,
+            "current_batch_index_in_epoch": 495609,
+            "next_epoch_index": 1,
+            "next_epoch": 2,
+            "next_batch_index_in_epoch": 495610
+          }
+        }
+      },
+      "device": "cuda:0",
+      "dtype": "bfloat16",
+      "model_seconds": 9.115726362593705,
+      "factorize_seconds": 0.48488569803885184,
+      "probability_transfer_seconds": 0.17870621453039348,
+      "trace_generation_seconds": 10.249899625981925,
+      "batch_size": 8192,
+      "batch_count": 1,
+      "window_count": 15,
+      "tokens_per_window": 1024,
+      "model_window_tokens": 1024,
+      "model_window_bases": 3072,
+      "trace_window_bases": 8192,
+      "trace_token_merge_size": 1,
+      "model_token_merge_size": 3,
+      "includes_partial_final_model_token": true,
+      "lm_backend": "megabyte",
+      "lm_seq_length": 1024,
+      "lm_token_merge_size": 3,
+      "lm_token_alphabet": "ACGTN",
+      "model_uses_ascii_tokens": false,
+      "trace_order_conversion": {
+        "source_trace_dir": "outputs/megabyte_dnacorpus_w8192_model3072_streaming_cache_bs8192_target_traces/traces/AgPh",
+        "source_emission_order": "fused_depth_major_v1",
+        "output_emission_order": "position_major_v1",
+        "store_emit_position": false
+      }
+    },
+    "shard_files": [
+      "shards/shard_000000.npz"
+    ],
+    "checksum_sha256": "0c4fd12771f0364654d2dca1394db696cc6c67b9953d5e1155c827dd58fa01ff"
+  },
+  "annotation_index_manifest": {
+    "schema_version": 1,
+    "species": "AgPh",
+    "sequence_length": 43970,
+    "region_classes": [
+      "intergenic",
+      "cds",
+      "rna",
+      "exon_non_cds",
+      "intron",
+      "gene_other",
+      "repeat_mobile_existing"
+    ],
+    "exclusive_priority_low_to_high": [
+      "intergenic",
+      "gene_other",
+      "intron",
+      "exon_non_cds",
+      "rna",
+      "cds",
+      "repeat_mobile_existing"
+    ],
+    "mapping_status": "exact_raw_match",
+    "annotation_dir": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official",
+    "gff3_path": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official/AgPh/AgPh_NC_013597.1.gff3",
+    "gff3_sha256": "fecb8e05a29e2c33d11b469ac4eec90a3b27852d2ae1ec7641e75ab29388b5e2",
+    "feature_table_path": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/megabyte_annotation_region_analysis/annotation_interval_index/AgPh.features.tsv.gz",
+    "source_fasta_path": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official/AgPh/AgPh_NC_013597.1.fna",
+    "local_source_file": "/home/Liang_junnan/DNACompress/datasets/DNACorpus/AgPh",
+    "trace_dir": "outputs/megabyte_dnacorpus_w8192_model3072_streaming_cache_bs8192_target_traces_position_major/traces/AgPh",
+    "trace_manifest": {
+      "schema_version": 1,
+      "trace_kind": "target_probability",
+      "model_family": "megabyte",
+      "model_id": "outputs/dna_megabyte_large_opengenome2_11/best.pt",
+      "alphabet": "ACGT",
+      "unit_size": 1,
+      "source_sha256": "e0d46111e565dd90f0bd35a7543f81119bd2f713cda6cae91c5fde956ab79e56",
+      "normalized_sequence_sha256": "e0d46111e565dd90f0bd35a7543f81119bd2f713cda6cae91c5fde956ab79e56",
+      "core_base_count": 43970,
+      "tail_base_count": 0,
+      "tail_sequence_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_symbols_sha256": "f64944f8fe2a177d84258a83ab869074c597505ae4d40ae64fd72d583507dfba",
+      "emit_order_sha256": "6bbddc297494b1ccc6bef4fc0aba083d508d254fef0efe9ad01985640aefb924",
+      "row_count": 43970,
+      "dtype": "float32",
+      "shard_rows": 1000000,
+      "window_bases": 8192,
+      "token_merge_size": 1,
+      "emission_order": "position_major_v1",
+      "producer_config": {
+        "source_file": "datasets/DNACorpus/AgPh",
+        "source_format": "raw",
+        "max_bases": null,
+        "model": "megabyte",
+        "run_dir": "outputs/dna_megabyte_large_opengenome2_11",
+        "checkpoint": "outputs/dna_megabyte_large_opengenome2_11/best.pt",
+        "checkpoint_metadata": {
+          "step": 7447500,
+          "best_val_bpb": 1.6386809738709998,
+          "epoch": 2,
+          "data_state": {
+            "schema_version": 1,
+            "train": {
+              "dataset_kind": "indexed_source_batch_stream",
+              "completed_global_steps": 7447500,
+              "batches_per_epoch": 6951890,
+              "current_epoch_index": 1,
+              "current_epoch": 2,
+              "current_batch_index_in_epoch": 495609,
+              "next_epoch_index": 1,
+              "next_epoch": 2,
+              "next_batch_index_in_epoch": 495610
+            }
+          }
+        },
+        "device": "cuda:0",
+        "dtype": "bfloat16",
+        "model_seconds": 9.115726362593705,
+        "factorize_seconds": 0.48488569803885184,
+        "probability_transfer_seconds": 0.17870621453039348,
+        "trace_generation_seconds": 10.249899625981925,
+        "batch_size": 8192,
+        "batch_count": 1,
+        "window_count": 15,
+        "tokens_per_window": 1024,
+        "model_window_tokens": 1024,
+        "model_window_bases": 3072,
+        "trace_window_bases": 8192,
+        "trace_token_merge_size": 1,
+        "model_token_merge_size": 3,
+        "includes_partial_final_model_token": true,
+        "lm_backend": "megabyte",
+        "lm_seq_length": 1024,
+        "lm_token_merge_size": 3,
+        "lm_token_alphabet": "ACGTN",
+        "model_uses_ascii_tokens": false,
+        "trace_order_conversion": {
+          "source_trace_dir": "outputs/megabyte_dnacorpus_w8192_model3072_streaming_cache_bs8192_target_traces/traces/AgPh",
+          "source_emission_order": "fused_depth_major_v1",
+          "output_emission_order": "position_major_v1",
+          "store_emit_position": false
+        }
+      },
+      "shard_files": [
+        "shards/shard_000000.npz"
+      ],
+      "checksum_sha256": "0c4fd12771f0364654d2dca1394db696cc6c67b9953d5e1155c827dd58fa01ff"
+    },
+    "coordinate_record_count": 1,
+    "feature_type_counts": {
+      "region": 1,
+      "gene": 66,
+      "CDS": 66
+    },
+    "mapped_feature_type_counts": {
+      "gene": 66,
+      "CDS": 66
+    },
+    "mapped_feature_rows": 132,
+    "skipped_unmapped_seqid": 0,
+    "skipped_unclassified": 1,
+    "clipped_or_split_features": 0,
+    "raw_class_base_counts": {
+      "cds": 39278,
+      "rna": 0,
+      "exon_non_cds": 0,
+      "intron": 0,
+      "gene_other": 39278,
+      "repeat_mobile_existing": 0
+    },
+    "exclusive_class_base_counts": {
+      "intergenic": 4692,
+      "cds": 39278,
+      "rna": 0,
+      "exon_non_cds": 0,
+      "intron": 0,
+      "gene_other": 0,
+      "repeat_mobile_existing": 0
+    },
+    "exclusive_interval_counts": {
+      "intergenic": 44,
+      "cds": 43,
+      "rna": 0,
+      "exon_non_cds": 0,
+      "intron": 0,
+      "gene_other": 0,
+      "repeat_mobile_existing": 0
+    },
+    "repeat_mobile_existing_note": "Uses only repeat/mobile-like features already present in the official GFF3; this is not a complete RepeatMasker/TRF repeat landscape."
+  },
+  "rows_seen": 43970,
+  "shard_count": 1,
+  "elapsed_seconds": 0.0044295160041656345,
+  "bases_per_second": 9926592.421982322,
+  "region_rows": [
+    {
+      "species": "AgPh",
+      "region_class": "intergenic",
+      "base_count": 4692,
+      "interval_count": 44,
+      "coverage_fraction": 0.10670911985444621,
+      "sum_bits": 8670.382040071336,
+      "mean_bpb": 1.8479075106716403,
+      "min_bpb": 0.0029713924210301,
+      "max_bpb": 8.150524647574313
+    },
+    {
+      "species": "AgPh",
+      "region_class": "cds",
+      "base_count": 39278,
+      "interval_count": 43,
+      "coverage_fraction": 0.8932908801455538,
+      "sum_bits": 70883.11475150607,
+      "mean_bpb": 1.8046518343985456,
+      "min_bpb": 0.000721647677269311,
+      "max_bpb": 8.22419473528949
+    },
+    {
+      "species": "AgPh",
+      "region_class": "rna",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    },
+    {
+      "species": "AgPh",
+      "region_class": "exon_non_cds",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    },
+    {
+      "species": "AgPh",
+      "region_class": "intron",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    },
+    {
+      "species": "AgPh",
+      "region_class": "gene_other",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    },
+    {
+      "species": "AgPh",
+      "region_class": "repeat_mobile_existing",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    }
+  ],
+  "window_rows": [
+    {
+      "species": "AgPh",
+      "window_id": 0,
+      "start": 0,
+      "end": 8192,
+      "base_count": 8192,
+      "mean_bpb": 1.8583518949910292,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.9447021484375
+    },
+    {
+      "species": "AgPh",
+      "window_id": 1,
+      "start": 8192,
+      "end": 16384,
+      "base_count": 8192,
+      "mean_bpb": 1.784661773475684,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.9638671875
+    },
+    {
+      "species": "AgPh",
+      "window_id": 2,
+      "start": 16384,
+      "end": 24576,
+      "base_count": 8192,
+      "mean_bpb": 1.7423383987457548,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.9652099609375
+    },
+    {
+      "species": "AgPh",
+      "window_id": 3,
+      "start": 24576,
+      "end": 32768,
+      "base_count": 8192,
+      "mean_bpb": 1.8219836528625628,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.90576171875
+    },
+    {
+      "species": "AgPh",
+      "window_id": 4,
+      "start": 32768,
+      "end": 40960,
+      "base_count": 8192,
+      "mean_bpb": 1.8536579584411057,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.6986083984375
+    },
+    {
+      "species": "AgPh",
+      "window_id": 5,
+      "start": 40960,
+      "end": 43970,
+      "base_count": 3010,
+      "mean_bpb": 1.769380922649034,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.8614617940199335
+    }
+  ]
+}

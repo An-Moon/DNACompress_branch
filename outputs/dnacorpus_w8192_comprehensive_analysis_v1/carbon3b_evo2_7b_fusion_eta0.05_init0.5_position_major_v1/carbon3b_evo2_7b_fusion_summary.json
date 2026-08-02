@@ -1,0 +1,34 @@
+{
+  "fusion_name": "carbon3b_evo2_7b_online_hedge",
+  "fusion_eta": 0.05,
+  "fusion_initial_lm_weight": 0.5,
+  "species_count": 13,
+  "species": [
+    "HoSa",
+    "GaGa",
+    "AnCa",
+    "DaRe",
+    "OrSa",
+    "DrMe",
+    "WaMe",
+    "EsCo",
+    "HaHi",
+    "AeCa",
+    "YeMi",
+    "AgPh",
+    "BuEb"
+  ],
+  "excluded_from_this_summary": [
+    "EnIn",
+    "HePy",
+    "PlFa",
+    "ScPo"
+  ],
+  "total_bases": 637887345,
+  "weighted_carbon3b_only_theoretical_bpb": 1.5371997193646425,
+  "weighted_evo2_7b_only_theoretical_bpb": 1.5315769222693785,
+  "weighted_fused_theoretical_bpb": 1.5071045199259014,
+  "weighted_core_fused_theoretical_bpb": 1.5071045199259014,
+  "summary_csv": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_position_major_v1/carbon3b_evo2_7b_fusion_summary.csv",
+  "elapsed_seconds": 226.7693751580082
+}

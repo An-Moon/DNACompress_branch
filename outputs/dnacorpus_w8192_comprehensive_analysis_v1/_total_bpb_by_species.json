@@ -1,0 +1,26 @@
+{
+  "plot_path": "/home/Liang_junnan/DNACompress/outputs/dnacorpus_w8192_comprehensive_analysis_v1/_total_bpb_by_species.png",
+  "series_order": [
+    "nc_prefix",
+    "carbon3b",
+    "carbon_nc_fused",
+    "evo2_7b",
+    "evo2_nc_fused"
+  ],
+  "species_count": 17,
+  "total_bases": 715968925,
+  "weighted_bpb": {
+    "nc_prefix": 1.6490868720854017,
+    "carbon3b": 1.5448218081703582,
+    "carbon_nc_fused": 1.4861760828923236,
+    "evo2_7b": 1.5364263353603804,
+    "evo2_nc_fused": 1.4777323185874667
+  },
+  "species_group_separator": {
+    "between": [
+      "PlFa",
+      "EsCo"
+    ],
+    "label": "eukaryotes_to_prokaryotes_and_viral"
+  }
+}

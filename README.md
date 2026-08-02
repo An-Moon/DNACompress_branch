@@ -150,7 +150,8 @@ python scripts/run_dna_compression.py \
 | 模型 / 工具 | 本地路径 | 下载或来源 |
 |---|---|---|
 | 自训练 MEGABYTE | `outputs/dna_megabyte_large_opengenome2_9/best.pt`, `outputs/dna_megabyte_large_opengenome2_9/last.pt` | 本仓库训练输出；实现参考 `https://github.com/shjwudp/megabyte` |
-| Carbon-500M FNS | `third_party/Carbon-500M-fns/` | `HF_ENDPOINT=https://hf-mirror.com huggingface-cli download HuggingFaceBio/Carbon-500M --revision fns --local-dir third_party/Carbon-500M-fns --local-dir-use-symlinks False`; 源 `https://huggingface.co/HuggingFaceBio/Carbon-500M/tree/fns` |
+| Carbon-500M FNS | `third_party/Carbon-500M-fns/` | `env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY HF_ENDPOINT=https://hf-mirror.com hf download HuggingFaceBio/Carbon-500M --revision fns --local-dir third_party/Carbon-500M-fns`; 源 `https://huggingface.co/HuggingFaceBio/Carbon-500M/tree/fns` |
+| Carbon-3B | `third_party/Carbon-3B/` | `env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY HF_ENDPOINT=https://hf-mirror.com hf download HuggingFaceBio/Carbon-3B --local-dir third_party/Carbon-3B`; fused 管线可用 `--lm-backend carbon --carbon-preset 3b` |
 | Evo2 1B base | `third_party/evo2_1b_base/evo2_1b_base.pt` | `https://huggingface.co/arcinstitute/evo2_1b_base` |
 | Evo2 7B base | `third_party/evo2_7b_base/evo2_7b_base.pt` | `https://huggingface.co/arcinstitute/evo2_7b_base` |
 | megaDNA | `third_party/megaDNA/checkpoints/megaDNA_phage_145M.pt` | `https://huggingface.co/lingxusb/megaDNA_updated` |

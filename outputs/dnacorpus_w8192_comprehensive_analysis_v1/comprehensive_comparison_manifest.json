@@ -1,0 +1,11 @@
+{
+  "display_name": "DNACorpus w8192 comprehensive model comparison",
+  "directory_role": "comprehensive_result_comparison",
+  "series_order": [
+    "nc_prefix",
+    "carbon3b",
+    "carbon_nc_fused",
+    "evo2_7b",
+    "evo2_nc_fused"
+  ]
+}

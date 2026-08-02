@@ -30,6 +30,7 @@ constexpr int64_t DENSE_CONTEXT_MAX_ENTRIES = 1000000;
 constexpr uint16_t COUNTER_MAX = std::numeric_limits<uint16_t>::max();
 constexpr int64_t DEFAULT_HASH_BUCKETS = 0;
 constexpr int64_t DEFAULT_HASH_SLOTS = 4;
+constexpr int64_t MAX_HASH_SLOTS = 20;
 constexpr int64_t NC_PREFIX_PRESET_GECO2_STRICT = 2;
 constexpr int64_t GECO2_HASH_TABLE_BEGIN_CTX = 15;
 constexpr int64_t GECO2_HASH_SIZE = 33554471;
@@ -365,6 +366,85 @@ class FusedArithmeticEncoder {
   }
 };
 
+FusedInterval quantize_acgt_interval_precise(
+    const std::array<uint32_t, 4> &source_freqs,
+    uint32_t source_total,
+    uint8_t target,
+    int64_t total_i64) {
+  if (target >= 4) {
+    throw std::runtime_error("target symbol must be in ACGT");
+  }
+  if (source_total == 0) {
+    throw std::runtime_error("source frequency total must be positive");
+  }
+  if (total_i64 <= 4 || total_i64 > static_cast<int64_t>((uint64_t{1} << 30) + 2)) {
+    throw std::runtime_error("arithmetic frequency total is outside the supported 32-bit range");
+  }
+
+  const uint32_t total = static_cast<uint32_t>(total_i64);
+  std::array<uint32_t, 4> freqs{};
+  std::array<double, 4> fractional{};
+  int64_t freq_sum = 0;
+  const double scale = static_cast<double>(total_i64 - 4);
+  for (int64_t symbol = 0; symbol < 4; ++symbol) {
+    const double probability = static_cast<double>(source_freqs[static_cast<size_t>(symbol)]) /
+        static_cast<double>(source_total);
+    const double scaled = probability * scale;
+    const double floored = std::floor(scaled);
+    const uint32_t value = static_cast<uint32_t>(floored) + 1U;
+    freqs[static_cast<size_t>(symbol)] = value;
+    fractional[static_cast<size_t>(symbol)] = scaled - floored;
+    freq_sum += value;
+  }
+
+  int64_t remainder = total_i64 - freq_sum;
+  std::array<int64_t, 4> order{0, 1, 2, 3};
+  if (remainder > 0) {
+    std::stable_sort(order.begin(), order.end(), [&](int64_t lhs, int64_t rhs) {
+      return fractional[static_cast<size_t>(lhs)] > fractional[static_cast<size_t>(rhs)];
+    });
+    int64_t cursor = 0;
+    while (remainder > 0) {
+      ++freqs[static_cast<size_t>(order[static_cast<size_t>(cursor & 3)])];
+      --remainder;
+      ++cursor;
+    }
+  } else if (remainder < 0) {
+    std::stable_sort(order.begin(), order.end(), [&](int64_t lhs, int64_t rhs) {
+      return freqs[static_cast<size_t>(lhs)] > freqs[static_cast<size_t>(rhs)];
+    });
+    int64_t debt = -remainder;
+    while (debt > 0) {
+      bool made_progress = false;
+      for (int64_t symbol : order) {
+        uint32_t &value = freqs[static_cast<size_t>(symbol)];
+        if (value <= 1U) {
+          continue;
+        }
+        --value;
+        --debt;
+        made_progress = true;
+        if (debt == 0) {
+          break;
+        }
+      }
+      if (!made_progress) {
+        throw std::runtime_error("failed to normalize nc_prefix arithmetic frequencies");
+      }
+    }
+  }
+
+  uint32_t low = 0;
+  for (uint8_t symbol = 0; symbol < target; ++symbol) {
+    low += freqs[static_cast<size_t>(symbol)];
+  }
+  const uint32_t high = low + freqs[static_cast<size_t>(target)];
+  if (!(low < high && high <= total)) {
+    throw std::runtime_error("invalid nc_prefix arithmetic interval");
+  }
+  return FusedInterval{low, high, total};
+}
+
 struct DenseTable {
   bool enabled = false;
   int64_t entries = 0;
@@ -390,38 +470,37 @@ uint8_t complement_symbol(uint8_t symbol) {
   return static_cast<uint8_t>(3 - symbol);
 }
 
-struct alignas(64) StrictHashBucket {
-  std::array<uint32_t, 8> keys{};
-  std::array<uint16_t, 8> packed_counts{};
-  uint8_t next_slot = 0;
-  std::array<uint8_t, 15> padding{};
-};
-
-static_assert(sizeof(StrictHashBucket) == 64, "strict hash bucket must fit one cache line");
-
 struct StrictHashTable {
   int64_t bucket_count = 0;
   int64_t slots = 0;
-  LargeZeroArray<StrictHashBucket> buckets;
+  LargeZeroArray<uint32_t> keys;
+  LargeZeroArray<uint16_t> packed_counts;
+  LargeZeroArray<uint8_t> next_slots;
 
   StrictHashTable() = default;
 
   StrictHashTable(int64_t buckets, int64_t slot_count)
       : bucket_count(std::max<int64_t>(1, buckets)),
         slots(std::max<int64_t>(1, slot_count)) {
-    if (slots > 8) {
-      throw std::runtime_error("strict hash supports at most 8 slots per bucket");
+    if (slots > MAX_HASH_SLOTS) {
+      throw std::runtime_error("strict hash slot count exceeds GECO2 level support");
     }
-    this->buckets.allocate(static_cast<size_t>(bucket_count));
+    keys.allocate(static_cast<size_t>(bucket_count * slots));
+    packed_counts.allocate(static_cast<size_t>(bucket_count * slots));
+    next_slots.allocate(static_cast<size_t>(bucket_count));
   }
 
   int64_t bucket_for_hashed(uint64_t hashed_key) const {
     return static_cast<int64_t>(hashed_key % static_cast<uint64_t>(bucket_count));
   }
 
-  int64_t find_slot_in_bucket(const StrictHashBucket &bucket, uint32_t low_key) const {
+  size_t slot_offset(int64_t bucket_index, int64_t slot) const {
+    return static_cast<size_t>(bucket_index * slots + slot);
+  }
+
+  int64_t find_slot_in_bucket(int64_t bucket_index, uint32_t low_key) const {
     for (int64_t slot = 0; slot < slots; ++slot) {
-      if (bucket.keys[static_cast<size_t>(slot)] == low_key) {
+      if (keys[slot_offset(bucket_index, slot)] == low_key) {
         return slot;
       }
     }
@@ -430,18 +509,20 @@ struct StrictHashTable {
 
   void prefetch_hashed(uint64_t hashed, bool for_write = false) const {
     const int64_t bucket_index = bucket_for_hashed(hashed);
-    __builtin_prefetch(buckets.data() + bucket_index, for_write ? 1 : 0, 1);
+    const size_t offset = slot_offset(bucket_index, 0);
+    __builtin_prefetch(keys.data() + offset, for_write ? 1 : 0, 1);
+    __builtin_prefetch(packed_counts.data() + offset, for_write ? 1 : 0, 1);
+    __builtin_prefetch(next_slots.data() + bucket_index, for_write ? 1 : 0, 1);
   }
 
   uint32_t freqs_hashed(uint64_t hashed, uint32_t alpha_den, std::array<uint32_t, 4> &out) const {
     const int64_t bucket_index = bucket_for_hashed(hashed);
-    const StrictHashBucket &bucket = buckets[static_cast<size_t>(bucket_index)];
-    const int64_t slot = find_slot_in_bucket(bucket, static_cast<uint32_t>(hashed & 0xffffffffULL));
+    const int64_t slot = find_slot_in_bucket(bucket_index, static_cast<uint32_t>(hashed & 0xffffffffULL));
     if (slot < 0) {
       out = {1, 1, 1, 1};
       return 4;
     }
-    const uint16_t packed = bucket.packed_counts[static_cast<size_t>(slot)];
+    const uint16_t packed = packed_counts[slot_offset(bucket_index, slot)];
     uint32_t sum = 0;
     for (int64_t symbol = 0; symbol < 4; ++symbol) {
       out[static_cast<size_t>(symbol)] =
@@ -458,10 +539,10 @@ struct StrictHashTable {
   void update_hashed(uint64_t hashed, uint8_t symbol) {
     const int64_t bucket_index = bucket_for_hashed(hashed);
     const uint32_t low_key = static_cast<uint32_t>(hashed & 0xffffffffULL);
-    StrictHashBucket &bucket = buckets[static_cast<size_t>(bucket_index)];
     for (int64_t slot = 0; slot < slots; ++slot) {
-      if (bucket.keys[static_cast<size_t>(slot)] == low_key) {
-        uint16_t packed = bucket.packed_counts[static_cast<size_t>(slot)];
+      const size_t offset = slot_offset(bucket_index, slot);
+      if (keys[offset] == low_key) {
+        uint16_t packed = packed_counts[offset];
         uint16_t sc = static_cast<uint16_t>((packed >> (symbol << 2)) & 0x0fU);
         if (sc == GECO2_HASH_COUNTER_MAX) {
           uint16_t decayed = 0;
@@ -475,22 +556,31 @@ struct StrictHashTable {
         ++sc;
         packed &= static_cast<uint16_t>(~(0x0fU << (symbol << 2)));
         packed |= static_cast<uint16_t>(sc << (symbol << 2));
-        bucket.packed_counts[static_cast<size_t>(slot)] = packed;
+        packed_counts[offset] = packed;
         return;
       }
     }
 
-    uint8_t &cursor = bucket.next_slot;
+    uint8_t &cursor = next_slots[static_cast<size_t>(bucket_index)];
     ++cursor;
     if (cursor == slots) {
       cursor = 0;
     }
-    bucket.keys[static_cast<size_t>(cursor)] = low_key;
-    bucket.packed_counts[static_cast<size_t>(cursor)] = static_cast<uint16_t>(1U << (symbol << 2));
+    const size_t offset = slot_offset(bucket_index, cursor);
+    keys[offset] = low_key;
+    packed_counts[offset] = static_cast<uint16_t>(1U << (symbol << 2));
   }
 
   void update(uint64_t raw_key, uint8_t symbol) {
     update_hashed(zhash(raw_key), symbol);
+  }
+
+  size_t requested_bytes() const {
+    return keys.requested_bytes() + packed_counts.requested_bytes() + next_slots.requested_bytes();
+  }
+
+  size_t mapped_bytes() const {
+    return keys.mapped_bytes() + packed_counts.mapped_bytes() + next_slots.mapped_bytes();
   }
 };
 
@@ -499,6 +589,7 @@ struct StrictModel {
   uint32_t alpha_den = 1;
   double gamma = 0.9;
   int64_t hash_slots = 1;
+  bool use_hash = false;
   bool ir = false;
   uint32_t edits = 0;
   uint32_t edit_alpha_den = 0;
@@ -539,40 +630,82 @@ uint64_t pow4_i64(int64_t context_len) {
   return uint64_t{1} << (2 * context_len);
 }
 
-std::vector<StrictModel> make_strict_level10_models(
+struct StrictModelSpec {
+  int64_t ctx;
+  uint32_t alpha_den;
+  bool ir;
+  int64_t hash_slots;
+  double gamma;
+  uint32_t edits;
+  uint32_t edit_alpha_den;
+  double edit_gamma;
+};
+
+std::vector<StrictModelSpec> geco2_level_specs(int64_t geco2_level) {
+  switch (geco2_level) {
+    case 1:
+      return {{1, 1, false, 0, 0.70, 0, 0, 0}, {12, 20, true, 1, 0.97, 0, 0, 0}};
+    case 2:
+      return {{2, 1, false, 0, 0.78, 0, 0, 0}, {4, 1, true, 0, 0.78, 0, 0, 0},
+          {11, 80, true, 1, 0.96, 0, 0, 0}};
+    case 3:
+      return {{3, 1, false, 0, 0.80, 0, 0, 0}, {4, 1, true, 0, 0.84, 0, 0, 0},
+          {12, 50, true, 1, 0.94, 2, 15, 0.95}};
+    case 4:
+      return {{4, 1, false, 0, 0.80, 0, 0, 0}, {6, 1, true, 0, 0.84, 0, 0, 0},
+          {13, 50, true, 1, 0.94, 2, 15, 0.95}};
+    case 5:
+      return {{4, 1, false, 0, 0.82, 0, 0, 0}, {6, 1, true, 0, 0.72, 0, 0, 0},
+          {13, 50, true, 1, 0.95, 2, 15, 0.95}};
+    case 6:
+      return {{4, 1, false, 0, 0.88, 0, 0, 0}, {6, 1, true, 0, 0.76, 0, 0, 0},
+          {13, 50, true, 1, 0.95, 2, 15, 0.95}};
+    case 7:
+      return {{4, 1, true, 0, 0.90, 0, 0, 0}, {6, 1, true, 0, 0.79, 0, 0, 0},
+          {8, 1, true, 0, 0.91, 0, 0, 0}, {13, 10, true, 0, 0.94, 1, 20, 0.94},
+          {16, 200, true, 5, 0.95, 4, 15, 0.95}};
+    case 8:
+      return {{4, 1, true, 0, 0.90, 0, 0, 0}, {6, 1, true, 0, 0.80, 0, 0, 0},
+          {13, 10, true, 0, 0.95, 1, 20, 0.94}, {16, 100, true, 5, 0.95, 3, 15, 0.95}};
+    case 9:
+      return {{4, 1, true, 0, 0.91, 0, 0, 0}, {6, 1, true, 0, 0.82, 0, 0, 0},
+          {13, 10, true, 0, 0.95, 1, 20, 0.94}, {17, 100, true, 8, 0.95, 3, 15, 0.95}};
+    case 10:
+      return {{1, 1, false, 0, 0.90, 0, 0, 0}, {3, 1, false, 0, 0.90, 0, 0, 0},
+          {6, 1, true, 0, 0.82, 0, 0, 0}, {9, 10, false, 0, 0.90, 0, 0, 0},
+          {11, 10, false, 0, 0.90, 0, 0, 0}, {13, 10, true, 0, 0.90, 0, 20, 0.94},
+          {17, 100, true, 8, 0.89, 5, 10, 0.90}};
+    case 11:
+      return {{4, 1, true, 0, 0.91, 0, 0, 0}, {6, 1, true, 0, 0.82, 0, 0, 0},
+          {13, 10, true, 0, 0.95, 1, 20, 0.94}, {17, 100, true, 15, 0.95, 3, 15, 0.95}};
+    case 12:
+      return {{1, 1, false, 0, 0.90, 0, 0, 0}, {3, 1, false, 0, 0.90, 0, 0, 0},
+          {6, 1, true, 0, 0.85, 0, 0, 0}, {9, 10, false, 0, 0.90, 0, 0, 0},
+          {11, 10, false, 0, 0.90, 0, 0, 0}, {13, 50, true, 0, 0.90, 0, 0, 0},
+          {17, 100, true, 20, 0.90, 3, 10, 0.90}};
+    default:
+      throw std::runtime_error("GECO2 level must be in [1, 12]");
+  }
+}
+
+std::vector<StrictModel> make_strict_geco2_models(
+    int64_t geco2_level,
     int64_t window_count,
     int64_t hash_bucket_count,
     bool disable_edit_experts,
     bool disable_ir,
     std::vector<StrictPredictor> &predictors) {
-  struct Spec {
-    int64_t ctx;
-    uint32_t alpha_den;
-    bool ir;
-    int64_t hash_slots;
-    double gamma;
-    uint32_t edits;
-    uint32_t edit_alpha_den;
-    double edit_gamma;
-  };
-  const std::vector<Spec> specs = {
-      {1, 1, false, 0, 0.90, 0, 0, 0},
-      {3, 1, false, 0, 0.90, 0, 0, 0},
-      {6, 1, true, 0, 0.82, 0, 0, 0},
-      {9, 10, false, 0, 0.90, 0, 0, 0},
-      {11, 10, false, 0, 0.90, 0, 0, 0},
-      {13, 10, true, 0, 0.90, 0, 20, 0.94},
-      {17, 100, true, 8, 0.89, 5, 10, 0.90},
-  };
+  const std::vector<StrictModelSpec> specs = geco2_level_specs(geco2_level);
 
   std::vector<StrictModel> models;
   predictors.clear();
-  for (const Spec &spec : specs) {
+  for (const StrictModelSpec &spec : specs) {
     StrictModel model;
     model.context_len = spec.ctx;
     model.alpha_den = spec.alpha_den;
     model.gamma = spec.gamma;
     model.hash_slots = std::max<int64_t>(1, spec.hash_slots);
+    model.use_hash = spec.hash_slots > 0;
     model.ir = spec.ir && !disable_ir;
     model.edits = disable_edit_experts ? 0 : spec.edits;
     model.edit_alpha_den = spec.edit_alpha_den;
@@ -580,7 +713,7 @@ std::vector<StrictModel> make_strict_level10_models(
     model.label = "ctx" + std::to_string(spec.ctx);
     model.n_contexts = pow4_i64(spec.ctx);
     model.multiplier = spec.ctx <= 0 ? 1 : pow4_i64(spec.ctx - 1);
-    if (spec.ctx < GECO2_HASH_TABLE_BEGIN_CTX) {
+    if (!model.use_hash && spec.ctx < GECO2_HASH_TABLE_BEGIN_CTX) {
       model.dense = DenseTable(static_cast<int64_t>(model.n_contexts), 4);
     } else {
       model.hash = StrictHashTable(hash_bucket_count, model.hash_slots);
@@ -812,18 +945,20 @@ py::dict strict_window_weight_snapshot(
 
 class FusedNcPrefixStreamingEncoder {
  public:
-  FusedNcPrefixStreamingEncoder(
-      int64_t window_count,
-      int64_t window_bases,
-      int64_t hash_bucket_count,
-      int64_t arithmetic_frequency_total,
-      double fusion_eta,
-      double initial_lm_weight,
-      bool encode_arithmetic,
-      bool collect_diagnostics)
-      : window_count_(window_count),
-        window_bases_(window_bases),
-        arithmetic_frequency_total_(arithmetic_frequency_total),
+	  FusedNcPrefixStreamingEncoder(
+	      int64_t window_count,
+	      int64_t window_bases,
+	      int64_t hash_bucket_count,
+	      int64_t geco2_level,
+	      int64_t arithmetic_frequency_total,
+	      double fusion_eta,
+	      double initial_lm_weight,
+	      bool encode_arithmetic,
+	      bool collect_diagnostics)
+	      : window_count_(window_count),
+	        window_bases_(window_bases),
+	        geco2_level_(geco2_level),
+	        arithmetic_frequency_total_(arithmetic_frequency_total),
         fusion_eta_(fusion_eta),
         encode_arithmetic_(encode_arithmetic),
         collect_diagnostics_(collect_diagnostics) {
@@ -847,9 +982,10 @@ class FusedNcPrefixStreamingEncoder {
       throw std::runtime_error("initial_lm_weight must be in [0, 1]");
     }
     const int64_t effective_hash_buckets = hash_bucket_count > 0 ? hash_bucket_count : GECO2_HASH_SIZE;
-    models_ = make_strict_level10_models(
-        window_count_,
-        effective_hash_buckets,
+	    models_ = make_strict_geco2_models(
+	        geco2_level_,
+	        window_count_,
+	        effective_hash_buckets,
         false,
         false,
         predictors_);
@@ -888,9 +1024,9 @@ class FusedNcPrefixStreamingEncoder {
             static_cast<int64_t>(pipeline_high_predictors_.size());
         pipeline_high_predictors_.push_back(static_cast<int64_t>(predictor_index));
       }
-      if (!predictor.edit && model.context_len == 17) {
-        pipeline_ctx17_model_index_ = predictor.model_index;
-      }
+	      if (!predictor.edit && !model.dense.enabled && model.ir && pipeline_ctx17_model_index_ < 0) {
+	        pipeline_ctx17_model_index_ = predictor.model_index;
+	      }
     }
     const size_t query_slots =
         static_cast<size_t>(pipeline_block_windows_) * pipeline_high_predictors_.size();
@@ -953,7 +1089,10 @@ class FusedNcPrefixStreamingEncoder {
           step_nc_bits,
           emitted,
           4,
-          1);
+          1,
+          nullptr,
+          0,
+          0);
     };
 
     {
@@ -984,7 +1123,10 @@ class FusedNcPrefixStreamingEncoder {
     return result;
   }
 
-  py::dict encode_token_step(const at::Tensor &lm_probabilities, const at::Tensor &target_symbols) {
+  py::dict encode_token_step(
+      const at::Tensor &lm_probabilities,
+      const at::Tensor &target_symbols,
+      bool collect_nc_target_probabilities = false) {
     if (finished_) {
       throw std::runtime_error("cannot encode after finish()");
     }
@@ -1024,6 +1166,12 @@ class FusedNcPrefixStreamingEncoder {
     double token_lm_bits = 0.0;
     double token_nc_bits = 0.0;
     int64_t token_emitted = 0;
+    at::Tensor nc_target_probabilities;
+    double *nc_target_probability_ptr = nullptr;
+    if (collect_nc_target_probabilities) {
+      nc_target_probabilities = at::empty({active_count, token_merge_size}, at::TensorOptions().dtype(at::kDouble));
+      nc_target_probability_ptr = nc_target_probabilities.data_ptr<double>();
+    }
 
     auto body = [&]<typename prob_t, typename target_t>(const prob_t *lm_ptr, const target_t *target_ptr) {
       for (int64_t base_offset = 0; base_offset < token_merge_size; ++base_offset) {
@@ -1041,6 +1189,9 @@ class FusedNcPrefixStreamingEncoder {
             step_nc_bits,
             emitted,
             token_merge_size * 4,
+            token_merge_size,
+            nc_target_probability_ptr,
+            base_offset,
             token_merge_size);
         record_encoded_base(active_count, step_fused_bits, step_lm_bits, step_nc_bits, emitted);
         token_fused_bits += step_fused_bits;
@@ -1078,6 +1229,9 @@ class FusedNcPrefixStreamingEncoder {
     result["lm_bits"] = token_lm_bits;
     result["nc_bits"] = token_nc_bits;
     result["emitted_count"] = token_emitted;
+    if (collect_nc_target_probabilities) {
+      result["nc_target_probabilities"] = nc_target_probabilities;
+    }
     return result;
   }
 
@@ -1127,7 +1281,9 @@ class FusedNcPrefixStreamingEncoder {
 
   py::dict metadata() const {
     py::dict metadata;
-    metadata["algorithm"] = "geco2_level10_per_window_weights_streaming";
+	    metadata["algorithm"] = "geco2_level_per_window_weights_streaming";
+	    metadata["preset"] = "geco2_level";
+	    metadata["geco2_level"] = geco2_level_;
     metadata["window_count"] = window_count_;
     metadata["window_bases"] = window_bases_;
     metadata["predictor_count"] = static_cast<int64_t>(predictor_count_);
@@ -1176,9 +1332,9 @@ class FusedNcPrefixStreamingEncoder {
       item["hits"] = model.hits;
       item["edit_hits"] = model.edit_hits;
       item["edit_fails"] = model.edit_fails;
-      item["storage_bytes"] = static_cast<int64_t>(model.dense.enabled
-          ? model.dense.counts.requested_bytes()
-          : model.hash.buckets.requested_bytes());
+	      item["storage_bytes"] = static_cast<int64_t>(model.dense.enabled
+	          ? model.dense.counts.requested_bytes()
+	          : model.hash.requested_bytes());
       model_list.append(item);
     }
     metadata["models"] = model_list;
@@ -1186,9 +1342,10 @@ class FusedNcPrefixStreamingEncoder {
   }
 
  private:
-  int64_t window_count_ = 0;
-  int64_t window_bases_ = 0;
-  int64_t depth_ = 0;
+	  int64_t window_count_ = 0;
+	  int64_t window_bases_ = 0;
+	  int64_t geco2_level_ = 10;
+	  int64_t depth_ = 0;
   int64_t window_group_count_ = 0;
   int64_t arithmetic_frequency_total_ = 65536;
   double fusion_eta_ = 0.05;
@@ -1419,8 +1576,8 @@ class FusedNcPrefixStreamingEncoder {
               query_buffer[local_window * pipeline_high_predictors_.size() + high_index];
           const size_t slot = static_cast<size_t>(window_id) * predictor_count_ + predictor_index;
           uint32_t sum = 0;
-          if (predictor.edit && model.context_len == 17 && have_ctx17_base &&
-              query.key == ctx17_base_key) {
+	          if (predictor.edit && predictor.model_index == pipeline_ctx17_model_index_ && have_ctx17_base &&
+	              query.key == ctx17_base_key) {
             for (int64_t symbol = 0; symbol < 4; ++symbol) {
               const uint32_t base_freq =
                   step_freqs_[ctx17_base_slot][static_cast<size_t>(symbol)];
@@ -1447,7 +1604,7 @@ class FusedNcPrefixStreamingEncoder {
           if (predictor.edit) {
             model.edit_best_ids[static_cast<size_t>(window_id)] =
                 static_cast<int8_t>(strict_best_id(step_freqs_[slot], sum));
-          } else if (model.context_len == 17) {
+	          } else if (!predictor.edit && predictor.model_index == pipeline_ctx17_model_index_) {
             ctx17_base_key = query.key;
             ctx17_base_slot = slot;
             have_ctx17_base = true;
@@ -1497,7 +1654,10 @@ class FusedNcPrefixStreamingEncoder {
       double &step_nc_bits,
       int64_t &emitted,
       int64_t lm_window_stride,
-      int64_t target_window_stride) {
+      int64_t target_window_stride,
+      double *nc_target_output,
+      int64_t nc_target_output_base_offset,
+      int64_t nc_target_output_stride) {
     const int64_t block_count =
         (active_count + pipeline_block_windows_ - 1) / pipeline_block_windows_;
     for (int64_t block_index = 0; block_index < block_count; ++block_index) {
@@ -1545,6 +1705,9 @@ class FusedNcPrefixStreamingEncoder {
         const double nc_weight = nc_source_weights_[static_cast<size_t>(window_id)];
         const double lm_target = std::max(lm_probs[static_cast<size_t>(target)], 1e-300);
         const double nc_target = std::max(nc_probs[static_cast<size_t>(target)], 1e-300);
+        if (nc_target_output != nullptr) {
+          nc_target_output[window_id * nc_target_output_stride + nc_target_output_base_offset] = nc_target;
+        }
         std::array<double, 4> fused{};
         double fused_target = 1.0;
         if (encode_arithmetic_ || collect_diagnostics_) {
@@ -1622,7 +1785,7 @@ class FusedNcPrefixStreamingEncoder {
         const uint8_t target = static_cast<uint8_t>(target_ptr[window_id * target_window_stride]);
         for (StrictModel &model : models_) {
           const uint64_t key = model.pidx[static_cast<size_t>(window_id)];
-          if (model.context_len == 17) {
+	            if (static_cast<int64_t>(&model - models_.data()) == pipeline_ctx17_model_index_) {
             model.hash.update_hashed(
                 pipeline_ctx17_base_hashes_[static_cast<size_t>(window_id)], target);
             model.hash.update_hashed(
@@ -1702,7 +1865,8 @@ class FusedNcPrefixStreamingEncoder {
             : model.pidx[static_cast<size_t>(window_id)];
         const size_t slot = static_cast<size_t>(window_id) * predictor_count_ + predictor_index;
         uint32_t sum = 0;
-        if (predictor.edit && model.context_len == 17 && have_ctx17_base && key == ctx17_base_key) {
+	        if (predictor.edit && predictor.model_index == pipeline_ctx17_model_index_ && have_ctx17_base &&
+	            key == ctx17_base_key) {
           for (int64_t symbol = 0; symbol < 4; ++symbol) {
             const uint32_t base_freq = step_freqs_[ctx17_base_slot][static_cast<size_t>(symbol)];
             const uint32_t count = (base_freq - 1U) / model.alpha_den;
@@ -1722,7 +1886,7 @@ class FusedNcPrefixStreamingEncoder {
         if (predictor.edit) {
           model.edit_best_ids[static_cast<size_t>(window_id)] =
               static_cast<int8_t>(strict_best_id(step_freqs_[slot], sum));
-        } else if (model.context_len == 17) {
+	        } else if (!predictor.edit && predictor.model_index == pipeline_ctx17_model_index_) {
           ctx17_base_key = key;
           ctx17_base_slot = slot;
           have_ctx17_base = true;
@@ -1853,9 +2017,11 @@ py::dict compute_current_nc_prefix_impl(
     int64_t window_bases,
     int64_t vocab_size,
     bool return_probabilities,
-    bool summary_only,
-    int64_t hash_bucket_count,
-    bool disable_edit_experts,
+	    bool summary_only,
+	    int64_t hash_bucket_count,
+	    int64_t geco2_level,
+	    int64_t stream_arithmetic_total,
+	    bool disable_edit_experts,
     bool disable_ir,
     const std::string &update_mode,
     const std::string &profile_mode,
@@ -1868,6 +2034,14 @@ py::dict compute_current_nc_prefix_impl(
   }
   if (hash_bucket_count < 0) {
     throw std::runtime_error("hash_bucket_count must be non-negative; use 0 for GECO2 default");
+  }
+  if (stream_arithmetic_total < 0) {
+    throw std::runtime_error("stream_arithmetic_total must be non-negative");
+  }
+  if (stream_arithmetic_total > 0 &&
+      (stream_arithmetic_total <= 4 ||
+       stream_arithmetic_total > static_cast<int64_t>((uint64_t{1} << 30) + 2))) {
+    throw std::runtime_error("stream_arithmetic_total is outside the supported 32-bit arithmetic range");
   }
   const scalar_t *symbols = symbols_tensor.data_ptr<scalar_t>();
   const int64_t n = symbols_tensor.size(0);
@@ -1926,9 +2100,10 @@ py::dict compute_current_nc_prefix_impl(
 
   const int64_t effective_hash_buckets = hash_bucket_count > 0 ? hash_bucket_count : GECO2_HASH_SIZE;
   std::vector<StrictPredictor> predictors;
-  std::vector<StrictModel> models = make_strict_level10_models(
-      window_count,
-      effective_hash_buckets,
+	  std::vector<StrictModel> models = make_strict_geco2_models(
+	      geco2_level,
+	      window_count,
+	      effective_hash_buckets,
       disable_edit_experts,
       disable_ir,
       predictors);
@@ -1970,9 +2145,9 @@ py::dict compute_current_nc_prefix_impl(
         pipeline_predictor_to_high[predictor_index] = static_cast<int64_t>(pipeline_high_predictors.size());
         pipeline_high_predictors.push_back(static_cast<int64_t>(predictor_index));
       }
-      if (!predictor.edit && model.context_len == 17) {
-        pipeline_ctx17_model_index = predictor.model_index;
-      }
+	      if (!predictor.edit && !model.dense.enabled && model.ir && pipeline_ctx17_model_index < 0) {
+	        pipeline_ctx17_model_index = predictor.model_index;
+	      }
     }
     const size_t query_slots = static_cast<size_t>(pipeline_block_windows) * pipeline_high_predictors.size();
     pipeline_query_buffers[0].resize(query_slots);
@@ -2002,10 +2177,16 @@ py::dict compute_current_nc_prefix_impl(
   double pipeline_fusion_seconds = 0.0;
   double pipeline_update_prepare_seconds = 0.0;
   double pipeline_update_commit_seconds = 0.0;
+  double stream_arithmetic_quantize_seconds = 0.0;
+  double stream_arithmetic_range_seconds = 0.0;
+  double stream_arithmetic_finish_seconds = 0.0;
   double base_counter_update_seconds = 0.0;
   double edit_state_update_seconds = 0.0;
   double context_state_update_seconds = 0.0;
   double weight_snapshot_seconds = 0.0;
+  FusedArithmeticEncoder stream_arithmetic_encoder;
+  const bool stream_arithmetic_enabled = stream_arithmetic_total > 0;
+  int64_t stream_arithmetic_emitted = 0;
   setup_seconds = collect_timing ? elapsed_seconds(started, Clock::now()) : 0.0;
 
   for (int64_t depth = 0; depth < max_window_len; ++depth) {
@@ -2112,8 +2293,8 @@ py::dict compute_current_nc_prefix_impl(
                 query_buffer[local_window * pipeline_high_predictors.size() + high_index];
             const size_t slot = local_window * predictor_count + predictor_index;
             uint32_t sum = 0;
-            if (predictor.edit && model.context_len == 17 && have_ctx17_base &&
-                query.key == ctx17_base_key) {
+	            if (predictor.edit && predictor.model_index == pipeline_ctx17_model_index && have_ctx17_base &&
+	                query.key == ctx17_base_key) {
               for (int64_t symbol = 0; symbol < 4; ++symbol) {
                 const uint32_t base_freq =
                     pipeline_freqs[ctx17_base_slot][static_cast<size_t>(symbol)];
@@ -2138,7 +2319,7 @@ py::dict compute_current_nc_prefix_impl(
             if (predictor.edit) {
               model.edit_best_ids[static_cast<size_t>(window_id)] =
                   static_cast<int8_t>(strict_best_id(pipeline_freqs[slot], sum));
-            } else if (model.context_len == 17) {
+	            } else if (!predictor.edit && predictor.model_index == pipeline_ctx17_model_index) {
               ctx17_base_key = query.key;
               ctx17_base_slot = slot;
               have_ctx17_base = true;
@@ -2208,6 +2389,21 @@ py::dict compute_current_nc_prefix_impl(
               row[symbol] = static_cast<double>(mx_freqs[static_cast<size_t>(symbol)]) /
                   static_cast<double>(mx_sum);
             }
+          }
+          if (stream_arithmetic_enabled) {
+            if (collect_timing) {
+              const auto quantize_started = Clock::now();
+              const FusedInterval interval =
+                  quantize_acgt_interval_precise(mx_freqs, mx_sum, target, stream_arithmetic_total);
+              stream_arithmetic_quantize_seconds += elapsed_seconds(quantize_started, Clock::now());
+              const auto range_started = Clock::now();
+              stream_arithmetic_encoder.update(interval);
+              stream_arithmetic_range_seconds += elapsed_seconds(range_started, Clock::now());
+            } else {
+              stream_arithmetic_encoder.update(
+                  quantize_acgt_interval_precise(mx_freqs, mx_sum, target, stream_arithmetic_total));
+            }
+            ++stream_arithmetic_emitted;
           }
 
           if (!profile_skip_weight_update) {
@@ -2295,7 +2491,7 @@ py::dict compute_current_nc_prefix_impl(
           const uint8_t target = static_cast<uint8_t>(targets[position]);
           for (StrictModel &model : models) {
             const uint64_t key = model.pidx[static_cast<size_t>(window_id)];
-            if (model.context_len == 17) {
+	            if (static_cast<int64_t>(&model - models.data()) == pipeline_ctx17_model_index) {
               model.hash.update_hashed(
                   pipeline_ctx17_base_hashes[static_cast<size_t>(window_id)], target);
               model.hash.update_hashed(
@@ -2387,6 +2583,16 @@ py::dict compute_current_nc_prefix_impl(
   if (!summary_only && emit_index != n) {
     throw std::runtime_error("internal error: emitted symbol count does not match input length");
   }
+  std::string stream_arithmetic_bytes;
+  if (stream_arithmetic_enabled) {
+    if (collect_timing) {
+      const auto finish_started = Clock::now();
+      stream_arithmetic_bytes = stream_arithmetic_encoder.finish();
+      stream_arithmetic_finish_seconds = elapsed_seconds(finish_started, Clock::now());
+    } else {
+      stream_arithmetic_bytes = stream_arithmetic_encoder.finish();
+    }
+  }
   const auto finished = Clock::now();
 
   py::list model_list;
@@ -2402,33 +2608,33 @@ py::dict compute_current_nc_prefix_impl(
     item["edit_gamma"] = model.edit_gamma;
     item["dense"] = model.dense.enabled;
     item["hash_slots"] = model.hash_slots;
-    item["storage_mmap"] = model.dense.enabled
-        ? model.dense.counts.mapped()
-        : model.hash.buckets.mapped();
-    item["hugepage_advised"] = model.dense.enabled
-        ? model.dense.counts.hugepage_advised()
-        : model.hash.buckets.hugepage_advised();
-    item["storage_bytes"] = static_cast<int64_t>(model.dense.enabled
-        ? model.dense.counts.requested_bytes()
-        : model.hash.buckets.requested_bytes());
-    item["storage_mapped_bytes"] = static_cast<int64_t>(model.dense.enabled
-        ? model.dense.counts.mapped_bytes()
-        : model.hash.buckets.mapped_bytes());
-    item["storage_alignment_bytes"] = static_cast<int64_t>(model.dense.enabled
-        ? model.dense.counts.mapped_alignment_bytes()
-        : model.hash.buckets.mapped_alignment_bytes());
-    item["storage_2mb_aligned"] = model.dense.enabled
-        ? model.dense.counts.mapped_2mb_aligned()
-        : model.hash.buckets.mapped_2mb_aligned();
-    item["populate_requested"] = model.dense.enabled
-        ? model.dense.counts.populate_requested()
-        : model.hash.buckets.populate_requested();
-    item["populate_succeeded"] = model.dense.enabled
-        ? model.dense.counts.populate_succeeded()
-        : model.hash.buckets.populate_succeeded();
-    item["populate_mode"] = model.dense.enabled
-        ? model.dense.counts.populate_mode()
-        : model.hash.buckets.populate_mode();
+	    item["storage_mmap"] = model.dense.enabled
+	        ? model.dense.counts.mapped()
+	        : model.hash.keys.mapped();
+	    item["hugepage_advised"] = model.dense.enabled
+	        ? model.dense.counts.hugepage_advised()
+	        : model.hash.keys.hugepage_advised();
+	    item["storage_bytes"] = static_cast<int64_t>(model.dense.enabled
+	        ? model.dense.counts.requested_bytes()
+	        : model.hash.requested_bytes());
+	    item["storage_mapped_bytes"] = static_cast<int64_t>(model.dense.enabled
+	        ? model.dense.counts.mapped_bytes()
+	        : model.hash.mapped_bytes());
+	    item["storage_alignment_bytes"] = static_cast<int64_t>(model.dense.enabled
+	        ? model.dense.counts.mapped_alignment_bytes()
+	        : model.hash.keys.mapped_alignment_bytes());
+	    item["storage_2mb_aligned"] = model.dense.enabled
+	        ? model.dense.counts.mapped_2mb_aligned()
+	        : model.hash.keys.mapped_2mb_aligned();
+	    item["populate_requested"] = model.dense.enabled
+	        ? model.dense.counts.populate_requested()
+	        : model.hash.keys.populate_requested();
+	    item["populate_succeeded"] = model.dense.enabled
+	        ? model.dense.counts.populate_succeeded()
+	        : model.hash.keys.populate_succeeded();
+	    item["populate_mode"] = model.dense.enabled
+	        ? model.dense.counts.populate_mode()
+	        : model.hash.keys.populate_mode();
     item["ir_updates"] = model.ir_updates;
     item["edit_hits"] = model.edit_hits;
     item["edit_fails"] = model.edit_fails;
@@ -2478,6 +2684,9 @@ py::dict compute_current_nc_prefix_impl(
   timing["pipeline_fusion_seconds"] = pipeline_fusion_seconds;
   timing["pipeline_update_prepare_seconds"] = pipeline_update_prepare_seconds;
   timing["pipeline_update_commit_seconds"] = pipeline_update_commit_seconds;
+  timing["stream_arithmetic_quantize_seconds"] = stream_arithmetic_quantize_seconds;
+  timing["stream_arithmetic_range_seconds"] = stream_arithmetic_range_seconds;
+  timing["stream_arithmetic_finish_seconds"] = stream_arithmetic_finish_seconds;
   timing["base_counter_update_seconds"] = base_counter_update_seconds;
   timing["edit_state_update_seconds"] = edit_state_update_seconds;
   timing["context_state_update_seconds"] = context_state_update_seconds;
@@ -2498,10 +2707,21 @@ py::dict compute_current_nc_prefix_impl(
   metadata["update_iteration_order"] = "window_major_block_prefetch";
   metadata["parallel_predictor_hit_counts"] = "exact";
   metadata["preset"] = "nc_prefix";
-  metadata["algorithm"] = "geco2_level10_per_window_weights";
-  metadata["geco2_level"] = 10;
+	  metadata["algorithm"] = "geco2_level_per_window_weights";
+	  metadata["geco2_level"] = geco2_level;
   metadata["base_count"] = n;
   metadata["summary_only"] = summary_only;
+  metadata["streaming_arithmetic"] = stream_arithmetic_enabled;
+  metadata["streaming_arithmetic_frequency_total"] = stream_arithmetic_total;
+  metadata["streaming_arithmetic_emitted_symbols"] = stream_arithmetic_emitted;
+  metadata["streaming_arithmetic_coded_bytes"] =
+      stream_arithmetic_enabled ? static_cast<int64_t>(stream_arithmetic_bytes.size()) : int64_t{0};
+  metadata["streaming_arithmetic_bits_per_base"] =
+      stream_arithmetic_enabled && n > 0
+          ? static_cast<double>(stream_arithmetic_bytes.size()) * 8.0 / static_cast<double>(n)
+          : 0.0;
+  metadata["streaming_arithmetic_backend"] =
+      stream_arithmetic_enabled ? "fast_cpp_inline_precise" : "none";
   metadata["artifact_tensor_bytes"] = summary_only
       ? int64_t{0}
       : static_cast<int64_t>(
@@ -2552,8 +2772,8 @@ py::dict compute_current_nc_prefix_impl(
       pipeline_ctx17_ir_hashes.capacity() * sizeof(uint64_t) +
       pipeline_ctx17_ir_keys.capacity() * sizeof(uint64_t));
   metadata["query_order"] = "window_block_double_buffer_prefetch";
-  metadata["hash_bucket_bytes"] = static_cast<int64_t>(sizeof(StrictHashBucket));
-  metadata["hash_bucket_cacheline_aligned"] = alignof(StrictHashBucket) == 64;
+	  metadata["hash_storage_layout"] = "separate_keys_counts_next_slot_arrays";
+	  metadata["hash_slot_count_max"] = MAX_HASH_SLOTS;
   metadata["large_table_allocator"] = "anonymous_mmap_2mb_aligned_with_madvise_hugepage_fallback_contiguous";
   metadata["large_table_alignment_bytes"] = static_cast<int64_t>(LARGE_TABLE_ALIGNMENT_BYTES);
   metadata["populate_tables_requested"] = env_flag_enabled("DNA_COMPRESS_NC_PREFIX_POPULATE_TABLES");
@@ -2619,20 +2839,18 @@ py::dict compute_nc_prefix(
   if (symbols.dim() != 1 || orders_tensor.dim() != 1) {
     throw std::runtime_error("symbols and orders must be 1D tensors");
   }
-  at::Tensor symbols_contig = symbols.contiguous();
-  if (geco2_level != 10) {
-    throw std::runtime_error("nc_prefix currently supports only GECO2 level 10");
-  }
-
-  if (symbols_contig.scalar_type() == at::kLong) {
-    return compute_current_nc_prefix_impl<int64_t>(
-        symbols_contig,
-        window_bases,
-        vocab_size,
-        return_probabilities,
-        summary_only,
-        hash_bucket_count,
-        disable_edit_experts,
+	  at::Tensor symbols_contig = symbols.contiguous();
+	  if (symbols_contig.scalar_type() == at::kLong) {
+	    return compute_current_nc_prefix_impl<int64_t>(
+	        symbols_contig,
+	        window_bases,
+	        vocab_size,
+	        return_probabilities,
+	        summary_only,
+	        hash_bucket_count,
+	        geco2_level,
+	        0,
+	        disable_edit_experts,
         disable_ir,
         update_mode,
         profile_mode,
@@ -2641,11 +2859,13 @@ py::dict compute_nc_prefix(
   if (symbols_contig.scalar_type() == at::kShort) {
     return compute_current_nc_prefix_impl<int16_t>(
         symbols_contig,
-        window_bases,
-        vocab_size,
-        return_probabilities,
-        summary_only,
-        hash_bucket_count,
+	        window_bases,
+	        vocab_size,
+	        return_probabilities,
+	        summary_only,
+	        hash_bucket_count,
+	        geco2_level,
+	        0,
         disable_edit_experts,
         disable_ir,
         update_mode,
@@ -2655,11 +2875,13 @@ py::dict compute_nc_prefix(
   if (symbols_contig.scalar_type() == at::kInt) {
     return compute_current_nc_prefix_impl<int32_t>(
         symbols_contig,
-        window_bases,
-        vocab_size,
-        return_probabilities,
-        summary_only,
-        hash_bucket_count,
+	        window_bases,
+	        vocab_size,
+	        return_probabilities,
+	        summary_only,
+	        hash_bucket_count,
+	        geco2_level,
+	        0,
         disable_edit_experts,
         disable_ir,
         update_mode,
@@ -2671,11 +2893,13 @@ py::dict compute_nc_prefix(
 
 py::dict compute_nc_prefix_current(
     const at::Tensor &symbols,
-    int64_t window_bases,
-    int64_t vocab_size,
-    bool return_probabilities,
-    bool summary_only,
-    int64_t hash_bucket_count) {
+	    int64_t window_bases,
+	    int64_t vocab_size,
+	    bool return_probabilities,
+	    bool summary_only,
+	    int64_t hash_bucket_count,
+	    int64_t geco2_level,
+	    int64_t stream_arithmetic_total) {
   if (symbols.device().is_cuda()) {
     throw std::runtime_error("fast nc_prefix expects a CPU tensor");
   }
@@ -2686,11 +2910,13 @@ py::dict compute_nc_prefix_current(
   if (symbols_contig.scalar_type() == at::kLong) {
     return compute_current_nc_prefix_impl<int64_t>(
         symbols_contig,
-        window_bases,
-        vocab_size,
-        return_probabilities,
-        summary_only,
-        hash_bucket_count,
+	        window_bases,
+	        vocab_size,
+	        return_probabilities,
+	        summary_only,
+	        hash_bucket_count,
+	        geco2_level,
+	        stream_arithmetic_total,
         false,
         false,
         "cache_pipeline",
@@ -2700,11 +2926,13 @@ py::dict compute_nc_prefix_current(
   if (symbols_contig.scalar_type() == at::kShort) {
     return compute_current_nc_prefix_impl<int16_t>(
         symbols_contig,
-        window_bases,
-        vocab_size,
-        return_probabilities,
-        summary_only,
-        hash_bucket_count,
+	        window_bases,
+	        vocab_size,
+	        return_probabilities,
+	        summary_only,
+	        hash_bucket_count,
+	        geco2_level,
+	        stream_arithmetic_total,
         false,
         false,
         "cache_pipeline",
@@ -2714,11 +2942,13 @@ py::dict compute_nc_prefix_current(
   if (symbols_contig.scalar_type() == at::kInt) {
     return compute_current_nc_prefix_impl<int32_t>(
         symbols_contig,
-        window_bases,
-        vocab_size,
-        return_probabilities,
-        summary_only,
-        hash_bucket_count,
+	        window_bases,
+	        vocab_size,
+	        return_probabilities,
+	        summary_only,
+	        hash_bucket_count,
+	        geco2_level,
+	        stream_arithmetic_total,
         false,
         false,
         "cache_pipeline",
@@ -2731,30 +2961,38 @@ py::dict compute_nc_prefix_current(
 }  // namespace
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
-  py::class_<FusedNcPrefixStreamingEncoder>(m, "FusedNcPrefixStreamingEncoder")
-      .def(
-          py::init<int64_t, int64_t, int64_t, int64_t, double, double, bool, bool>(),
-          py::arg("window_count"),
-          py::arg("window_bases"),
-          py::arg("hash_bucket_count"),
-          py::arg("arithmetic_frequency_total"),
-          py::arg("fusion_eta"),
-          py::arg("initial_lm_weight"),
-          py::arg("encode_arithmetic"),
-          py::arg("collect_diagnostics") = true)
+	  py::class_<FusedNcPrefixStreamingEncoder>(m, "FusedNcPrefixStreamingEncoder")
+	      .def(
+	          py::init<int64_t, int64_t, int64_t, int64_t, int64_t, double, double, bool, bool>(),
+	          py::arg("window_count"),
+	          py::arg("window_bases"),
+	          py::arg("hash_bucket_count"),
+	          py::arg("geco2_level"),
+	          py::arg("arithmetic_frequency_total"),
+	          py::arg("fusion_eta"),
+	          py::arg("initial_lm_weight"),
+	          py::arg("encode_arithmetic"),
+	          py::arg("collect_diagnostics") = true)
       .def("encode_base_step", &FusedNcPrefixStreamingEncoder::encode_base_step)
-      .def("encode_token_step", &FusedNcPrefixStreamingEncoder::encode_token_step)
+      .def(
+          "encode_token_step",
+          &FusedNcPrefixStreamingEncoder::encode_token_step,
+          py::arg("lm_probabilities"),
+          py::arg("target_symbols"),
+          py::arg("collect_nc_target_probabilities") = false)
       .def("finish", &FusedNcPrefixStreamingEncoder::finish)
       .def("metadata", &FusedNcPrefixStreamingEncoder::metadata);
   m.def(
       "compute_nc_prefix_current",
       &compute_nc_prefix_current,
       py::arg("symbols"),
-      py::arg("window_bases"),
-      py::arg("vocab_size"),
-      py::arg("return_probabilities"),
-      py::arg("summary_only") = false,
-      py::arg("hash_bucket_count") = DEFAULT_HASH_BUCKETS);
+	      py::arg("window_bases"),
+	      py::arg("vocab_size"),
+	      py::arg("return_probabilities"),
+	      py::arg("summary_only") = false,
+	      py::arg("hash_bucket_count") = DEFAULT_HASH_BUCKETS,
+	      py::arg("geco2_level") = 10,
+	      py::arg("stream_arithmetic_total") = 0);
   m.def(
       "compute_nc_prefix",
       &compute_nc_prefix,

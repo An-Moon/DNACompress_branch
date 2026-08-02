@@ -1,0 +1,11 @@
+{
+  "codec": "nc_prefix",
+  "source_count": 1,
+  "total_bases": 189752667,
+  "total_theoretical_bits_per_base": 1.6403478393029765,
+  "total_arithmetic_bits_per_base": 1.6403471999684727,
+  "encode_arithmetic": true,
+  "wall_seconds": 163.096739006,
+  "parameters_json": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/HoSa/parameters.json",
+  "per_source_csv": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/HoSa/nc_prefix_per_source.csv"
+}

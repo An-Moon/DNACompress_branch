@@ -1,0 +1,11 @@
+{
+  "codec": "nc_prefix",
+  "source_count": 1,
+  "total_bases": 1667825,
+  "total_theoretical_bits_per_base": 1.802685137581242,
+  "total_arithmetic_bits_per_base": 1.8026927285536551,
+  "encode_arithmetic": true,
+  "wall_seconds": 1.4153182690001813,
+  "parameters_json": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/HePy/parameters.json",
+  "per_source_csv": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/HePy/nc_prefix_per_source.csv"
+}

@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "annotation_dir": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official",
+  "trace_root": "/home/Liang_junnan/DNACompress/outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full_position_major/traces",
+  "fused_left_trace_root": "outputs/carbon3b_dnacorpus_w8192_target_traces_position_major/traces",
+  "fused_right_trace_root": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full_position_major/traces",
+  "fusion_eta": 0.05,
+  "fusion_initial_left_weight": 0.5,
+  "output_dir": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis",
+  "species": [
+    "HoSa",
+    "GaGa",
+    "DaRe",
+    "OrSa",
+    "DrMe",
+    "EsCo",
+    "AgPh",
+    "BuEb",
+    "YeMi",
+    "AeCa",
+    "HaHi"
+  ],
+  "build_only": false,
+  "aggregate_only": false,
+  "window_bases": 8192,
+  "results": {
+    "HoSa": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/HoSa.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/HoSa.json",
+      "elapsed_seconds": 80.3618972300028,
+      "bases_per_second": 2361226.819432986
+    },
+    "GaGa": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/GaGa.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/GaGa.json",
+      "elapsed_seconds": 61.067425137996906,
+      "bases_per_second": 2432267.181142068
+    },
+    "DaRe": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/DaRe.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/DaRe.json",
+      "elapsed_seconds": 26.082131904986454,
+      "bases_per_second": 2398769.403816973
+    },
+    "OrSa": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/OrSa.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/OrSa.json",
+      "elapsed_seconds": 17.044127717002993,
+      "bases_per_second": 2538265.5961232847
+    },
+    "DrMe": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/DrMe.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/DrMe.json",
+      "elapsed_seconds": 12.688922745990567,
+      "bases_per_second": 2536182.9088421753
+    },
+    "EsCo": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/EsCo.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/EsCo.json",
+      "elapsed_seconds": 1.9335114080167841,
+      "bases_per_second": 2400633.366193052
+    },
+    "AgPh": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/AgPh.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/AgPh.json",
+      "elapsed_seconds": 0.1650969430047553,
+      "bases_per_second": 266328.3716811978
+    },
+    "BuEb": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/BuEb.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/BuEb.json",
+      "elapsed_seconds": 0.16028272299445234,
+      "bases_per_second": 118166.19811640924
+    },
+    "YeMi": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/YeMi.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/YeMi.json",
+      "elapsed_seconds": 0.16550043600727804,
+      "bases_per_second": 445249.5822836349
+    },
+    "AeCa": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/AeCa.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/AeCa.json",
+      "elapsed_seconds": 0.7723166290088557,
+      "bases_per_second": 2060099.3688843083
+    },
+    "HaHi": {
+      "annotation_index": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/annotation_interval_index/HaHi.npz",
+      "per_species_json": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/annotation_region_analysis/per_species/HaHi.json",
+      "elapsed_seconds": 1.5199484399927314,
+      "bases_per_second": 2559300.6299730814
+    }
+  },
+  "skipped": []
+}

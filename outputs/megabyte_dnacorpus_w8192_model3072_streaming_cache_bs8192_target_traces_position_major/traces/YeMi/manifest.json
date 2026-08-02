@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "trace_kind": "target_probability",
+  "model_family": "megabyte",
+  "model_id": "outputs/dna_megabyte_large_opengenome2_11/best.pt",
+  "alphabet": "ACGT",
+  "unit_size": 1,
+  "source_sha256": "ad83a10938612c5b0aaa8baf863e047b74ce4c53036cf2fa5fa42779acbe9e02",
+  "normalized_sequence_sha256": "ad83a10938612c5b0aaa8baf863e047b74ce4c53036cf2fa5fa42779acbe9e02",
+  "core_base_count": 73689,
+  "tail_base_count": 0,
+  "tail_sequence_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "target_symbols_sha256": "3943e74ca08d2165b384936afb6a6a0d9aef32541ef34248f2ded0a8712ceec3",
+  "emit_order_sha256": "fc106e683166ab9a3a93bdc8b71b89406e8b4a6929bcf01af973495f932285f3",
+  "row_count": 73689,
+  "dtype": "float32",
+  "shard_rows": 1000000,
+  "window_bases": 8192,
+  "token_merge_size": 1,
+  "emission_order": "position_major_v1",
+  "producer_config": {
+    "source_file": "datasets/DNACorpus/YeMi",
+    "source_format": "raw",
+    "max_bases": null,
+    "model": "megabyte",
+    "run_dir": "outputs/dna_megabyte_large_opengenome2_11",
+    "checkpoint": "outputs/dna_megabyte_large_opengenome2_11/best.pt",
+    "checkpoint_metadata": {
+      "step": 7447500,
+      "best_val_bpb": 1.6386809738709998,
+      "epoch": 2,
+      "data_state": {
+        "schema_version": 1,
+        "train": {
+          "dataset_kind": "indexed_source_batch_stream",
+          "completed_global_steps": 7447500,
+          "batches_per_epoch": 6951890,
+          "current_epoch_index": 1,
+          "current_epoch": 2,
+          "current_batch_index_in_epoch": 495609,
+          "next_epoch_index": 1,
+          "next_epoch": 2,
+          "next_batch_index_in_epoch": 495610
+        }
+      }
+    },
+    "device": "cuda:0",
+    "dtype": "bfloat16",
+    "model_seconds": 10.00082713161828,
+    "factorize_seconds": 0.5227523004868999,
+    "probability_transfer_seconds": 0.19074918716796674,
+    "trace_generation_seconds": 11.239662042004056,
+    "batch_size": 8192,
+    "batch_count": 1,
+    "window_count": 24,
+    "tokens_per_window": 1024,
+    "model_window_tokens": 1024,
+    "model_window_bases": 3072,
+    "trace_window_bases": 8192,
+    "trace_token_merge_size": 1,
+    "model_token_merge_size": 3,
+    "includes_partial_final_model_token": false,
+    "lm_backend": "megabyte",
+    "lm_seq_length": 1024,
+    "lm_token_merge_size": 3,
+    "lm_token_alphabet": "ACGTN",
+    "model_uses_ascii_tokens": false,
+    "trace_order_conversion": {
+      "source_trace_dir": "outputs/megabyte_dnacorpus_w8192_model3072_streaming_cache_bs8192_target_traces/traces/YeMi",
+      "source_emission_order": "fused_depth_major_v1",
+      "output_emission_order": "position_major_v1",
+      "store_emit_position": false
+    }
+  },
+  "shard_files": [
+    "shards/shard_000000.npz"
+  ],
+  "checksum_sha256": "0fbe2f19c1d5e83572380489974004c45e5bb56e6ba241feb4f47ff197382116"
+}

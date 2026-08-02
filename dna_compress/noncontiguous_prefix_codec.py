@@ -7,7 +7,6 @@ from typing import Any
 import numpy as np
 
 from .compression import resolve_arithmetic_coding_metadata
-from .fast_arithmetic import StreamingArithmeticEncoder
 from .fast_nc_prefix import (
     NC_PREFIX_BACKENDS,
     compute_fast_nc_prefix,
@@ -27,6 +26,7 @@ class NoncontiguousPrefixConfig:
     backend: str = "auto"
     min_windows: int = DEFAULT_NC_PREFIX_MIN_WINDOWS
     hash_bucket_count: int = 0
+    geco2_level: int = 10
 
 
 @dataclass(frozen=True)
@@ -59,12 +59,15 @@ def _validate_config(config: NoncontiguousPrefixConfig) -> NoncontiguousPrefixCo
         raise ValueError("min_windows must be positive")
     if int(config.hash_bucket_count) < 0:
         raise ValueError("hash_bucket_count must be non-negative; use 0 for GECO2 default")
+    if int(config.geco2_level) < 1 or int(config.geco2_level) > 12:
+        raise ValueError("geco2_level must be in [1, 12]")
     return NoncontiguousPrefixConfig(
         window_bases=int(config.window_bases),
         alphabet=alphabet,
         backend=backend,
         min_windows=int(config.min_windows),
         hash_bucket_count=int(config.hash_bucket_count),
+        geco2_level=int(config.geco2_level),
     )
 
 
@@ -74,6 +77,7 @@ def compute_noncontiguous_prefix_probabilities(
     *,
     return_probabilities: bool = True,
     summary_only: bool = False,
+    stream_arithmetic_total: int = 0,
 ) -> NoncontiguousPrefixResult:
     cfg = _validate_config(config or NoncontiguousPrefixConfig())
     base_to_symbol = {base: index for index, base in enumerate(cfg.alphabet)}
@@ -101,6 +105,8 @@ def compute_noncontiguous_prefix_probabilities(
         return_probabilities=return_probabilities,
         summary_only=summary_only,
         hash_bucket_count=cfg.hash_bucket_count,
+        geco2_level=cfg.geco2_level,
+        stream_arithmetic_total=int(stream_arithmetic_total),
     )
     probabilities = fast_result["probabilities"].cpu().numpy()
     bpb_values = fast_result["bpb"].cpu().numpy()
@@ -116,6 +122,7 @@ def compute_noncontiguous_prefix_probabilities(
             "return_probabilities": bool(return_probabilities),
             "summary_only": bool(summary_only),
             "hash_bucket_count_config": int(cfg.hash_bucket_count),
+            "geco2_level_config": int(cfg.geco2_level),
         }
     )
     return NoncontiguousPrefixResult(
@@ -137,36 +144,42 @@ def compress_noncontiguous_prefix_sequence(
 ) -> dict[str, Any]:
     started = perf_counter()
     cfg = _validate_config(config or NoncontiguousPrefixConfig())
-    result = compute_noncontiguous_prefix_probabilities(
-        sequence,
-        cfg,
-        return_probabilities=encode_arithmetic,
-        summary_only=not encode_arithmetic,
-    )
     if encode_arithmetic:
-        vocab_size = result.probabilities.shape[1]
         arithmetic_metadata = resolve_arithmetic_coding_metadata(
-            vocab_size=vocab_size,
+            vocab_size=len(cfg.alphabet),
             requested_total=arithmetic_frequency_total,
             target_uniform_mass=arithmetic_target_uniform_mass,
         )
         total = int(arithmetic_metadata["arithmetic_frequency_total"])
-        ordered_probabilities = result.probabilities[result.emit_order]
-        ordered_symbols = result.target_symbols[result.emit_order]
-        encoder = StreamingArithmeticEncoder("auto")
-        timings = encoder.encode_probability_rows(ordered_probabilities, ordered_symbols, total=total)
-        encoded = encoder.finish()
-        arithmetic_backend = encoder.backend
-        arithmetic_bits_per_base = (len(encoded) * 8.0) / max(int(result.target_symbols.shape[0]), 1)
-        arithmetic_coded_bytes = len(encoded)
-        arithmetic_symbol_count = int(ordered_symbols.shape[0])
+        result = compute_noncontiguous_prefix_probabilities(
+            sequence,
+            cfg,
+            return_probabilities=False,
+            summary_only=True,
+            stream_arithmetic_total=total,
+        )
+        metadata = result.metadata
+        timing = dict(metadata.get("timing") or {})
+        arithmetic_backend = str(metadata.get("streaming_arithmetic_backend", "fast_cpp_inline_precise"))
+        arithmetic_bits_per_base = float(metadata["streaming_arithmetic_bits_per_base"])
+        arithmetic_coded_bytes = int(metadata["streaming_arithmetic_coded_bytes"])
+        arithmetic_symbol_count = int(metadata["streaming_arithmetic_emitted_symbols"])
+        quantize_seconds = float(timing.get("stream_arithmetic_quantize_seconds", 0.0))
+        range_seconds = float(timing.get("stream_arithmetic_range_seconds", 0.0))
+        finish_seconds = float(timing.get("stream_arithmetic_finish_seconds", 0.0))
         arithmetic_timing_fields = {
-            "arithmetic_quantize_seconds": timings.quantize_seconds,
-            "arithmetic_range_seconds": timings.range_seconds,
-            "arithmetic_interval_transfer_seconds": timings.interval_transfer_seconds,
-            "arithmetic_encode_seconds": timings.encode_seconds,
+            "arithmetic_quantize_seconds": quantize_seconds,
+            "arithmetic_range_seconds": range_seconds,
+            "arithmetic_interval_transfer_seconds": 0.0,
+            "arithmetic_encode_seconds": quantize_seconds + range_seconds + finish_seconds,
         }
     else:
+        result = compute_noncontiguous_prefix_probabilities(
+            sequence,
+            cfg,
+            return_probabilities=False,
+            summary_only=True,
+        )
         arithmetic_metadata = {
             "arithmetic_frequency_total": arithmetic_frequency_total,
             "arithmetic_target_uniform_mass": arithmetic_target_uniform_mass,
@@ -213,6 +226,7 @@ class NoncontiguousPrefixProbabilityAdapter(ProbabilityAdapter):
         backend: str = "auto",
         min_windows: int = DEFAULT_NC_PREFIX_MIN_WINDOWS,
         hash_bucket_count: int = 0,
+        geco2_level: int = 10,
     ) -> None:
         self.name = name
         self.token_size = 1
@@ -224,6 +238,7 @@ class NoncontiguousPrefixProbabilityAdapter(ProbabilityAdapter):
                 backend=backend,
                 min_windows=min_windows,
                 hash_bucket_count=hash_bucket_count,
+                geco2_level=geco2_level,
             )
         )
 

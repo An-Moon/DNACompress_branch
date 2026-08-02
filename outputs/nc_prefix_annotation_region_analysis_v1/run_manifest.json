@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "annotation_dir": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official",
+  "trace_root": "/home/Liang_junnan/DNACompress/outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/traces",
+  "output_dir": "outputs/nc_prefix_annotation_region_analysis_v1",
+  "species": [
+    "HoSa",
+    "GaGa",
+    "DaRe",
+    "OrSa",
+    "DrMe",
+    "EsCo",
+    "AgPh",
+    "BuEb",
+    "YeMi",
+    "AeCa",
+    "HaHi"
+  ],
+  "build_only": false,
+  "aggregate_only": false,
+  "window_bases": 8192,
+  "results": {
+    "HoSa": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/HoSa.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/HoSa.json",
+      "elapsed_seconds": 21.074801506998483,
+      "bases_per_second": 9003770.068106562
+    },
+    "GaGa": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/GaGa.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/GaGa.json",
+      "elapsed_seconds": 17.10354421500233,
+      "bases_per_second": 8684299.121448481
+    },
+    "DaRe": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/DaRe.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/DaRe.json",
+      "elapsed_seconds": 7.443112690001726,
+      "bases_per_second": 8405760.14441419
+    },
+    "OrSa": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/OrSa.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/OrSa.json",
+      "elapsed_seconds": 5.819470736998483,
+      "bases_per_second": 7434099.242900151
+    },
+    "DrMe": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/DrMe.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/DrMe.json",
+      "elapsed_seconds": 4.2143453390017385,
+      "bases_per_second": 7636163.249882813
+    },
+    "EsCo": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/EsCo.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/EsCo.json",
+      "elapsed_seconds": 0.5016217160009546,
+      "bases_per_second": 9253291.577973004
+    },
+    "AgPh": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/AgPh.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/AgPh.json",
+      "elapsed_seconds": 0.006162981997476891,
+      "bases_per_second": 7134533.253220796
+    },
+    "BuEb": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/BuEb.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/BuEb.json",
+      "elapsed_seconds": 0.0024855219962773845,
+      "bases_per_second": 7620129.706503025
+    },
+    "YeMi": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/YeMi.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/YeMi.json",
+      "elapsed_seconds": 0.010032480000518262,
+      "bases_per_second": 7345043.298984233
+    },
+    "AeCa": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/AeCa.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/AeCa.json",
+      "elapsed_seconds": 0.1867844850057736,
+      "bases_per_second": 8518100.419051507
+    },
+    "HaHi": {
+      "annotation_index": "outputs/nc_prefix_annotation_region_analysis_v1/annotation_interval_index/HaHi.npz",
+      "per_species_json": "outputs/nc_prefix_annotation_region_analysis_v1/per_species/HaHi.json",
+      "elapsed_seconds": 0.4418672829924617,
+      "bases_per_second": 8803559.68800334
+    }
+  },
+  "skipped": []
+}

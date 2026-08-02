@@ -1,0 +1,20 @@
+{
+  "dataset_root": "datasets/dnacorpus_corrected_supplement_v1",
+  "output_dir": "outputs/nc_prefix_dnacorpus_corrected_supplement_w8192_target_traces",
+  "position_major_output_dir": "outputs/nc_prefix_dnacorpus_corrected_supplement_w8192_target_traces_position_major",
+  "source": null,
+  "window_bases": 8192,
+  "token_merge_size": 1,
+  "trace_dtype": "float32",
+  "shard_rows": 1000000,
+  "nc_prefix_backend": "fast_cpp",
+  "nc_prefix_min_windows": 1,
+  "nc_prefix_hash_bucket_count": 0,
+  "nc_prefix_preset": "geco2_paper",
+  "nc_prefix_geco2_level": 10,
+  "store_position_major_emit_position": false,
+  "skip_existing": true,
+  "depth_major_output_dir": "outputs/nc_prefix_dnacorpus_corrected_supplement_w8192_target_traces",
+  "analysis_trace_order": "position_major_v1",
+  "probability_entrypoint": "scripts/run_probability_trace.py"
+}

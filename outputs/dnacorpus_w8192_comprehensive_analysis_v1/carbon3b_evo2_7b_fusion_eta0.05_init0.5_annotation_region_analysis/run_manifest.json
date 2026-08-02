@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "annotation_dir": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official",
+  "trace_root": "/home/Liang_junnan/DNACompress/outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full_position_major/traces",
+  "fused_left_trace_root": "outputs/carbon3b_dnacorpus_w8192_target_traces_position_major/traces",
+  "fused_right_trace_root": "outputs/evo2_7b_dnacorpus_w8192_full_forward_bs12_target_traces_position_major/traces",
+  "fusion_eta": 0.05,
+  "fusion_initial_left_weight": 0.5,
+  "output_dir": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis",
+  "species": [
+    "HoSa",
+    "GaGa",
+    "DaRe",
+    "OrSa",
+    "DrMe",
+    "EsCo",
+    "HaHi",
+    "AeCa",
+    "YeMi",
+    "AgPh",
+    "BuEb"
+  ],
+  "build_only": false,
+  "aggregate_only": false,
+  "window_bases": 8192,
+  "results": {
+    "HoSa": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/HoSa.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/HoSa.json",
+      "elapsed_seconds": 79.14308940095361,
+      "bases_per_second": 2397589.839318474
+    },
+    "GaGa": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/GaGa.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/GaGa.json",
+      "elapsed_seconds": 58.0694791849819,
+      "bases_per_second": 2557837.543657768
+    },
+    "DaRe": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/DaRe.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/DaRe.json",
+      "elapsed_seconds": 23.468648190028034,
+      "bases_per_second": 2665897.903168715
+    },
+    "OrSa": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/OrSa.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/OrSa.json",
+      "elapsed_seconds": 15.90029343101196,
+      "bases_per_second": 2720863.1832932527
+    },
+    "DrMe": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/DrMe.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/DrMe.json",
+      "elapsed_seconds": 11.816516168008093,
+      "bases_per_second": 2723427.831218786
+    },
+    "EsCo": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/EsCo.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/EsCo.json",
+      "elapsed_seconds": 1.8741231159656309,
+      "bases_per_second": 2476706.0181147256
+    },
+    "HaHi": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/HaHi.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/HaHi.json",
+      "elapsed_seconds": 1.5133591349585913,
+      "bases_per_second": 2570444.06059401
+    },
+    "AeCa": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/AeCa.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/AeCa.json",
+      "elapsed_seconds": 0.7044532549916767,
+      "bases_per_second": 2258558.6605300005
+    },
+    "YeMi": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/YeMi.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/YeMi.json",
+      "elapsed_seconds": 0.16747690102783963,
+      "bases_per_second": 439995.0055664733
+    },
+    "AgPh": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/AgPh.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/AgPh.json",
+      "elapsed_seconds": 0.15713044302538037,
+      "bases_per_second": 279831.19727408764
+    },
+    "BuEb": {
+      "annotation_index": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/annotation_interval_index/BuEb.npz",
+      "per_species_json": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/carbon3b_evo2_7b_fusion_eta0.05_init0.5_annotation_region_analysis/per_species/BuEb.json",
+      "elapsed_seconds": 0.15233277500374243,
+      "bases_per_second": 124333.05964218595
+    }
+  },
+  "skipped": []
+}

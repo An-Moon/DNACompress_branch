@@ -1,0 +1,729 @@
+{
+  "k": 21,
+  "sample_step": 997,
+  "rows": [
+    {
+      "code": "HePy",
+      "original_len": 1667825,
+      "official_clean_len": 1667850,
+      "sampled_21mers": 1673,
+      "sample_hits": 1673,
+      "sample_hit_fraction": 1.0,
+      "record_hit_counts": [
+        {
+          "record_index": 0,
+          "seqid": "NC_018939.1",
+          "header": "NC_018939.1 Helicobacter pylori 26695, complete sequence",
+          "record_acgt_len": 1667850,
+          "sample_hits": 1673,
+          "first_original_sample_pos": 0,
+          "last_original_sample_pos": 1666984,
+          "first_official_pos": 0,
+          "last_official_pos": 1667009
+        }
+      ],
+      "record_hit_count_total_records_with_hits": 1,
+      "top_position_delta_modes": [
+        {
+          "delta_mod_official": 19,
+          "count": 208
+        },
+        {
+          "delta_mod_official": 16,
+          "count": 160
+        },
+        {
+          "delta_mod_official": 10,
+          "count": 126
+        },
+        {
+          "delta_mod_official": 6,
+          "count": 108
+        },
+        {
+          "delta_mod_official": 14,
+          "count": 107
+        },
+        {
+          "delta_mod_official": 5,
+          "count": 105
+        },
+        {
+          "delta_mod_official": 0,
+          "count": 104
+        },
+        {
+          "delta_mod_official": 2,
+          "count": 95
+        }
+      ],
+      "seconds": 0.26385023503098637
+    },
+    {
+      "code": "ScPo",
+      "original_len": 10652155,
+      "official_clean_len": 12590851,
+      "sampled_21mers": 10685,
+      "sample_hits": 9282,
+      "sample_hit_fraction": 0.8686944314459523,
+      "record_hit_counts": [
+        {
+          "record_index": 0,
+          "seqid": "NC_003424.3",
+          "header": "NC_003424.3 Schizosaccharomyces pombe strain 972h- genome assembly, chromosome: I",
+          "record_acgt_len": 5579033,
+          "sample_hits": 4243,
+          "first_original_sample_pos": 0,
+          "last_original_sample_pos": 10525329,
+          "first_official_pos": 0,
+          "last_official_pos": 5579032
+        },
+        {
+          "record_index": 1,
+          "seqid": "NC_003423.3",
+          "header": "NC_003423.3 Schizosaccharomyces pombe strain 972h- genome assembly, chromosome: II",
+          "record_acgt_len": 4539604,
+          "sample_hits": 3259,
+          "first_original_sample_pos": 4743726,
+          "last_original_sample_pos": 10639984,
+          "first_official_pos": 5586428,
+          "last_official_pos": 10117104
+        },
+        {
+          "record_index": 2,
+          "seqid": "NC_003421.2",
+          "header": "NC_003421.2 Schizosaccharomyces pombe strain 972h- genome assembly, chromosome: III",
+          "record_acgt_len": 2452781,
+          "sample_hits": 1761,
+          "first_original_sample_pos": 8568218,
+          "last_original_sample_pos": 10632008,
+          "first_official_pos": 10119337,
+          "last_official_pos": 12567257
+        },
+        {
+          "record_index": 3,
+          "seqid": "NC_088682.1",
+          "header": "NC_088682.1 Schizosaccharomyces pombe isolate MT1 mitochondrion, complete genome",
+          "record_acgt_len": 19433,
+          "sample_hits": 19,
+          "first_original_sample_pos": 10633005,
+          "last_original_sample_pos": 10651948,
+          "first_official_pos": 12571699,
+          "last_official_pos": 12590644
+        }
+      ],
+      "record_hit_count_total_records_with_hits": 4,
+      "top_position_delta_modes": [
+        {
+          "delta_mod_official": 1938696,
+          "count": 11
+        },
+        {
+          "delta_mod_official": 1814926,
+          "count": 4
+        },
+        {
+          "delta_mod_official": 937066,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 1156117,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 1938693,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 1938694,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 1813538,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 619252,
+          "count": 3
+        }
+      ],
+      "seconds": 2.5181768860202283
+    },
+    {
+      "code": "PlFa",
+      "original_len": 8986712,
+      "official_clean_len": 23326872,
+      "sampled_21mers": 9014,
+      "sample_hits": 5457,
+      "sample_hit_fraction": 0.6053916130463723,
+      "record_hit_counts": [
+        {
+          "record_index": 0,
+          "seqid": "NC_004325.2",
+          "header": "NC_004325.2 Plasmodium falciparum 3D7 genome assembly, chromosome: 1",
+          "record_acgt_len": 640851,
+          "sample_hits": 225,
+          "first_original_sample_pos": 0,
+          "last_original_sample_pos": 8977985,
+          "first_official_pos": 319,
+          "last_official_pos": 637364
+        },
+        {
+          "record_index": 1,
+          "seqid": "NC_037280.1",
+          "header": "NC_037280.1 Plasmodium falciparum 3D7 genome assembly, chromosome: 2",
+          "record_acgt_len": 947102,
+          "sample_hits": 290,
+          "first_original_sample_pos": 247256,
+          "last_original_sample_pos": 8973000,
+          "first_official_pos": 642734,
+          "last_official_pos": 1586837
+        },
+        {
+          "record_index": 2,
+          "seqid": "NC_000521.4",
+          "header": "NC_000521.4 Plasmodium falciparum 3D7 genome assembly, chromosome: 3",
+          "record_acgt_len": 1067971,
+          "sample_hits": 265,
+          "first_original_sample_pos": 619137,
+          "last_original_sample_pos": 7753669,
+          "first_official_pos": 1593801,
+          "last_official_pos": 2650619
+        },
+        {
+          "record_index": 3,
+          "seqid": "NC_004318.2",
+          "header": "NC_004318.2 Plasmodium falciparum 3D7 genome assembly, chromosome: 4",
+          "record_acgt_len": 1200490,
+          "sample_hits": 312,
+          "first_original_sample_pos": 1032892,
+          "last_original_sample_pos": 6629053,
+          "first_official_pos": 2657448,
+          "last_official_pos": 3854922
+        },
+        {
+          "record_index": 4,
+          "seqid": "NC_004326.2",
+          "header": "NC_004326.2 Plasmodium falciparum 3D7 genome assembly, chromosome: 5",
+          "record_acgt_len": 1343557,
+          "sample_hits": 322,
+          "first_original_sample_pos": 1520425,
+          "last_original_sample_pos": 6662951,
+          "first_official_pos": 3857579,
+          "last_official_pos": 5198133
+        },
+        {
+          "record_index": 5,
+          "seqid": "NC_004327.3",
+          "header": "NC_004327.3 Plasmodium falciparum 3D7 genome assembly, chromosome: 6",
+          "record_acgt_len": 1418242,
+          "sample_hits": 336,
+          "first_original_sample_pos": 2045844,
+          "last_original_sample_pos": 7737717,
+          "first_official_pos": 5200697,
+          "last_official_pos": 6616104
+        },
+        {
+          "record_index": 6,
+          "seqid": "NC_004328.3",
+          "header": "NC_004328.3 Plasmodium falciparum 3D7 genome assembly, chromosome: 7",
+          "record_acgt_len": 1445207,
+          "sample_hits": 337,
+          "first_original_sample_pos": 2067778,
+          "last_original_sample_pos": 7738714,
+          "first_official_pos": 6620224,
+          "last_official_pos": 8060587
+        },
+        {
+          "record_index": 7,
+          "seqid": "NC_004329.3",
+          "header": "NC_004329.3 Plasmodium falciparum 3D7 genome assembly, chromosome: 8",
+          "record_acgt_len": 1472805,
+          "sample_hits": 316,
+          "first_original_sample_pos": 3202364,
+          "last_original_sample_pos": 6669930,
+          "first_official_pos": 8067854,
+          "last_official_pos": 9496656
+        },
+        {
+          "record_index": 8,
+          "seqid": "NC_004330.2",
+          "header": "NC_004330.2 Plasmodium falciparum 3D7 genome assembly, chromosome: 9",
+          "record_acgt_len": 1541735,
+          "sample_hits": 342,
+          "first_original_sample_pos": 25922,
+          "last_original_sample_pos": 6684885,
+          "first_official_pos": 9538536,
+          "last_official_pos": 11074014
+        },
+        {
+          "record_index": 9,
+          "seqid": "NC_037281.1",
+          "header": "NC_037281.1 Plasmodium falciparum 3D7 genome assembly, chromosome: 10",
+          "record_acgt_len": 1687656,
+          "sample_hits": 370,
+          "first_original_sample_pos": 4336950,
+          "last_original_sample_pos": 7761645,
+          "first_official_pos": 11084297,
+          "last_official_pos": 12762670
+        },
+        {
+          "record_index": 10,
+          "seqid": "NC_037282.1",
+          "header": "NC_037282.1 Plasmodium falciparum 3D7 genome assembly, chromosome: 11",
+          "record_acgt_len": 2038340,
+          "sample_hits": 448,
+          "first_original_sample_pos": 4989985,
+          "last_original_sample_pos": 8974994,
+          "first_official_pos": 12768043,
+          "last_official_pos": 14800584
+        },
+        {
+          "record_index": 11,
+          "seqid": "NC_037284.1",
+          "header": "NC_037284.1 Plasmodium falciparum 3D7 genome assembly, chromosome: 12",
+          "record_acgt_len": 2271494,
+          "sample_hits": 529,
+          "first_original_sample_pos": 2621113,
+          "last_original_sample_pos": 8971006,
+          "first_official_pos": 14807181,
+          "last_official_pos": 17073899
+        },
+        {
+          "record_index": 12,
+          "seqid": "NC_004331.3",
+          "header": "NC_004331.3 Plasmodium falciparum 3D7 genome assembly, chromosome: 13",
+          "record_acgt_len": 2925236,
+          "sample_hits": 664,
+          "first_original_sample_pos": 3758690,
+          "last_original_sample_pos": 7768624,
+          "first_official_pos": 17100251,
+          "last_official_pos": 19994069
+        },
+        {
+          "record_index": 13,
+          "seqid": "NC_037283.1",
+          "header": "NC_037283.1 Plasmodium falciparum 3D7 genome assembly, chromosome: 14",
+          "record_acgt_len": 3291936,
+          "sample_hits": 701,
+          "first_original_sample_pos": 7756660,
+          "last_original_sample_pos": 8979979,
+          "first_official_pos": 20003064,
+          "last_official_pos": 23291145
+        }
+      ],
+      "record_hit_count_total_records_with_hits": 14,
+      "top_position_delta_modes": [
+        {
+          "delta_mod_official": 7691422,
+          "count": 6
+        },
+        {
+          "delta_mod_official": 3955817,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 7691403,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 7691440,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 3185171,
+          "count": 2
+        },
+        {
+          "delta_mod_official": 10413926,
+          "count": 2
+        },
+        {
+          "delta_mod_official": 23142750,
+          "count": 1
+        },
+        {
+          "delta_mod_official": 4561439,
+          "count": 1
+        }
+      ],
+      "seconds": 4.643854449968785
+    },
+    {
+      "code": "EnIn",
+      "original_len": 26403087,
+      "official_clean_len": 40496007,
+      "sampled_21mers": 26483,
+      "sample_hits": 21326,
+      "sample_hit_fraction": 0.8052713061209078,
+      "record_hit_counts": [
+        {
+          "record_index": 0,
+          "seqid": "NW_004443936.1",
+          "header": "NW_004443936.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725349, whole genome shotgun sequence",
+          "record_acgt_len": 1513,
+          "sample_hits": 4,
+          "first_original_sample_pos": 0,
+          "last_original_sample_pos": 23899087,
+          "first_official_pos": 0,
+          "last_official_pos": 273
+        },
+        {
+          "record_index": 1,
+          "seqid": "NW_004443935.1",
+          "header": "NW_004443935.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074724739, whole genome shotgun sequence",
+          "record_acgt_len": 1489,
+          "sample_hits": 3,
+          "first_original_sample_pos": 997,
+          "last_original_sample_pos": 24833276,
+          "first_official_pos": 1913,
+          "last_official_pos": 2680
+        },
+        {
+          "record_index": 2,
+          "seqid": "NW_004443805.1",
+          "header": "NW_004443805.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725015, whole genome shotgun sequence",
+          "record_acgt_len": 1354,
+          "sample_hits": 1,
+          "first_original_sample_pos": 1994,
+          "last_original_sample_pos": 1994,
+          "first_official_pos": 4313,
+          "last_official_pos": 4313
+        },
+        {
+          "record_index": 3,
+          "seqid": "NW_004443803.1",
+          "header": "NW_004443803.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074724831, whole genome shotgun sequence",
+          "record_acgt_len": 73213,
+          "sample_hits": 59,
+          "first_original_sample_pos": 3988,
+          "last_original_sample_pos": 25555104,
+          "first_official_pos": 6159,
+          "last_official_pos": 77471
+        },
+        {
+          "record_index": 5,
+          "seqid": "NW_004443934.1",
+          "header": "NW_004443934.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725203, whole genome shotgun sequence",
+          "record_acgt_len": 2003,
+          "sample_hits": 4,
+          "first_original_sample_pos": 46859,
+          "last_original_sample_pos": 22037688,
+          "first_official_pos": 78790,
+          "last_official_pos": 80677
+        },
+        {
+          "record_index": 7,
+          "seqid": "NW_004443797.1",
+          "header": "NW_004443797.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725791, whole genome shotgun sequence",
+          "record_acgt_len": 1831,
+          "sample_hits": 1,
+          "first_original_sample_pos": 48853,
+          "last_original_sample_pos": 48853,
+          "first_official_pos": 82592,
+          "last_official_pos": 82592
+        },
+        {
+          "record_index": 8,
+          "seqid": "NW_004443795.1",
+          "header": "NW_004443795.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725865, whole genome shotgun sequence",
+          "record_acgt_len": 12286,
+          "sample_hits": 9,
+          "first_original_sample_pos": 49850,
+          "last_original_sample_pos": 17019787,
+          "first_official_pos": 84337,
+          "last_official_pos": 94400
+        },
+        {
+          "record_index": 11,
+          "seqid": "NW_004443793.1",
+          "header": "NW_004443793.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074726507, whole genome shotgun sequence",
+          "record_acgt_len": 65631,
+          "sample_hits": 56,
+          "first_original_sample_pos": 56829,
+          "last_original_sample_pos": 25840246,
+          "first_official_pos": 98754,
+          "last_official_pos": 163265
+        },
+        {
+          "record_index": 12,
+          "seqid": "NW_004443791.1",
+          "header": "NW_004443791.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725089, whole genome shotgun sequence",
+          "record_acgt_len": 25192,
+          "sample_hits": 23,
+          "first_original_sample_pos": 94715,
+          "last_original_sample_pos": 21843273,
+          "first_official_pos": 165003,
+          "last_official_pos": 189379
+        },
+        {
+          "record_index": 14,
+          "seqid": "NW_004443789.1",
+          "header": "NW_004443789.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725673, whole genome shotgun sequence",
+          "record_acgt_len": 64956,
+          "sample_hits": 43,
+          "first_original_sample_pos": 109670,
+          "last_original_sample_pos": 26030673,
+          "first_official_pos": 191361,
+          "last_official_pos": 255128
+        },
+        {
+          "record_index": 15,
+          "seqid": "NW_004443930.1",
+          "header": "NW_004443930.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074726035, whole genome shotgun sequence",
+          "record_acgt_len": 3043,
+          "sample_hits": 2,
+          "first_original_sample_pos": 146559,
+          "last_original_sample_pos": 13696786,
+          "first_official_pos": 257643,
+          "last_official_pos": 258550
+        },
+        {
+          "record_index": 16,
+          "seqid": "NW_004443929.1",
+          "header": "NW_004443929.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074726485, whole genome shotgun sequence",
+          "record_acgt_len": 1007,
+          "sample_hits": 2,
+          "first_original_sample_pos": 147556,
+          "last_original_sample_pos": 22108475,
+          "first_official_pos": 259028,
+          "last_official_pos": 259800
+        },
+        {
+          "record_index": 18,
+          "seqid": "NW_004443927.1",
+          "header": "NW_004443927.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725431, whole genome shotgun sequence",
+          "record_acgt_len": 1008,
+          "sample_hits": 1,
+          "first_original_sample_pos": 148553,
+          "last_original_sample_pos": 148553,
+          "first_official_pos": 261798,
+          "last_official_pos": 261798
+        },
+        {
+          "record_index": 19,
+          "seqid": "NW_004443787.1",
+          "header": "NW_004443787.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074724661, whole genome shotgun sequence",
+          "record_acgt_len": 1105,
+          "sample_hits": 1,
+          "first_original_sample_pos": 8640999,
+          "last_original_sample_pos": 8640999,
+          "first_official_pos": 262482,
+          "last_official_pos": 262482
+        },
+        {
+          "record_index": 20,
+          "seqid": "NW_004443785.1",
+          "header": "NW_004443785.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725901, whole genome shotgun sequence",
+          "record_acgt_len": 19952,
+          "sample_hits": 13,
+          "first_original_sample_pos": 151544,
+          "last_original_sample_pos": 25125397,
+          "first_official_pos": 264594,
+          "last_official_pos": 282555
+        },
+        {
+          "record_index": 21,
+          "seqid": "NW_004443926.1",
+          "header": "NW_004443926.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725721, whole genome shotgun sequence",
+          "record_acgt_len": 1045,
+          "sample_hits": 1,
+          "first_original_sample_pos": 161514,
+          "last_original_sample_pos": 161514,
+          "first_official_pos": 283758,
+          "last_official_pos": 283758
+        },
+        {
+          "record_index": 23,
+          "seqid": "NW_004443925.1",
+          "header": "NW_004443925.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074726623, whole genome shotgun sequence",
+          "record_acgt_len": 1049,
+          "sample_hits": 1,
+          "first_original_sample_pos": 162511,
+          "last_original_sample_pos": 162511,
+          "first_official_pos": 285961,
+          "last_official_pos": 285961
+        },
+        {
+          "record_index": 24,
+          "seqid": "NW_004443781.1",
+          "header": "NW_004443781.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725989, whole genome shotgun sequence",
+          "record_acgt_len": 87186,
+          "sample_hits": 75,
+          "first_original_sample_pos": 163508,
+          "last_original_sample_pos": 26006745,
+          "first_official_pos": 287123,
+          "last_official_pos": 373724
+        },
+        {
+          "record_index": 26,
+          "seqid": "NW_004443779.1",
+          "header": "NW_004443779.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074726335, whole genome shotgun sequence",
+          "record_acgt_len": 1122,
+          "sample_hits": 2,
+          "first_original_sample_pos": 213358,
+          "last_original_sample_pos": 9035811,
+          "first_official_pos": 376263,
+          "last_official_pos": 376371
+        },
+        {
+          "record_index": 27,
+          "seqid": "NW_004443777.1",
+          "header": "NW_004443777.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725155, whole genome shotgun sequence",
+          "record_acgt_len": 16628,
+          "sample_hits": 12,
+          "first_original_sample_pos": 214355,
+          "last_original_sample_pos": 19975892,
+          "first_official_pos": 377388,
+          "last_official_pos": 393274
+        },
+        {
+          "record_index": 28,
+          "seqid": "NW_004443923.1",
+          "header": "NW_004443923.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074726423, whole genome shotgun sequence",
+          "record_acgt_len": 1077,
+          "sample_hits": 3,
+          "first_original_sample_pos": 7499434,
+          "last_original_sample_pos": 7648984,
+          "first_official_pos": 393818,
+          "last_official_pos": 394263
+        },
+        {
+          "record_index": 29,
+          "seqid": "NW_004443922.1",
+          "header": "NW_004443922.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074724547, whole genome shotgun sequence",
+          "record_acgt_len": 1047,
+          "sample_hits": 2,
+          "first_original_sample_pos": 10639984,
+          "last_original_sample_pos": 12593107,
+          "first_official_pos": 395613,
+          "last_official_pos": 395615
+        },
+        {
+          "record_index": 30,
+          "seqid": "NW_004443921.1",
+          "header": "NW_004443921.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074724557, whole genome shotgun sequence",
+          "record_acgt_len": 1165,
+          "sample_hits": 1,
+          "first_original_sample_pos": 225322,
+          "last_original_sample_pos": 225322,
+          "first_official_pos": 396700,
+          "last_official_pos": 396700
+        },
+        {
+          "record_index": 31,
+          "seqid": "NW_004443920.1",
+          "header": "NW_004443920.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074726125, whole genome shotgun sequence",
+          "record_acgt_len": 1994,
+          "sample_hits": 1,
+          "first_original_sample_pos": 226319,
+          "last_original_sample_pos": 226319,
+          "first_official_pos": 398210,
+          "last_official_pos": 398210
+        },
+        {
+          "record_index": 32,
+          "seqid": "NW_004443919.1",
+          "header": "NW_004443919.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074724673, whole genome shotgun sequence",
+          "record_acgt_len": 1627,
+          "sample_hits": 1,
+          "first_original_sample_pos": 227316,
+          "last_original_sample_pos": 227316,
+          "first_official_pos": 399826,
+          "last_official_pos": 399826
+        },
+        {
+          "record_index": 33,
+          "seqid": "NW_004443918.1",
+          "header": "NW_004443918.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725971, whole genome shotgun sequence",
+          "record_acgt_len": 1451,
+          "sample_hits": 2,
+          "first_original_sample_pos": 5314010,
+          "last_original_sample_pos": 11837381,
+          "first_official_pos": 400791,
+          "last_official_pos": 401082
+        },
+        {
+          "record_index": 34,
+          "seqid": "NW_004443775.1",
+          "header": "NW_004443775.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725329, whole genome shotgun sequence",
+          "record_acgt_len": 1284,
+          "sample_hits": 1,
+          "first_original_sample_pos": 228313,
+          "last_original_sample_pos": 228313,
+          "first_official_pos": 402337,
+          "last_official_pos": 402337
+        },
+        {
+          "record_index": 35,
+          "seqid": "NW_004443917.1",
+          "header": "NW_004443917.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074724338, whole genome shotgun sequence",
+          "record_acgt_len": 1025,
+          "sample_hits": 3,
+          "first_original_sample_pos": 229310,
+          "last_original_sample_pos": 2227298,
+          "first_official_pos": 403441,
+          "last_official_pos": 404332
+        },
+        {
+          "record_index": 36,
+          "seqid": "NW_004443773.1",
+          "header": "NW_004443773.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725037, whole genome shotgun sequence",
+          "record_acgt_len": 15712,
+          "sample_hits": 24,
+          "first_original_sample_pos": 231304,
+          "last_original_sample_pos": 21483356,
+          "first_official_pos": 404722,
+          "last_official_pos": 417692
+        },
+        {
+          "record_index": 37,
+          "seqid": "NW_004443916.1",
+          "header": "NW_004443916.1 Entamoeba invadens IP1 unplaced genomic scaffold scaff_1105074725607, whole genome shotgun sequence",
+          "record_acgt_len": 1429,
+          "sample_hits": 1,
+          "first_original_sample_pos": 239280,
+          "last_original_sample_pos": 239280,
+          "first_official_pos": 420758,
+          "last_official_pos": 420758
+        }
+      ],
+      "record_hit_count_total_records_with_hits": 672,
+      "top_position_delta_modes": [
+        {
+          "delta_mod_official": 6731351,
+          "count": 4
+        },
+        {
+          "delta_mod_official": 11342276,
+          "count": 4
+        },
+        {
+          "delta_mod_official": 679351,
+          "count": 4
+        },
+        {
+          "delta_mod_official": 12798399,
+          "count": 4
+        },
+        {
+          "delta_mod_official": 2616505,
+          "count": 4
+        },
+        {
+          "delta_mod_official": 4272142,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 1965838,
+          "count": 3
+        },
+        {
+          "delta_mod_official": 2691753,
+          "count": 3
+        }
+      ],
+      "seconds": 12.031475368014071
+    }
+  ]
+}

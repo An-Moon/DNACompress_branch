@@ -1,0 +1,148 @@
+{
+  "plot_path": "/home/Liang_junnan/DNACompress/outputs/dnacorpus_w8192_comprehensive_analysis_v1/_annotation_region_bpb_by_species_subplots.png",
+  "series_order": [
+    "nc_prefix",
+    "carbon3b",
+    "carbon_nc_fused",
+    "evo2_7b",
+    "evo2_nc_fused"
+  ],
+  "supported_species": [
+    "HoSa",
+    "GaGa",
+    "DaRe",
+    "OrSa",
+    "DrMe",
+    "EnIn",
+    "ScPo",
+    "PlFa",
+    "EsCo",
+    "HaHi",
+    "HePy",
+    "AeCa",
+    "YeMi",
+    "AgPh",
+    "BuEb"
+  ],
+  "global_by_region": [
+    {
+      "region_class": "intergenic",
+      "weighted_bpb": {
+        "nc_prefix": 1.5921558864092507,
+        "carbon3b": 1.5621888479424042,
+        "carbon_nc_fused": 1.4626631940428203,
+        "evo2_7b": 1.550950935450668,
+        "evo2_nc_fused": 1.4580880079541476
+      },
+      "small_base_count_species": [
+        {
+          "species": "BuEb",
+          "base_count": 681
+        }
+      ]
+    },
+    {
+      "region_class": "intron",
+      "weighted_bpb": {
+        "nc_prefix": 1.7145188425420241,
+        "carbon3b": 1.6055760372455627,
+        "carbon_nc_fused": 1.5816886474318732,
+        "evo2_7b": 1.6120586522295255,
+        "evo2_nc_fused": 1.5847448184336912
+      },
+      "small_base_count_species": [
+        {
+          "species": "HaHi",
+          "base_count": 4
+        }
+      ]
+    },
+    {
+      "region_class": "exon_non_cds",
+      "weighted_bpb": {
+        "nc_prefix": 1.8236377356839617,
+        "carbon3b": 1.7033209096481468,
+        "carbon_nc_fused": 1.6765682515051634,
+        "evo2_7b": 1.7021849516890795,
+        "evo2_nc_fused": 1.6772573905885848
+      },
+      "small_base_count_species": []
+    },
+    {
+      "region_class": "rna",
+      "weighted_bpb": {
+        "nc_prefix": 1.6792982859534815,
+        "carbon3b": 1.5239003009811385,
+        "carbon_nc_fused": 1.4987328378473643,
+        "evo2_7b": 1.5238710725603604,
+        "evo2_nc_fused": 1.499273733501083
+      },
+      "small_base_count_species": []
+    },
+    {
+      "region_class": "cds",
+      "weighted_bpb": {
+        "nc_prefix": 1.8001475667902984,
+        "carbon3b": 1.3923947591216395,
+        "carbon_nc_fused": 1.3453625285511817,
+        "evo2_7b": 1.3160117137976,
+        "evo2_nc_fused": 1.2726507106411857
+      },
+      "small_base_count_species": []
+    },
+    {
+      "region_class": "repeat_mobile_existing",
+      "weighted_bpb": {
+        "nc_prefix": 0.9093418331545684,
+        "carbon3b": 1.512120726094067,
+        "carbon_nc_fused": 0.8383184281596967,
+        "evo2_7b": 1.0764903382732556,
+        "evo2_nc_fused": 0.6902714936930217
+      },
+      "small_base_count_species": [
+        {
+          "species": "HaHi",
+          "base_count": 812
+        }
+      ]
+    }
+  ],
+  "small_region_base_threshold": 1000,
+  "small_region_rows": [
+    {
+      "region_class": "intergenic",
+      "species": [
+        {
+          "species": "BuEb",
+          "base_count": 681
+        }
+      ]
+    },
+    {
+      "region_class": "intron",
+      "species": [
+        {
+          "species": "HaHi",
+          "base_count": 4
+        }
+      ]
+    },
+    {
+      "region_class": "repeat_mobile_existing",
+      "species": [
+        {
+          "species": "HaHi",
+          "base_count": 812
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "AnCa and WaMe are omitted from annotation-region plots because they have no coordinate-verified region data.",
+    "A subtle dashed separator is drawn between the eukaryotic/protist group and EsCo/prokaryotic/viral entries.",
+    "The RNA panel is restricted to non-mRNA RNA features such as tRNA/rRNA/ncRNA labels.",
+    "Empty bars mean zero exclusive bases for that region under the priority label scheme, not necessarily biological absence.",
+    "Small gray triangle markers flag regions with fewer than 1000 exclusive bases; these regions are excluded from bars and weighted values.",
+    "repeat_mobile_existing is sparse and reflects only repeat/mobile labels present in official GFF3."
+  ]
+}

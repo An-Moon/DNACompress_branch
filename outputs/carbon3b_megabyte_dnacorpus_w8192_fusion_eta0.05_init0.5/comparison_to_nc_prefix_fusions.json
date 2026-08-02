@@ -1,0 +1,63 @@
+{
+  "comparison_scope": "DNACorpus original 17 species, position_major traces, online_hedge_linear eta=0.05 init=0.5",
+  "total_bases": 685597124,
+  "species_count": 17,
+  "sources": {
+    "carbon_megabyte": "outputs/carbon3b_megabyte_dnacorpus_w8192_fusion_eta0.05_init0.5/carbon3b_megabyte_fusion_summary.csv",
+    "carbon_nc_prefix": "outputs/carbon_vs_nc_prefix_dnacorpus_w8192_species_curves_v1/fusion_online_hedge_eta0.05_init0.5_position_major_v1/carbon3b_nc_prefix_fusion_summary.csv",
+    "megabyte_nc_prefix": "outputs/megabyte_nc_prefix_dnacorpus_w8192_model3072_streaming_cache_bs8192_fusion_eta0.05_init0.5/megabyte_nc_prefix_fusion_summary.csv"
+  },
+  "weighted_bpb": {
+    "carbon3b": 1.5537016710018088,
+    "megabyte": 1.792852833853983,
+    "nc_prefix": 1.6661174326998553,
+    "carbon_megabyte_fused": 1.549721022273833,
+    "carbon_nc_prefix_fused": 1.503475802843938,
+    "megabyte_nc_prefix_fused": 1.6263415228883704
+  },
+  "weighted_delta_bpb": {
+    "carbon_megabyte_minus_carbon3b": -0.003980648727975877,
+    "carbon_megabyte_minus_megabyte": -0.24313181158015018,
+    "carbon_megabyte_minus_nc_prefix": -0.11639641042602245,
+    "carbon_megabyte_minus_carbon_nc_prefix_fused": 0.04624521942989501,
+    "carbon_megabyte_minus_megabyte_nc_prefix_fused": -0.07662050061453751
+  },
+  "best_pair_counts": {
+    "carbon_megabyte": 4,
+    "carbon_nc_prefix": 13,
+    "megabyte_nc_prefix": 0
+  },
+  "species_where_carbon_megabyte_best_pair": [
+    "AeCa",
+    "YeMi",
+    "AgPh",
+    "BuEb"
+  ],
+  "largest_carbon_megabyte_loss_vs_best_pair": [
+    {
+      "species": "EnIn",
+      "loss_bpb": 0.30857243192010997,
+      "best_pair": "carbon_nc_prefix"
+    },
+    {
+      "species": "OrSa",
+      "loss_bpb": 0.1667786202482351,
+      "best_pair": "carbon_nc_prefix"
+    },
+    {
+      "species": "PlFa",
+      "loss_bpb": 0.07696168740113296,
+      "best_pair": "carbon_nc_prefix"
+    },
+    {
+      "species": "DaRe",
+      "loss_bpb": 0.07632806329274233,
+      "best_pair": "carbon_nc_prefix"
+    },
+    {
+      "species": "AnCa",
+      "loss_bpb": 0.04622425795196339,
+      "best_pair": "carbon_nc_prefix"
+    }
+  ]
+}

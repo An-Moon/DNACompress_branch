@@ -1,0 +1,30 @@
+[
+  {
+    "species": "DrMe",
+    "reason": "\"species 'DrMe' not found in mapping validation\""
+  },
+  {
+    "species": "EsCo",
+    "reason": "\"species 'EsCo' not found in mapping validation\""
+  },
+  {
+    "species": "AgPh",
+    "reason": "\"species 'AgPh' not found in mapping validation\""
+  },
+  {
+    "species": "BuEb",
+    "reason": "\"species 'BuEb' not found in mapping validation\""
+  },
+  {
+    "species": "YeMi",
+    "reason": "\"species 'YeMi' not found in mapping validation\""
+  },
+  {
+    "species": "AeCa",
+    "reason": "\"species 'AeCa' not found in mapping validation\""
+  },
+  {
+    "species": "HaHi",
+    "reason": "\"species 'HaHi' not found in mapping validation\""
+  }
+]

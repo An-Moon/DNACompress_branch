@@ -1,0 +1,11 @@
+{
+  "codec": "nc_prefix",
+  "source_count": 1,
+  "total_bases": 9144432,
+  "total_theoretical_bits_per_base": 1.9424551740830287,
+  "total_arithmetic_bits_per_base": 1.9424567868184706,
+  "encode_arithmetic": true,
+  "wall_seconds": 5.185741552999389,
+  "parameters_json": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/WaMe/parameters.json",
+  "per_source_csv": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/WaMe/nc_prefix_per_source.csv"
+}

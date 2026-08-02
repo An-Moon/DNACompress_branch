@@ -1,0 +1,11 @@
+{
+  "codec": "nc_prefix",
+  "source_count": 1,
+  "total_bases": 1591049,
+  "total_theoretical_bits_per_base": 1.9108651237227945,
+  "total_arithmetic_bits_per_base": 1.9108701240502335,
+  "encode_arithmetic": true,
+  "wall_seconds": 1.221215329000188,
+  "parameters_json": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/AeCa/parameters.json",
+  "per_source_csv": "outputs/nc_prefix_dnacorpus_best_available_w8192_target_traces_full/per_species/AeCa/nc_prefix_per_source.csv"
+}

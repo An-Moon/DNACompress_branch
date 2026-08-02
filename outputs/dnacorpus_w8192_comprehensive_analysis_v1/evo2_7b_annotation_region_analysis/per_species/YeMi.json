@@ -1,0 +1,360 @@
+{
+  "species": "YeMi",
+  "schema_version": 1,
+  "trace_dir": "outputs/evo2_7b_dnacorpus_w8192_full_forward_bs12_target_traces_position_major/traces/YeMi",
+  "trace_manifest": {
+    "schema_version": 1,
+    "trace_kind": "target_probability",
+    "model_family": "evo2",
+    "model_id": "third_party/evo2_7b_base/evo2_7b_base.pt:full_forward_base_w8192",
+    "alphabet": "ACGT",
+    "unit_size": 1,
+    "source_sha256": "ad83a10938612c5b0aaa8baf863e047b74ce4c53036cf2fa5fa42779acbe9e02",
+    "normalized_sequence_sha256": "ad83a10938612c5b0aaa8baf863e047b74ce4c53036cf2fa5fa42779acbe9e02",
+    "core_base_count": 73689,
+    "tail_base_count": 0,
+    "tail_sequence_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "target_symbols_sha256": "3943e74ca08d2165b384936afb6a6a0d9aef32541ef34248f2ded0a8712ceec3",
+    "emit_order_sha256": "fc106e683166ab9a3a93bdc8b71b89406e8b4a6929bcf01af973495f932285f3",
+    "row_count": 73689,
+    "dtype": "float32",
+    "shard_rows": 1000000,
+    "window_bases": 8192,
+    "token_merge_size": 1,
+    "emission_order": "position_major_v1",
+    "producer_config": {
+      "source_file": "datasets/DNACorpus/YeMi",
+      "source_format": "raw",
+      "max_bases": null,
+      "model": "evo2",
+      "local_path": "third_party/evo2_7b_base/evo2_7b_base.pt",
+      "model_name": "evo2_7b_base",
+      "device": "cuda:0",
+      "dtype": "bfloat16",
+      "use_kernels": false,
+      "evo2_probability_mode": "full_forward",
+      "trace_generation_seconds": 8.833355522947386,
+      "model_seconds": 8.778444488998502,
+      "softmax_seconds": 0.012565127981361002,
+      "probability_transfer_seconds": 0.0045477370149455965,
+      "batch_size": 12,
+      "batch_count": 1,
+      "window_count": 9,
+      "window_bases": 8192,
+      "evo2_trace_source": "full_forward_target_prob_base_tokens_first_base_uniform",
+      "evo2_alignment": "log_softmax(logits[:, :-1]) gathered at input_ids[:, 1:]",
+      "first_base_probability": 0.25,
+      "trace_order_conversion": {
+        "source_trace_dir": "outputs/evo2_7b_dnacorpus_w8192_full_forward_bs12_target_traces/traces/YeMi",
+        "source_emission_order": "fused_depth_major_v1",
+        "output_emission_order": "position_major_v1",
+        "store_emit_position": false
+      }
+    },
+    "shard_files": [
+      "shards/shard_000000.npz"
+    ],
+    "checksum_sha256": "e9653cda0abd01ff2bbacaec21c1f421864d0ba598f6dcb3566e718d668786da"
+  },
+  "annotation_index_manifest": {
+    "schema_version": 1,
+    "species": "YeMi",
+    "sequence_length": 73689,
+    "region_classes": [
+      "intergenic",
+      "cds",
+      "rna",
+      "exon_non_cds",
+      "intron",
+      "gene_other",
+      "repeat_mobile_existing"
+    ],
+    "exclusive_priority_low_to_high": [
+      "intergenic",
+      "gene_other",
+      "intron",
+      "exon_non_cds",
+      "rna",
+      "cds",
+      "repeat_mobile_existing"
+    ],
+    "mapping_status": "exact_raw_match",
+    "annotation_dir": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official",
+    "gff3_path": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official/YeMi/YeMi_NC_028104.1.gff3",
+    "gff3_sha256": "57cacb3afd72314e2dc4220307d44061f8ee4b5eb58fb6e2148edaf6ed17a8f5",
+    "feature_table_path": "outputs/dnacorpus_w8192_comprehensive_analysis_v1/evo2_7b_annotation_region_analysis/annotation_interval_index/YeMi.features.tsv.gz",
+    "source_fasta_path": "/home/Liang_junnan/DNACompress/datasets/DNACorpus_annotations_official/YeMi/YeMi_NC_028104.1.fna",
+    "local_source_file": "/home/Liang_junnan/DNACompress/datasets/DNACorpus/YeMi",
+    "trace_dir": "outputs/evo2_7b_dnacorpus_w8192_full_forward_bs12_target_traces_position_major/traces/YeMi",
+    "trace_manifest": {
+      "schema_version": 1,
+      "trace_kind": "target_probability",
+      "model_family": "evo2",
+      "model_id": "third_party/evo2_7b_base/evo2_7b_base.pt:full_forward_base_w8192",
+      "alphabet": "ACGT",
+      "unit_size": 1,
+      "source_sha256": "ad83a10938612c5b0aaa8baf863e047b74ce4c53036cf2fa5fa42779acbe9e02",
+      "normalized_sequence_sha256": "ad83a10938612c5b0aaa8baf863e047b74ce4c53036cf2fa5fa42779acbe9e02",
+      "core_base_count": 73689,
+      "tail_base_count": 0,
+      "tail_sequence_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "target_symbols_sha256": "3943e74ca08d2165b384936afb6a6a0d9aef32541ef34248f2ded0a8712ceec3",
+      "emit_order_sha256": "fc106e683166ab9a3a93bdc8b71b89406e8b4a6929bcf01af973495f932285f3",
+      "row_count": 73689,
+      "dtype": "float32",
+      "shard_rows": 1000000,
+      "window_bases": 8192,
+      "token_merge_size": 1,
+      "emission_order": "position_major_v1",
+      "producer_config": {
+        "source_file": "datasets/DNACorpus/YeMi",
+        "source_format": "raw",
+        "max_bases": null,
+        "model": "evo2",
+        "local_path": "third_party/evo2_7b_base/evo2_7b_base.pt",
+        "model_name": "evo2_7b_base",
+        "device": "cuda:0",
+        "dtype": "bfloat16",
+        "use_kernels": false,
+        "evo2_probability_mode": "full_forward",
+        "trace_generation_seconds": 8.833355522947386,
+        "model_seconds": 8.778444488998502,
+        "softmax_seconds": 0.012565127981361002,
+        "probability_transfer_seconds": 0.0045477370149455965,
+        "batch_size": 12,
+        "batch_count": 1,
+        "window_count": 9,
+        "window_bases": 8192,
+        "evo2_trace_source": "full_forward_target_prob_base_tokens_first_base_uniform",
+        "evo2_alignment": "log_softmax(logits[:, :-1]) gathered at input_ids[:, 1:]",
+        "first_base_probability": 0.25,
+        "trace_order_conversion": {
+          "source_trace_dir": "outputs/evo2_7b_dnacorpus_w8192_full_forward_bs12_target_traces/traces/YeMi",
+          "source_emission_order": "fused_depth_major_v1",
+          "output_emission_order": "position_major_v1",
+          "store_emit_position": false
+        }
+      },
+      "shard_files": [
+        "shards/shard_000000.npz"
+      ],
+      "checksum_sha256": "e9653cda0abd01ff2bbacaec21c1f421864d0ba598f6dcb3566e718d668786da"
+    },
+    "coordinate_record_count": 1,
+    "feature_type_counts": {
+      "region": 1,
+      "gene": 102,
+      "CDS": 102
+    },
+    "mapped_feature_type_counts": {
+      "gene": 102,
+      "CDS": 102
+    },
+    "mapped_feature_rows": 204,
+    "skipped_unmapped_seqid": 0,
+    "skipped_unclassified": 1,
+    "clipped_or_split_features": 0,
+    "raw_class_base_counts": {
+      "cds": 63409,
+      "rna": 0,
+      "exon_non_cds": 0,
+      "intron": 0,
+      "gene_other": 63409,
+      "repeat_mobile_existing": 0
+    },
+    "exclusive_class_base_counts": {
+      "intergenic": 10280,
+      "cds": 63409,
+      "rna": 0,
+      "exon_non_cds": 0,
+      "intron": 0,
+      "gene_other": 0,
+      "repeat_mobile_existing": 0
+    },
+    "exclusive_interval_counts": {
+      "intergenic": 88,
+      "cds": 87,
+      "rna": 0,
+      "exon_non_cds": 0,
+      "intron": 0,
+      "gene_other": 0,
+      "repeat_mobile_existing": 0
+    },
+    "repeat_mobile_existing_note": "Uses only repeat/mobile-like features already present in the official GFF3; this is not a complete RepeatMasker/TRF repeat landscape."
+  },
+  "rows_seen": 73689,
+  "shard_count": 1,
+  "elapsed_seconds": 0.00677017099224031,
+  "bases_per_second": 10884363.199165765,
+  "region_rows": [
+    {
+      "species": "YeMi",
+      "region_class": "intergenic",
+      "base_count": 10280,
+      "interval_count": 88,
+      "coverage_fraction": 0.13950521787512382,
+      "sum_bits": 15924.08265212727,
+      "mean_bpb": 1.549035277444287,
+      "min_bpb": 0.0009917347810585865,
+      "max_bpb": 11.642436988534248
+    },
+    {
+      "species": "YeMi",
+      "region_class": "cds",
+      "base_count": 63409,
+      "interval_count": 87,
+      "coverage_fraction": 0.8604947821248762,
+      "sum_bits": 86596.48997052062,
+      "mean_bpb": 1.3656813696875936,
+      "min_bpb": 0.0004950509961608901,
+      "max_bpb": 13.327346984453273
+    },
+    {
+      "species": "YeMi",
+      "region_class": "rna",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    },
+    {
+      "species": "YeMi",
+      "region_class": "exon_non_cds",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    },
+    {
+      "species": "YeMi",
+      "region_class": "intron",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    },
+    {
+      "species": "YeMi",
+      "region_class": "gene_other",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    },
+    {
+      "species": "YeMi",
+      "region_class": "repeat_mobile_existing",
+      "base_count": 0,
+      "interval_count": 0,
+      "coverage_fraction": 0.0,
+      "sum_bits": 0.0,
+      "mean_bpb": null,
+      "min_bpb": null,
+      "max_bpb": null
+    }
+  ],
+  "window_rows": [
+    {
+      "species": "YeMi",
+      "window_id": 0,
+      "start": 0,
+      "end": 8192,
+      "base_count": 8192,
+      "mean_bpb": 1.531417130126302,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.8367919921875
+    },
+    {
+      "species": "YeMi",
+      "window_id": 1,
+      "start": 8192,
+      "end": 16384,
+      "base_count": 8192,
+      "mean_bpb": 1.3456876158881275,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.762939453125
+    },
+    {
+      "species": "YeMi",
+      "window_id": 2,
+      "start": 16384,
+      "end": 24576,
+      "base_count": 8192,
+      "mean_bpb": 1.3433599755565007,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.917236328125
+    },
+    {
+      "species": "YeMi",
+      "window_id": 3,
+      "start": 24576,
+      "end": 32768,
+      "base_count": 8192,
+      "mean_bpb": 1.3449863666037347,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.9012451171875
+    },
+    {
+      "species": "YeMi",
+      "window_id": 4,
+      "start": 32768,
+      "end": 40960,
+      "base_count": 8192,
+      "mean_bpb": 1.5040196964346002,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.873046875
+    },
+    {
+      "species": "YeMi",
+      "window_id": 5,
+      "start": 40960,
+      "end": 49152,
+      "base_count": 8192,
+      "mean_bpb": 1.5889946662308763,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.8349609375
+    },
+    {
+      "species": "YeMi",
+      "window_id": 6,
+      "start": 49152,
+      "end": 57344,
+      "base_count": 8192,
+      "mean_bpb": 1.3497139834982337,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.8856201171875
+    },
+    {
+      "species": "YeMi",
+      "window_id": 7,
+      "start": 57344,
+      "end": 65536,
+      "base_count": 8192,
+      "mean_bpb": 1.2232732567482003,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.8656005859375
+    },
+    {
+      "species": "YeMi",
+      "window_id": 8,
+      "start": 65536,
+      "end": 73689,
+      "base_count": 8153,
+      "mean_bpb": 1.2894041674557362,
+      "dominant_region_class": "cds",
+      "dominant_region_fraction": 0.8670428063289587
+    }
+  ]
+}
