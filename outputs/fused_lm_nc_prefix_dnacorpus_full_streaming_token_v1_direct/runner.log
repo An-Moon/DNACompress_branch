@@ -1,0 +1,34 @@
+{'event': 'start_source', 'source': 'AeCa', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/AeCa.log'}
+{'event': 'finish_source', 'source': 'AeCa', 'returncode': 0, 'seconds': 34.23631306900006, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/AeCa.json'}
+{'event': 'start_source', 'source': 'AgPh', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/AgPh.log'}
+{'event': 'finish_source', 'source': 'AgPh', 'returncode': 0, 'seconds': 28.607339810000667, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/AgPh.json'}
+{'event': 'start_source', 'source': 'AnCa', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/AnCa.log'}
+{'event': 'finish_source', 'source': 'AnCa', 'returncode': 0, 'seconds': 243.20141550000062, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/AnCa.json'}
+{'event': 'start_source', 'source': 'BuEb', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/BuEb.log'}
+{'event': 'finish_source', 'source': 'BuEb', 'returncode': 0, 'seconds': 27.662006698999903, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/BuEb.json'}
+{'event': 'start_source', 'source': 'DaRe', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/DaRe.log'}
+{'event': 'finish_source', 'source': 'DaRe', 'returncode': 0, 'seconds': 118.37963969400062, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/DaRe.json'}
+{'event': 'start_source', 'source': 'DrMe', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/DrMe.log'}
+{'event': 'finish_source', 'source': 'DrMe', 'returncode': 0, 'seconds': 74.48293958399881, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/DrMe.json'}
+{'event': 'start_source', 'source': 'EnIn', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/EnIn.log'}
+{'event': 'finish_source', 'source': 'EnIn', 'returncode': 0, 'seconds': 71.00521610299984, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/EnIn.json'}
+{'event': 'start_source', 'source': 'EsCo', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/EsCo.log'}
+{'event': 'finish_source', 'source': 'EsCo', 'returncode': 0, 'seconds': 32.32368519400006, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/EsCo.json'}
+{'event': 'start_source', 'source': 'GaGa', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/GaGa.log'}
+{'event': 'finish_source', 'source': 'GaGa', 'returncode': 0, 'seconds': 251.57821459499974, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/GaGa.json'}
+{'event': 'start_source', 'source': 'HaHi', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/HaHi.log'}
+{'event': 'finish_source', 'source': 'HaHi', 'returncode': 0, 'seconds': 39.44474371499928, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/HaHi.json'}
+{'event': 'start_source', 'source': 'HePy', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/HePy.log'}
+{'event': 'finish_source', 'source': 'HePy', 'returncode': 0, 'seconds': 36.40555536000102, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/HePy.json'}
+{'event': 'start_source', 'source': 'HoSa', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/HoSa.log'}
+{'event': 'finish_source', 'source': 'HoSa', 'returncode': 0, 'seconds': 336.96361060900017, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/HoSa.json'}
+{'event': 'start_source', 'source': 'OrSa', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/OrSa.log'}
+{'event': 'finish_source', 'source': 'OrSa', 'returncode': 0, 'seconds': 81.20109432699974, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/OrSa.json'}
+{'event': 'start_source', 'source': 'PlFa', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/PlFa.log'}
+{'event': 'finish_source', 'source': 'PlFa', 'returncode': 0, 'seconds': 35.315726728998925, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/PlFa.json'}
+{'event': 'start_source', 'source': 'ScPo', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/ScPo.log'}
+{'event': 'finish_source', 'source': 'ScPo', 'returncode': 0, 'seconds': 35.42016295999929, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/ScPo.json'}
+{'event': 'start_source', 'source': 'WaMe', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/WaMe.log'}
+{'event': 'finish_source', 'source': 'WaMe', 'returncode': 0, 'seconds': 35.2815601530001, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/WaMe.json'}
+{'event': 'start_source', 'source': 'YeMi', 'device': 'cuda:1', 'log': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/logs/YeMi.log'}
+{'event': 'finish_source', 'source': 'YeMi', 'returncode': 0, 'seconds': 29.448318162998476, 'output_json': 'outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct/per_species/YeMi.json'}

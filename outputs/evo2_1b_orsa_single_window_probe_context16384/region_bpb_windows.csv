@@ -1,0 +1,2 @@
+window_index,region_start,region_end_exclusive,source_start,source_end_exclusive,base_count,sum_bits,mean_bpb,model,plot_window_bases
+0,0,16384,5675277,5691661,16383,29970.11541524902,1.829342331395289,evo21,16384

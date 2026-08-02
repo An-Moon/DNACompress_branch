@@ -1,0 +1,11 @@
+{
+  "k": 6,
+  "dna_start_id": 151669,
+  "dna_vocab_size": 4107,
+  "dna_special_tokens": [
+    "<dna>",
+    "</dna>",
+    "<oov>"
+  ],
+  "auto_dna_tags": false
+}

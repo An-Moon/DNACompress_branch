@@ -1,0 +1,20 @@
+{
+  "dataset_dir": "datasets/DNACorpus",
+  "run_dir": "outputs/dna_megabyte_large_opengenome2_9",
+  "checkpoint_tag": "best",
+  "output_dir": "outputs/fused_lm_nc_prefix_dnacorpus_full_streaming_token_v1_direct",
+  "source": null,
+  "device": "cuda:1",
+  "idle_gpu_util": 100,
+  "idle_gpu_memory_mib": 49140,
+  "idle_poll_seconds": 60,
+  "dtype": "float16",
+  "batch_size": "8192",
+  "pipeline_mode": "streaming_token_encode_overlap",
+  "nc_prefix_window_bases": 3072,
+  "nc_prefix_min_windows": 8192,
+  "nc_prefix_hash_bucket_count": 0,
+  "fusion_eta": 0.05,
+  "fusion_initial_lm_weight": 0.5,
+  "skip_existing": true
+}
