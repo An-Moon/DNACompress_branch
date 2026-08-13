@@ -1,0 +1,42 @@
+{
+  "experiment": "dnacorpus_context_length_probe_v1",
+  "selection_policy": "three_equal_coordinate_strata_centered_aligned_nonoverlap",
+  "source": "OrSa",
+  "source_path": "datasets/DNACorpus/OrSa",
+  "source_bases": 43262523,
+  "source_sha256": "3116ea90b824997cc4f3b8c1304c267e0e858524aa302fb87f883e4ab5c763d4",
+  "segment_bases": 2359296,
+  "alignment_bases": 196608,
+  "segments": [
+    {
+      "name": "segment_a",
+      "stratum_start": 0,
+      "stratum_end": 14420841,
+      "start": 6094848,
+      "end": 8454144,
+      "bases": 2359296,
+      "path": "outputs/dnacorpus_context_length_probe_orsa_v2/segments/segment_a.seq",
+      "sha256": "60716670c323acb8e74cf5e328975c0b25025b8d0f9d4a03f8a26452a2fcf60d"
+    },
+    {
+      "name": "segment_b",
+      "stratum_start": 14420841,
+      "stratum_end": 28841682,
+      "start": 20447232,
+      "end": 22806528,
+      "bases": 2359296,
+      "path": "outputs/dnacorpus_context_length_probe_orsa_v2/segments/segment_b.seq",
+      "sha256": "b81d73d2832fb334f0f81a17a07a15402eac48b43016ee83274ab08022478fba"
+    },
+    {
+      "name": "segment_c",
+      "stratum_start": 28841682,
+      "stratum_end": 43262523,
+      "start": 34799616,
+      "end": 37158912,
+      "bases": 2359296,
+      "path": "outputs/dnacorpus_context_length_probe_orsa_v2/segments/segment_c.seq",
+      "sha256": "6e62930323d6d41a0c7477254c59eedee0a287ee8eb39de9be187b06db602d6b"
+    }
+  ]
+}

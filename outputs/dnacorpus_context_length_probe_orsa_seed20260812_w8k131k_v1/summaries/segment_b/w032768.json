@@ -1,0 +1,27 @@
+{
+  "source": "OrSa",
+  "segment": "segment_b",
+  "segment_start": 15597568,
+  "segment_bases": 2097152,
+  "window_bases": 32768,
+  "window_count": 64,
+  "models": {
+    "carbon": {
+      "trace": "outputs/dnacorpus_context_length_probe_orsa_seed20260812_w8k131k_v1/traces_position_major/segment_b/w032768/carbon",
+      "trace_checksum_sha256": "6a9880f080c36d1750e8f4ebfa2a7d7ad5603e25d6607bbebfa6ec8756fbd5c8",
+      "row_count": 2097152,
+      "native_bpb": 1.3954686084529664,
+      "common_mask_bases": 2096896,
+      "common_mask_bpb": 1.395450363043355
+    },
+    "evo2_optimized": {
+      "trace": "outputs/dnacorpus_context_length_probe_orsa_seed20260812_w8k131k_v1/traces_position_major/segment_b/w032768/evo2_optimized",
+      "trace_checksum_sha256": "d8a61159330e752a2c9e0f1fbba3e2c484fdec7af0f61eb2ff0de829410734c3",
+      "row_count": 2097152,
+      "native_bpb": 1.3067544602718923,
+      "common_mask_bases": 2096896,
+      "common_mask_bpb": 1.3067345275447715
+    }
+  },
+  "fusions": {}
+}

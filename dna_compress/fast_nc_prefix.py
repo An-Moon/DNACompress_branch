@@ -28,7 +28,7 @@ def load_fast_nc_prefix_extension():
         from torch.utils.cpp_extension import load
 
         _EXTENSION = load(
-            name="dna_compress_fast_nc_prefix_nc_geco2_levels_v3",
+            name="dna_compress_fast_nc_prefix_nc_geco2_levels_v6",
             sources=[str(_extension_source_path())],
             extra_cflags=["-O3", "-march=native", "-ffast-math", "-funroll-loops"],
             with_cuda=False,
@@ -160,8 +160,41 @@ class FusedNcPrefixStreamingEncoder:
                 lm_probabilities.contiguous(),
                 target_symbols.contiguous(),
                 True,
+                False,
             )
         )
+
+    def encode_token_step_collect_probabilities(self, lm_probabilities, target_symbols) -> dict[str, Any]:
+        if not isinstance(lm_probabilities, torch.Tensor):
+            lm_probabilities = torch.as_tensor(lm_probabilities)
+        if not isinstance(target_symbols, torch.Tensor):
+            target_symbols = torch.as_tensor(target_symbols)
+        if lm_probabilities.device.type != "cpu" or target_symbols.device.type != "cpu":
+            raise ValueError("streaming fused encoder expects CPU tensors")
+        return dict(
+            self._encoder.encode_token_step(
+                lm_probabilities.contiguous(),
+                target_symbols.contiguous(),
+                True,
+                True,
+            )
+        )
+
+    def freeze_background_and_reset_targets(
+        self, target_window_count: int, initial_lm_weight: float = 0.0
+    ) -> dict[str, Any]:
+        return dict(
+            self._encoder.freeze_background_and_reset_targets(
+                int(target_window_count), float(initial_lm_weight)
+            )
+        )
+
+    def train_background_token_step(self, target_symbols) -> dict[str, Any]:
+        if not isinstance(target_symbols, torch.Tensor):
+            target_symbols = torch.as_tensor(target_symbols)
+        if target_symbols.device.type != "cpu":
+            raise ValueError("background training expects CPU target symbols")
+        return dict(self._encoder.train_background_token_step(target_symbols.contiguous()))
 
     def finish(self) -> dict[str, Any]:
         return dict(self._encoder.finish())

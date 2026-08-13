@@ -78,6 +78,10 @@ Carbon、Evo2、GECO2 和 MEGABYTE 的 50kb 测试序列 bpb 柱状图适合看�
 
 这相当于在窗口中可见的局部序列之外，还增加一个来自前缀采样的全局视角。这个全局区域最大可覆盖25MB，已接近 GECO2 的记忆机制窗口范围，理论上可以设计类似的基于统计的机制，构建一个新的独立预测器。目标改善真核长程重复区域中窗口独立压缩的劣势。
 
+### 上下文长度机制实验
+
+当前新增的机制实验固定同一来源的三个确定性、互不重叠连续片段，同步扩大 gLM 和 STAP 的对齐窗口，检验更长 independent-window context 是否能够消除 STAP 的融合收益。首个正式 pilot 使用 OrSa 的三个 2,359,296-bp 片段（合计覆盖 16.36%），窗口长度为 6144 到 196608 bp 的二分序列。入口为 `scripts/run_dnacorpus_context_length_probe.py`；实验保留可复用的模型/STAP target-probability traces，融合结果从源 trace 离线计算。
+
 ## 仓库导航
 
 ### 训练与恢复

@@ -1,0 +1,19 @@
+{
+  "source": "HoSa",
+  "segment": "segment_c",
+  "segment_start": 147062784,
+  "segment_bases": 9437184,
+  "window_bases": 32768,
+  "window_count": 288,
+  "models": {
+    "evo2_optimized": {
+      "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_c/w032768/evo2_optimized",
+      "trace_checksum_sha256": "04a210dd598ca8f04fd8df46e742b29abdf8d216eeda330fea52d7e6e7986191",
+      "row_count": 9437184,
+      "native_bpb": 1.4577957911337838,
+      "common_mask_bases": 9436032,
+      "common_mask_bpb": 1.4577829213675164
+    }
+  },
+  "fusions": {}
+}

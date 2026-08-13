@@ -1,0 +1,42 @@
+{
+  "experiment": "dnacorpus_context_length_probe_v1",
+  "selection_policy": "three_equal_coordinate_strata_centered_aligned_nonoverlap",
+  "source": "DaRe",
+  "source_path": "datasets/DNACorpus/DaRe",
+  "source_bases": 62565020,
+  "source_sha256": "108490ec562f1535e66403ee7f290eafdaa8cfb20f322c99ca795463226ebe9f",
+  "segment_bases": 2359296,
+  "alignment_bases": 196608,
+  "segments": [
+    {
+      "name": "segment_a",
+      "stratum_start": 0,
+      "stratum_end": 20855006,
+      "start": 9240576,
+      "end": 11599872,
+      "bases": 2359296,
+      "path": "outputs/dnacorpus_context_length_probe_dare_v1/segments/segment_a.seq",
+      "sha256": "5f4db2dba10cd16eaf8fb49fd29618a1dfde9f31fc730a1d27d47aa3038f2814"
+    },
+    {
+      "name": "segment_b",
+      "stratum_start": 20855006,
+      "stratum_end": 41710013,
+      "start": 30081024,
+      "end": 32440320,
+      "bases": 2359296,
+      "path": "outputs/dnacorpus_context_length_probe_dare_v1/segments/segment_b.seq",
+      "sha256": "ada4be4186161cd3acd6b31290d0432a87528a813afe3112302d74b593b21789"
+    },
+    {
+      "name": "segment_c",
+      "stratum_start": 41710013,
+      "stratum_end": 62565020,
+      "start": 50921472,
+      "end": 53280768,
+      "bases": 2359296,
+      "path": "outputs/dnacorpus_context_length_probe_dare_v1/segments/segment_c.seq",
+      "sha256": "87a729f0bb4ba03369abe82f475e873ffc2a46f83e055d36d196d80853bc73d8"
+    }
+  ]
+}

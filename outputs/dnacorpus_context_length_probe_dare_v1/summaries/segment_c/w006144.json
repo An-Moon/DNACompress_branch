@@ -1,0 +1,62 @@
+{
+  "source": "DaRe",
+  "segment": "segment_c",
+  "segment_start": 50921472,
+  "segment_bases": 2359296,
+  "window_bases": 6144,
+  "window_count": 384,
+  "models": {
+    "carbon": {
+      "trace": "outputs/dnacorpus_context_length_probe_dare_v1/traces_position_major/segment_c/w006144/carbon",
+      "trace_checksum_sha256": "3abffaf230696705adebf68aef58c4eef00e5726ec19eb301350cd2349177bb5",
+      "row_count": 2359296,
+      "native_bpb": 1.3999421921877309,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.3998523229555626
+    },
+    "stap": {
+      "trace": "outputs/dnacorpus_context_length_probe_dare_v1/traces_position_major/segment_c/w006144/stap",
+      "trace_checksum_sha256": "441da14b5337b471e6c028bac369c3a1d306b21c5d6d4d0105a80bcff1cfd6b9",
+      "row_count": 2359296,
+      "native_bpb": 1.721594569226959,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.7215492484666168
+    },
+    "evo2_optimized": {
+      "trace": "outputs/dnacorpus_context_length_probe_dare_v1/traces_position_major/segment_c/w006144/evo2_optimized",
+      "trace_checksum_sha256": "cdf1b70fc48c6e6d77e7074f67322c4c30a65a0b23d07a039cb2d5a0cc8451be",
+      "row_count": 2359296,
+      "native_bpb": 1.4743436771013414,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.474258107131801
+    }
+  },
+  "fusions": {
+    "carbon_stap": {
+      "fusion_policy": "online_hedge_linear_target_probability_trace",
+      "fusion_eta": 0.05,
+      "fusion_initial_lm_weight": 0.5,
+      "left_trace": "outputs/dnacorpus_context_length_probe_dare_v1/traces_position_major/segment_c/w006144/carbon",
+      "right_trace": "outputs/dnacorpus_context_length_probe_dare_v1/traces_position_major/segment_c/w006144/stap",
+      "left_checksum_sha256": "3abffaf230696705adebf68aef58c4eef00e5726ec19eb301350cd2349177bb5",
+      "right_checksum_sha256": "441da14b5337b471e6c028bac369c3a1d306b21c5d6d4d0105a80bcff1cfd6b9",
+      "native_bpb": 1.380503263885947,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.3804075969904028,
+      "final_mean_lm_weight": 0.7347145932150972
+    },
+    "evo2_optimized_stap": {
+      "fusion_policy": "online_hedge_linear_target_probability_trace",
+      "fusion_eta": 0.05,
+      "fusion_initial_lm_weight": 0.5,
+      "left_trace": "outputs/dnacorpus_context_length_probe_dare_v1/traces_position_major/segment_c/w006144/evo2_optimized",
+      "right_trace": "outputs/dnacorpus_context_length_probe_dare_v1/traces_position_major/segment_c/w006144/stap",
+      "left_checksum_sha256": "cdf1b70fc48c6e6d77e7074f67322c4c30a65a0b23d07a039cb2d5a0cc8451be",
+      "right_checksum_sha256": "441da14b5337b471e6c028bac369c3a1d306b21c5d6d4d0105a80bcff1cfd6b9",
+      "native_bpb": 1.4413000588163443,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.441209109778223,
+      "final_mean_lm_weight": 0.7158808424318136
+    }
+  }
+}

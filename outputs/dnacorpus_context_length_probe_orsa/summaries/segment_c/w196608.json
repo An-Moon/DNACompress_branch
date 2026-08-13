@@ -1,0 +1,19 @@
+{
+  "source": "OrSa",
+  "segment": "segment_c",
+  "segment_start": 35389440,
+  "segment_bases": 1179648,
+  "window_bases": 196608,
+  "window_count": 6,
+  "models": {
+    "stap": {
+      "trace": "outputs/dnacorpus_context_length_probe_orsa/traces_position_major/segment_c/w196608/stap",
+      "trace_checksum_sha256": "3dec2fecb104036411a10236a1097713c5d7f3a785bf32d6f76a5b821a6bf19d",
+      "row_count": 1179648,
+      "native_bpb": 1.8642677938376826,
+      "common_mask_bases": 1179456,
+      "common_mask_bpb": 1.8642677714598521
+    }
+  },
+  "fusions": {}
+}

@@ -1,0 +1,83 @@
+{
+  "source": "OrSa",
+  "segment": "segment_b",
+  "segment_start": 20447232,
+  "segment_bases": 2359296,
+  "window_bases": 49152,
+  "window_count": 48,
+  "models": {
+    "stap": {
+      "trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/stap",
+      "trace_checksum_sha256": "2b36e7eb2437df52844b880fb51f8e66cf0295ed149fc24a9d5afcabfb2d51c5",
+      "row_count": 2359296,
+      "native_bpb": 1.7172312066403006,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.7172294567720683
+    },
+    "carbon": {
+      "trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/carbon",
+      "trace_checksum_sha256": "7ad05c9f2867af86ec10a1aac651d69419dca6b2d41b95926502d287400def45",
+      "row_count": 2359296,
+      "native_bpb": 1.5371293102616543,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.5371230383693024
+    },
+    "evo2": {
+      "trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/evo2",
+      "trace_checksum_sha256": "3c76825258a887f6b744b7780133e6c25a584fafdc4e132ce87ed33644fbdffc",
+      "row_count": 2359296,
+      "native_bpb": 1.4712072564837557,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.4711935250385506
+    },
+    "evo2_optimized": {
+      "trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/evo2_optimized",
+      "trace_checksum_sha256": "7fcf020b8df49db2e4c43f2980f3780b37b6bc2b55f025838ecf9de21262e4bb",
+      "row_count": 2359296,
+      "native_bpb": 1.471216765139292,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.4712030050256852
+    }
+  },
+  "fusions": {
+    "carbon_stap": {
+      "fusion_policy": "online_hedge_linear_target_probability_trace",
+      "fusion_eta": 0.05,
+      "fusion_initial_lm_weight": 0.5,
+      "left_trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/carbon",
+      "right_trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/stap",
+      "left_checksum_sha256": "7ad05c9f2867af86ec10a1aac651d69419dca6b2d41b95926502d287400def45",
+      "right_checksum_sha256": "2b36e7eb2437df52844b880fb51f8e66cf0295ed149fc24a9d5afcabfb2d51c5",
+      "native_bpb": 1.470550726425066,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.4705433100839305,
+      "final_mean_lm_weight": 0.5531904319205612
+    },
+    "evo2_stap": {
+      "fusion_policy": "online_hedge_linear_target_probability_trace",
+      "fusion_eta": 0.05,
+      "fusion_initial_lm_weight": 0.5,
+      "left_trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/evo2",
+      "right_trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/stap",
+      "left_checksum_sha256": "3c76825258a887f6b744b7780133e6c25a584fafdc4e132ce87ed33644fbdffc",
+      "right_checksum_sha256": "2b36e7eb2437df52844b880fb51f8e66cf0295ed149fc24a9d5afcabfb2d51c5",
+      "native_bpb": 1.4181615276462713,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.4181457515066405,
+      "final_mean_lm_weight": 0.5573721447625555
+    },
+    "evo2_optimized_stap": {
+      "fusion_policy": "online_hedge_linear_target_probability_trace",
+      "fusion_eta": 0.05,
+      "fusion_initial_lm_weight": 0.5,
+      "left_trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/evo2_optimized",
+      "right_trace": "outputs/dnacorpus_context_length_probe_orsa_v2/traces_position_major/segment_b/w049152/stap",
+      "left_checksum_sha256": "7fcf020b8df49db2e4c43f2980f3780b37b6bc2b55f025838ecf9de21262e4bb",
+      "right_checksum_sha256": "2b36e7eb2437df52844b880fb51f8e66cf0295ed149fc24a9d5afcabfb2d51c5",
+      "native_bpb": 1.4181733081883112,
+      "common_mask_bases": 2358912,
+      "common_mask_bpb": 1.4181574243277877,
+      "final_mean_lm_weight": 0.5571592254603238
+    }
+  }
+}

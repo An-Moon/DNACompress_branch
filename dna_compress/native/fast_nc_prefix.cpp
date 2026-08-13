@@ -1092,6 +1092,9 @@ class FusedNcPrefixStreamingEncoder {
           1,
           nullptr,
           0,
+          0,
+          nullptr,
+          0,
           0);
     };
 
@@ -1126,7 +1129,8 @@ class FusedNcPrefixStreamingEncoder {
   py::dict encode_token_step(
       const at::Tensor &lm_probabilities,
       const at::Tensor &target_symbols,
-      bool collect_nc_target_probabilities = false) {
+      bool collect_nc_target_probabilities = false,
+      bool collect_nc_probabilities = false) {
     if (finished_) {
       throw std::runtime_error("cannot encode after finish()");
     }
@@ -1172,6 +1176,13 @@ class FusedNcPrefixStreamingEncoder {
       nc_target_probabilities = at::empty({active_count, token_merge_size}, at::TensorOptions().dtype(at::kDouble));
       nc_target_probability_ptr = nc_target_probabilities.data_ptr<double>();
     }
+    at::Tensor nc_probabilities;
+    double *nc_probability_ptr = nullptr;
+    if (collect_nc_probabilities) {
+      nc_probabilities = at::empty(
+          {active_count, token_merge_size, 4}, at::TensorOptions().dtype(at::kDouble));
+      nc_probability_ptr = nc_probabilities.data_ptr<double>();
+    }
 
     auto body = [&]<typename prob_t, typename target_t>(const prob_t *lm_ptr, const target_t *target_ptr) {
       for (int64_t base_offset = 0; base_offset < token_merge_size; ++base_offset) {
@@ -1191,6 +1202,9 @@ class FusedNcPrefixStreamingEncoder {
             token_merge_size * 4,
             token_merge_size,
             nc_target_probability_ptr,
+            base_offset,
+            token_merge_size,
+            nc_probability_ptr,
             base_offset,
             token_merge_size);
         record_encoded_base(active_count, step_fused_bits, step_lm_bits, step_nc_bits, emitted);
@@ -1232,6 +1246,125 @@ class FusedNcPrefixStreamingEncoder {
     if (collect_nc_target_probabilities) {
       result["nc_target_probabilities"] = nc_target_probabilities;
     }
+    if (collect_nc_probabilities) {
+      result["nc_probabilities"] = nc_probabilities;
+    }
+    return result;
+  }
+
+  py::dict train_background_token_step(const at::Tensor &target_symbols) {
+    if (finished_ || frozen_counters_) {
+      throw std::runtime_error("background training is only allowed before freeze/finish");
+    }
+    if (target_symbols.device().is_cuda() || target_symbols.dim() != 2) {
+      throw std::runtime_error("target_symbols must be a CPU [active_windows,token_merge_size] tensor");
+    }
+    const int64_t active_count = target_symbols.size(0);
+    const int64_t token_merge_size = target_symbols.size(1);
+    if (active_count <= 0 || active_count > window_count_ || token_merge_size <= 0) {
+      throw std::runtime_error("invalid background target shape");
+    }
+    if (depth_ + token_merge_size > window_bases_) {
+      throw std::runtime_error("background token step crosses window boundary");
+    }
+    at::Tensor targets = target_symbols.contiguous();
+    if (targets.scalar_type() != at::kLong &&
+        targets.scalar_type() != at::kInt &&
+        targets.scalar_type() != at::kShort) {
+      throw std::runtime_error("target_symbols must be int16, int32, or int64");
+    }
+    const auto started = Clock::now();
+    auto body = [&]<typename target_t>(const target_t *target_ptr) {
+      for (int64_t base_offset = 0; base_offset < token_merge_size; ++base_offset) {
+        predict_pipeline_step(active_count);
+        update_nc_counters_and_contexts_pipeline(
+            active_count, target_ptr + base_offset, token_merge_size);
+        record_encoded_base(active_count, 0.0, 0.0, 0.0, 0);
+      }
+    };
+    {
+      py::gil_scoped_release release;
+      if (targets.scalar_type() == at::kShort) {
+        body(targets.data_ptr<int16_t>());
+      } else if (targets.scalar_type() == at::kInt) {
+        body(targets.data_ptr<int32_t>());
+      } else {
+        body(targets.data_ptr<int64_t>());
+      }
+    }
+    const double elapsed = elapsed_seconds(started, Clock::now());
+    encode_seconds_ += elapsed;
+    background_train_seconds_ += elapsed;
+    ++background_token_steps_;
+    py::dict result;
+    result["active_windows"] = active_count;
+    result["token_merge_size"] = token_merge_size;
+    result["background_base_count"] = base_count_;
+    return result;
+  }
+
+  py::dict freeze_background_and_reset_targets(int64_t target_window_count, double initial_lm_weight) {
+    if (finished_) {
+      throw std::runtime_error("cannot freeze after finish()");
+    }
+    if (depth_ != 0 || window_group_count_ <= 0) {
+      throw std::runtime_error("freeze requires at least one complete background window group");
+    }
+    if (target_window_count <= 0) {
+      throw std::runtime_error("target_window_count must be positive");
+    }
+    if (!(initial_lm_weight >= 0.0 && initial_lm_weight <= 1.0)) {
+      throw std::runtime_error("initial_lm_weight must be in [0, 1]");
+    }
+    const int64_t background_window_count = window_count_;
+    const int64_t background_base_count = base_count_;
+    frozen_counters_ = true;
+    window_count_ = target_window_count;
+    window_group_count_ = 0;
+
+    for (StrictModel &model : models_) {
+      model.pidx.assign(static_cast<size_t>(window_count_), 0);
+      if (model.ir) {
+        model.pidx_ir.assign(static_cast<size_t>(window_count_), model.n_contexts - 1);
+      }
+      if (model.edits > 0) {
+        model.edit_pidx.assign(static_cast<size_t>(window_count_), 0);
+        model.edit_masks.assign(static_cast<size_t>(window_count_), 0);
+        model.edit_in.assign(static_cast<size_t>(window_count_), 0);
+        model.edit_symbols.assign(static_cast<size_t>(window_count_ * model.context_len), 0);
+        model.edit_best_ids.assign(static_cast<size_t>(window_count_), int8_t{-2});
+      }
+    }
+    nc_window_weights_.assign(
+        static_cast<size_t>(window_count_) * predictor_count_,
+        1.0 / static_cast<double>(predictor_count_));
+    lm_source_weights_.assign(static_cast<size_t>(window_count_), initial_lm_weight);
+    nc_source_weights_.assign(static_cast<size_t>(window_count_), 1.0 - initial_lm_weight);
+    step_target_probs_.assign(static_cast<size_t>(window_count_) * predictor_count_, 0.25);
+    step_nc_probs_.assign(static_cast<size_t>(window_count_), std::array<double, 4>{0.25, 0.25, 0.25, 0.25});
+    step_freqs_.resize(static_cast<size_t>(window_count_) * predictor_count_);
+    step_sums_.assign(static_cast<size_t>(window_count_) * predictor_count_, 4);
+    history_.assign(static_cast<size_t>(window_count_ * 17), 0);
+    pipeline_ctx17_base_hashes_.resize(static_cast<size_t>(window_count_));
+    pipeline_ctx17_ir_hashes_.resize(static_cast<size_t>(window_count_));
+    pipeline_ctx17_ir_keys_.resize(static_cast<size_t>(window_count_));
+    arithmetic_streams_.clear();
+    if (encode_arithmetic_) {
+      arithmetic_streams_.resize(static_cast<size_t>(window_count_));
+    }
+
+    base_count_ = 0;
+    emitted_symbols_ = 0;
+    fused_bits_ = 0.0;
+    lm_bits_ = 0.0;
+    nc_bits_ = 0.0;
+    background_window_count_ = background_window_count;
+    background_base_count_ = background_base_count;
+    py::dict result;
+    result["background_window_count"] = background_window_count_;
+    result["background_base_count"] = background_base_count_;
+    result["target_window_count"] = window_count_;
+    result["frozen_counters"] = frozen_counters_;
     return result;
   }
 
@@ -1317,6 +1450,11 @@ class FusedNcPrefixStreamingEncoder {
     metadata["pipeline_edit_state_update_seconds"] = pipeline_edit_state_update_seconds_;
     metadata["pipeline_context_update_seconds"] = pipeline_context_update_seconds_;
     metadata["initialized_seconds"] = initialized_seconds_;
+    metadata["frozen_counters"] = frozen_counters_;
+    metadata["background_window_count"] = background_window_count_;
+    metadata["background_base_count"] = background_base_count_;
+    metadata["background_train_seconds"] = background_train_seconds_;
+    metadata["background_token_steps"] = background_token_steps_;
     py::list model_list;
     for (const StrictModel &model : models_) {
       py::dict item;
@@ -1352,6 +1490,9 @@ class FusedNcPrefixStreamingEncoder {
   bool encode_arithmetic_ = true;
   bool collect_diagnostics_ = true;
   bool finished_ = false;
+  bool frozen_counters_ = false;
+  int64_t background_window_count_ = 0;
+  int64_t background_base_count_ = 0;
   std::vector<StrictPredictor> predictors_;
   std::vector<StrictModel> models_;
   size_t predictor_count_ = 0;
@@ -1394,6 +1535,8 @@ class FusedNcPrefixStreamingEncoder {
   double pipeline_update_commit_seconds_ = 0.0;
   double pipeline_edit_state_update_seconds_ = 0.0;
   double pipeline_context_update_seconds_ = 0.0;
+  double background_train_seconds_ = 0.0;
+  int64_t background_token_steps_ = 0;
 
   static double mean(const std::vector<double> &values) {
     if (values.empty()) {
@@ -1657,7 +1800,10 @@ class FusedNcPrefixStreamingEncoder {
       int64_t target_window_stride,
       double *nc_target_output,
       int64_t nc_target_output_base_offset,
-      int64_t nc_target_output_stride) {
+      int64_t nc_target_output_stride,
+      double *nc_probability_output,
+      int64_t nc_probability_output_base_offset,
+      int64_t nc_probability_output_stride) {
     const int64_t block_count =
         (active_count + pipeline_block_windows_ - 1) / pipeline_block_windows_;
     for (int64_t block_index = 0; block_index < block_count; ++block_index) {
@@ -1685,6 +1831,13 @@ class FusedNcPrefixStreamingEncoder {
         }
         normalize_nc_weights(nc_weights);
         const std::array<double, 4> &nc_probs = step_nc_probs_[static_cast<size_t>(window_id)];
+        if (nc_probability_output != nullptr) {
+          double *output = nc_probability_output +
+              (window_id * nc_probability_output_stride + nc_probability_output_base_offset) * 4;
+          for (int64_t symbol = 0; symbol < 4; ++symbol) {
+            output[symbol] = nc_probs[static_cast<size_t>(symbol)];
+          }
+        }
 
         std::array<double, 4> lm_probs{};
         double lm_sum = 0.0;
@@ -1762,9 +1915,10 @@ class FusedNcPrefixStreamingEncoder {
     pipeline_update_prepare_seconds_ += elapsed_seconds(prepare_started, Clock::now());
 
     const auto commit_started = Clock::now();
-    const int64_t block_count =
-        (active_count + pipeline_block_windows_ - 1) / pipeline_block_windows_;
-    for (int64_t block_index = 0; block_index < block_count; ++block_index) {
+    if (!frozen_counters_) {
+      const int64_t block_count =
+          (active_count + pipeline_block_windows_ - 1) / pipeline_block_windows_;
+      for (int64_t block_index = 0; block_index < block_count; ++block_index) {
       const int64_t begin = block_index * pipeline_block_windows_;
       const int64_t end = std::min<int64_t>(active_count, begin + pipeline_block_windows_);
       const int64_t next_begin = end;
@@ -1781,7 +1935,7 @@ class FusedNcPrefixStreamingEncoder {
         }
       }
 
-      for (int64_t window_id = begin; window_id < end; ++window_id) {
+        for (int64_t window_id = begin; window_id < end; ++window_id) {
         const uint8_t target = static_cast<uint8_t>(target_ptr[window_id * target_window_stride]);
         for (StrictModel &model : models_) {
           const uint64_t key = model.pidx[static_cast<size_t>(window_id)];
@@ -1802,6 +1956,21 @@ class FusedNcPrefixStreamingEncoder {
             strict_model_update(model, ir_key, complement_symbol(old));
             ++model.ir_updates;
           }
+        }
+        }
+      }
+    } else {
+      for (int64_t window_id = 0; window_id < active_count; ++window_id) {
+        const uint8_t target = static_cast<uint8_t>(target_ptr[window_id * target_window_stride]);
+        for (size_t model_index = 0; model_index < models_.size(); ++model_index) {
+          StrictModel &model = models_[model_index];
+          if (!model.ir || static_cast<int64_t>(model_index) == pipeline_ctx17_model_index_) {
+            continue;
+          }
+          uint64_t &ir_key = model.pidx_ir[static_cast<size_t>(window_id)];
+          ir_key = (ir_key >> 2) +
+              (static_cast<uint64_t>(complement_symbol(target)) * model.multiplier);
+          ++model.ir_updates;
         }
       }
     }
@@ -2979,7 +3148,17 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
           &FusedNcPrefixStreamingEncoder::encode_token_step,
           py::arg("lm_probabilities"),
           py::arg("target_symbols"),
-          py::arg("collect_nc_target_probabilities") = false)
+          py::arg("collect_nc_target_probabilities") = false,
+          py::arg("collect_nc_probabilities") = false)
+      .def(
+          "freeze_background_and_reset_targets",
+          &FusedNcPrefixStreamingEncoder::freeze_background_and_reset_targets,
+          py::arg("target_window_count"),
+          py::arg("initial_lm_weight") = 0.0)
+      .def(
+          "train_background_token_step",
+          &FusedNcPrefixStreamingEncoder::train_background_token_step,
+          py::arg("target_symbols"))
       .def("finish", &FusedNcPrefixStreamingEncoder::finish)
       .def("metadata", &FusedNcPrefixStreamingEncoder::metadata);
   m.def(

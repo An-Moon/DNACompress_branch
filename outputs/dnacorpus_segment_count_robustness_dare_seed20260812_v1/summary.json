@@ -1,0 +1,320 @@
+{
+  "manifest": {
+    "experiment": "dnacorpus_segment_count_robustness_v1",
+    "selection_policy": "frozen_S3_plus_seeded_random_aligned_largest_gap_fill",
+    "selection_seed": 20260812,
+    "source": "DaRe",
+    "source_path": "/home/Hu_xuanwei/DNACompress/datasets/DNACorpus/DaRe",
+    "source_bases": 62565020,
+    "source_sha256": "108490ec562f1535e66403ee7f290eafdaa8cfb20f322c99ca795463226ebe9f",
+    "segment_bases": 2097152,
+    "alignment_bases": 131072,
+    "nested_sets": {
+      "S3": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "S4": [
+        "segment_a",
+        "segment_b",
+        "segment_c",
+        "segment_d"
+      ],
+      "S5": [
+        "segment_a",
+        "segment_b",
+        "segment_c",
+        "segment_d",
+        "segment_e"
+      ],
+      "S6": [
+        "segment_a",
+        "segment_b",
+        "segment_c",
+        "segment_d",
+        "segment_e",
+        "segment_f"
+      ]
+    },
+    "segments": [
+      {
+        "name": "segment_a",
+        "stratum_start": 0,
+        "stratum_end": 20855006,
+        "start": 1703936,
+        "end": 3801088,
+        "bases": 2097152,
+        "path": "outputs/dnacorpus_context_length_probe_dare_seed20260812_w8k131k_v1/segments/segment_a.seq",
+        "sha256": "ea7be54e14579bfbcea98fab5d1aa0407bd11de4f77db0b5c3d5a55001840692"
+      },
+      {
+        "name": "segment_b",
+        "stratum_start": 20855006,
+        "stratum_end": 41710013,
+        "start": 23199744,
+        "end": 25296896,
+        "bases": 2097152,
+        "path": "outputs/dnacorpus_context_length_probe_dare_seed20260812_w8k131k_v1/segments/segment_b.seq",
+        "sha256": "8b1d59e1aae3e9cf91e475587766bfbe914cd5de12553fe110313480e67f4035"
+      },
+      {
+        "name": "segment_c",
+        "stratum_start": 41710013,
+        "stratum_end": 62565020,
+        "start": 52035584,
+        "end": 54132736,
+        "bases": 2097152,
+        "path": "outputs/dnacorpus_context_length_probe_dare_seed20260812_w8k131k_v1/segments/segment_c.seq",
+        "sha256": "e4d7407bd62bf81f7d8b18e2af7835f94727e23a3b782a4a13241a1bb5d9af47"
+      },
+      {
+        "name": "segment_d",
+        "selection_step": 4,
+        "selected_gap_start": 25296896,
+        "selected_gap_end": 52035584,
+        "start": 27000832,
+        "end": 29097984,
+        "bases": 2097152,
+        "path": "outputs/dnacorpus_segment_count_robustness_dare_seed20260812_v1/segments/segment_d.seq",
+        "sha256": "6bd9afe268768d45c565d8a06280f37cc1a4ac3f5d70ff27b0ef94962391d8e3"
+      },
+      {
+        "name": "segment_e",
+        "selection_step": 5,
+        "selected_gap_start": 29097984,
+        "selected_gap_end": 52035584,
+        "start": 31326208,
+        "end": 33423360,
+        "bases": 2097152,
+        "path": "outputs/dnacorpus_segment_count_robustness_dare_seed20260812_v1/segments/segment_e.seq",
+        "sha256": "3bf2f5f2ea4f2a7e8fdad71aae5b002a211000adba42fd3152cea15f22d43795"
+      },
+      {
+        "name": "segment_f",
+        "selection_step": 6,
+        "selected_gap_start": 3801088,
+        "selected_gap_end": 23199744,
+        "start": 14024704,
+        "end": 16121856,
+        "bases": 2097152,
+        "path": "outputs/dnacorpus_segment_count_robustness_dare_seed20260812_v1/segments/segment_f.seq",
+        "sha256": "30e9769ec6429876e3f84dc1b24ffda8e8e5f4f50dec0625d1a29b8a4c8d61bd"
+      }
+    ],
+    "base_experiment_dir": "outputs/dnacorpus_context_length_probe_dare_seed20260812_w8k131k_v1"
+  },
+  "rows": [
+    {
+      "model": "evo2_optimized",
+      "window_bases": 8192,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.464352798349463,
+      "segment_sd_bpb": 0.0858521926781321,
+      "segment_sem_bpb": 0.04956678655323919,
+      "segment_min_bpb": 1.3869847654393488,
+      "segment_max_bpb": 1.5567139943164667
+    },
+    {
+      "model": "evo2_optimized",
+      "window_bases": 8192,
+      "segment_count": 4,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c",
+        "segment_d"
+      ],
+      "total_bases": 8388608,
+      "mean_bpb": 1.4844472902695134,
+      "segment_sd_bpb": 0.08080152894920126,
+      "segment_sem_bpb": 0.04040076447460063,
+      "segment_min_bpb": 1.3869847654393488,
+      "segment_max_bpb": 1.5567139943164667
+    },
+    {
+      "model": "evo2_optimized",
+      "window_bases": 16384,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.4521040927710118,
+      "segment_sd_bpb": 0.09065062783675829,
+      "segment_sem_bpb": 0.05233716438376098,
+      "segment_min_bpb": 1.3690151087924203,
+      "segment_max_bpb": 1.5487820762446356
+    },
+    {
+      "model": "evo2_optimized",
+      "window_bases": 16384,
+      "segment_count": 4,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c",
+        "segment_d"
+      ],
+      "total_bases": 8388608,
+      "mean_bpb": 1.4729868682987544,
+      "segment_sd_bpb": 0.08498658015495121,
+      "segment_sem_bpb": 0.042493290077475605,
+      "segment_min_bpb": 1.3690151087924203,
+      "segment_max_bpb": 1.5487820762446356
+    },
+    {
+      "model": "evo2_optimized",
+      "window_bases": 32768,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.440574640520561,
+      "segment_sd_bpb": 0.0988381247352122,
+      "segment_sem_bpb": 0.05706421792207257,
+      "segment_min_bpb": 1.3466903024032888,
+      "segment_max_bpb": 1.5437153255149818
+    },
+    {
+      "model": "evo2_optimized",
+      "window_bases": 32768,
+      "segment_count": 4,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c",
+        "segment_d"
+      ],
+      "total_bases": 8388608,
+      "mean_bpb": 1.4618080089078624,
+      "segment_sd_bpb": 0.09119250882829678,
+      "segment_sem_bpb": 0.04559625441414839,
+      "segment_min_bpb": 1.3466903024032888,
+      "segment_max_bpb": 1.5437153255149818
+    },
+    {
+      "model": "evo2_optimized",
+      "window_bases": 65536,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.4319898433339422,
+      "segment_sd_bpb": 0.10333498858289976,
+      "segment_sem_bpb": 0.05966048347504409,
+      "segment_min_bpb": 1.333520173339263,
+      "segment_max_bpb": 1.5395848782433987
+    },
+    {
+      "model": "evo2_optimized",
+      "window_bases": 131072,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.4184947607467386,
+      "segment_sd_bpb": 0.11627485643327531,
+      "segment_sem_bpb": 0.06713131966173659,
+      "segment_min_bpb": 1.3029365263109869,
+      "segment_max_bpb": 1.5354732282916888
+    },
+    {
+      "model": "carbon",
+      "window_bases": 8192,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.390958404840145,
+      "segment_sd_bpb": 0.11205063950381805,
+      "segment_sem_bpb": 0.06469246688039906,
+      "segment_min_bpb": 1.292635772971354,
+      "segment_max_bpb": 1.5129540592421222
+    },
+    {
+      "model": "carbon",
+      "window_bases": 16384,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.373617779362945,
+      "segment_sd_bpb": 0.11779844456397083,
+      "segment_sem_bpb": 0.06801096367912778,
+      "segment_min_bpb": 1.2685576919834767,
+      "segment_max_bpb": 1.500969324451373
+    },
+    {
+      "model": "carbon",
+      "window_bases": 32768,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.3607938179561152,
+      "segment_sd_bpb": 0.12451492539796682,
+      "segment_sem_bpb": 0.07188872569664231,
+      "segment_min_bpb": 1.2466422631710778,
+      "segment_max_bpb": 1.4935731854351033
+    },
+    {
+      "model": "carbon",
+      "window_bases": 65536,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.3541137825369989,
+      "segment_sd_bpb": 0.1275710135735033,
+      "segment_sem_bpb": 0.07365315902745555,
+      "segment_min_bpb": 1.2372855061870986,
+      "segment_max_bpb": 1.4902307449077559
+    },
+    {
+      "model": "carbon",
+      "window_bases": 131072,
+      "segment_count": 3,
+      "segments": [
+        "segment_a",
+        "segment_b",
+        "segment_c"
+      ],
+      "total_bases": 6291456,
+      "mean_bpb": 1.3447809600485563,
+      "segment_sd_bpb": 0.13672277678401645,
+      "segment_sem_bpb": 0.07893693198060502,
+      "segment_min_bpb": 1.2155418300696892,
+      "segment_max_bpb": 1.4879247452077
+    }
+  ]
+}

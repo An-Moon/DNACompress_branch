@@ -1,0 +1,105 @@
+{
+  "experiment": "dnacorpus_segment_count_robustness_v1",
+  "selection_policy": "frozen_S3_plus_seeded_random_aligned_largest_gap_fill",
+  "selection_seed": 20260812,
+  "source": "OrSa",
+  "source_path": "/home/Hu_xuanwei/DNACompress/datasets/DNACorpus/OrSa",
+  "source_bases": 43262523,
+  "source_sha256": "3116ea90b824997cc4f3b8c1304c267e0e858524aa302fb87f883e4ab5c763d4",
+  "segment_bases": 2097152,
+  "alignment_bases": 131072,
+  "nested_sets": {
+    "S3": [
+      "segment_a",
+      "segment_b",
+      "segment_c"
+    ],
+    "S4": [
+      "segment_a",
+      "segment_b",
+      "segment_c",
+      "segment_d"
+    ],
+    "S5": [
+      "segment_a",
+      "segment_b",
+      "segment_c",
+      "segment_d",
+      "segment_e"
+    ],
+    "S6": [
+      "segment_a",
+      "segment_b",
+      "segment_c",
+      "segment_d",
+      "segment_e",
+      "segment_f"
+    ]
+  },
+  "segments": [
+    {
+      "name": "segment_a",
+      "stratum_start": 0,
+      "stratum_end": 14420841,
+      "start": 786432,
+      "end": 2883584,
+      "bases": 2097152,
+      "path": "outputs/dnacorpus_context_length_probe_orsa_seed20260812_w8k131k_v1/segments/segment_a.seq",
+      "sha256": "9d35585c9dc8e9aa080d29827d46de9e84dbb0822e55bfcced46892c224b6f81"
+    },
+    {
+      "name": "segment_b",
+      "stratum_start": 14420841,
+      "stratum_end": 28841682,
+      "start": 15597568,
+      "end": 17694720,
+      "bases": 2097152,
+      "path": "outputs/dnacorpus_context_length_probe_orsa_seed20260812_w8k131k_v1/segments/segment_b.seq",
+      "sha256": "84e633017aec8c66502de752884fa649612534cc259a891d67a2c8fe6d888bee"
+    },
+    {
+      "name": "segment_c",
+      "stratum_start": 28841682,
+      "stratum_end": 43262523,
+      "start": 34078720,
+      "end": 36175872,
+      "bases": 2097152,
+      "path": "outputs/dnacorpus_context_length_probe_orsa_seed20260812_w8k131k_v1/segments/segment_c.seq",
+      "sha256": "1ab5f2e23d27164429ef7702597af29b24d159fcec3b991dac53e09ec93758c8"
+    },
+    {
+      "name": "segment_d",
+      "selection_step": 4,
+      "selected_gap_start": 17694720,
+      "selected_gap_end": 34078720,
+      "start": 18481152,
+      "end": 20578304,
+      "bases": 2097152,
+      "path": "outputs/dnacorpus_segment_count_robustness_orsa_seed20260812_v1/segments/segment_d.seq",
+      "sha256": "07115c183c666a9ce93ee568579da3ca3d358685a4aa607fc21d2dc1da0fef9b"
+    },
+    {
+      "name": "segment_e",
+      "selection_step": 5,
+      "selected_gap_start": 20578304,
+      "selected_gap_end": 34078720,
+      "start": 21626880,
+      "end": 23724032,
+      "bases": 2097152,
+      "path": "outputs/dnacorpus_segment_count_robustness_orsa_seed20260812_v1/segments/segment_e.seq",
+      "sha256": "92495834c5d883a2a225a6d80867d5a492c019eca76752c635f1bea0aa46702c"
+    },
+    {
+      "name": "segment_f",
+      "selection_step": 6,
+      "selected_gap_start": 2883584,
+      "selected_gap_end": 15597568,
+      "start": 7995392,
+      "end": 10092544,
+      "bases": 2097152,
+      "path": "outputs/dnacorpus_segment_count_robustness_orsa_seed20260812_v1/segments/segment_f.seq",
+      "sha256": "f27d22b6cd4179808a1c1ac1e0487c533bab47777b5e2fa6c2142ac17ed21fde"
+    }
+  ],
+  "base_experiment_dir": "outputs/dnacorpus_context_length_probe_orsa_seed20260812_w8k131k_v1"
+}

@@ -1,0 +1,43 @@
+{
+  "experiment": "dnacorpus_context_length_probe_v1",
+  "selection_policy": "three_equal_coordinate_strata_seeded_random_aligned_nonoverlap",
+  "selection_seed": 20260812,
+  "source": "HoSa",
+  "source_path": "datasets/DNACorpus/HoSa",
+  "source_bases": 189752667,
+  "source_sha256": "55860d11cc9039d83b5faa96f5bacd748fab2a3890e4676bd7f2a1ddec0a9677",
+  "segment_bases": 9437184,
+  "alignment_bases": 131072,
+  "segments": [
+    {
+      "name": "segment_a",
+      "stratum_start": 0,
+      "stratum_end": 63250889,
+      "start": 3538944,
+      "end": 12976128,
+      "bases": 9437184,
+      "path": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/segments/segment_a.seq",
+      "sha256": "bdc129581ad690119e5d81d77f3bb2af7d461172edf7a599313864c8300ec239"
+    },
+    {
+      "name": "segment_b",
+      "stratum_start": 63250889,
+      "stratum_end": 126501778,
+      "start": 67764224,
+      "end": 77201408,
+      "bases": 9437184,
+      "path": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/segments/segment_b.seq",
+      "sha256": "9d632ee40a4098b7da7007f2603aea09a12424b14851f8baec9f6c63ce18e216"
+    },
+    {
+      "name": "segment_c",
+      "stratum_start": 126501778,
+      "stratum_end": 189752667,
+      "start": 147062784,
+      "end": 156499968,
+      "bases": 9437184,
+      "path": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/segments/segment_c.seq",
+      "sha256": "ae949e3141e49901ea59b440dad8950f46934e3786bc00f0fee96ec817348df3"
+    }
+  ]
+}

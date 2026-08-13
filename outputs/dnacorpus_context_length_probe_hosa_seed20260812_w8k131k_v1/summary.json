@@ -1,0 +1,301 @@
+{
+  "source": "HoSa",
+  "window_bases": [
+    8192,
+    16384,
+    32768,
+    65536,
+    131072
+  ],
+  "segment_bases": 9437184,
+  "common_mask_block_bases": 8192,
+  "trace_policy": "retain_source_target_probability_traces",
+  "fusion_trace_policy": "summary_only_recomputable_from_source_traces",
+  "rows": [
+    {
+      "source": "HoSa",
+      "segment": "segment_a",
+      "segment_start": 3538944,
+      "segment_bases": 9437184,
+      "window_bases": 8192,
+      "window_count": 1152,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_a/w008192/evo2_optimized",
+          "trace_checksum_sha256": "d659262fd586196e1e99ae4c2468746b90235746621d4f829223d98b047ed2bb",
+          "row_count": 9437184,
+          "native_bpb": 1.4593770137833657,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.4593110117095998
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_a",
+      "segment_start": 3538944,
+      "segment_bases": 9437184,
+      "window_bases": 16384,
+      "window_count": 576,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_a/w016384/evo2_optimized",
+          "trace_checksum_sha256": "24ea7aa524754cc8565ae73077dd4a9a7c54908997449bc5c0a61a684ed6163b",
+          "row_count": 9437184,
+          "native_bpb": 1.4485276246368792,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.4484966148704141
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_a",
+      "segment_start": 3538944,
+      "segment_bases": 9437184,
+      "window_bases": 32768,
+      "window_count": 288,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_a/w032768/evo2_optimized",
+          "trace_checksum_sha256": "dc6b88cec9c278d20d4b9e68e3ae1e70c77aedc342fbbe7c0f380c95befc707e",
+          "row_count": 9437184,
+          "native_bpb": 1.4403975943140017,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.4403827128044473
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_a",
+      "segment_start": 3538944,
+      "segment_bases": 9437184,
+      "window_bases": 65536,
+      "window_count": 144,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_a/w065536/evo2_optimized",
+          "trace_checksum_sha256": "b44b22f757b253a373e924d805d8bffdfce48a0cd585bca1bdd033a782df790d",
+          "row_count": 9437184,
+          "native_bpb": 1.4345367816294923,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.43452886474232
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_a",
+      "segment_start": 3538944,
+      "segment_bases": 9437184,
+      "window_bases": 131072,
+      "window_count": 72,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_a/w131072/evo2_optimized",
+          "trace_checksum_sha256": "e353a7e47105ebc229c3d06316a957684d236bc2b34ecb20847acf3ecbc5749a",
+          "row_count": 9437184,
+          "native_bpb": 1.4300152653679978,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.430012394293246
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_b",
+      "segment_start": 67764224,
+      "segment_bases": 9437184,
+      "window_bases": 8192,
+      "window_count": 1152,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_b/w008192/evo2_optimized",
+          "trace_checksum_sha256": "810c38f5d28f61ea518270be2751c50551122454974e27e4ba5796fd3e06cd06",
+          "row_count": 9437184,
+          "native_bpb": 1.3898777385671086,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.3898032516593521
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_b",
+      "segment_start": 67764224,
+      "segment_bases": 9437184,
+      "window_bases": 16384,
+      "window_count": 576,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_b/w016384/evo2_optimized",
+          "trace_checksum_sha256": "638f8ba4add80ed8e01dcf67415c33adddd6df97ab6ae736498bad26ca24e57c",
+          "row_count": 9437184,
+          "native_bpb": 1.3838064967100003,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.3837718482293946
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_b",
+      "segment_start": 67764224,
+      "segment_bases": 9437184,
+      "window_bases": 32768,
+      "window_count": 288,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_b/w032768/evo2_optimized",
+          "trace_checksum_sha256": "a6cfd5e59b4514d4618d0566e1c6c33031e8acfee0d60940020fbc5c0ee7c08b",
+          "row_count": 9437184,
+          "native_bpb": 1.3765829063705488,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.3765717587220985
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_b",
+      "segment_start": 67764224,
+      "segment_bases": 9437184,
+      "window_bases": 65536,
+      "window_count": 144,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_b/w065536/evo2_optimized",
+          "trace_checksum_sha256": "f38114f5847149e0af9647185e5874bad3d51123d5f7eaefa7f09729459ede78",
+          "row_count": 9437184,
+          "native_bpb": 1.3671095236440358,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.367109731779262
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_b",
+      "segment_start": 67764224,
+      "segment_bases": 9437184,
+      "window_bases": 131072,
+      "window_count": 72,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_b/w131072/evo2_optimized",
+          "trace_checksum_sha256": "c4608d575aae70b0880e68fa2acdbb506ab360b7b4b901606065ab2b9acf4289",
+          "row_count": 9437184,
+          "native_bpb": 1.357021844241313,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.3570278697828944
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_c",
+      "segment_start": 147062784,
+      "segment_bases": 9437184,
+      "window_bases": 8192,
+      "window_count": 1152,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_c/w008192/evo2_optimized",
+          "trace_checksum_sha256": "ef59de2db613dd942bd200900a6eef267b865b4e30bd67389b34f135bad70f1b",
+          "row_count": 9437184,
+          "native_bpb": 1.4638722454939144,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.4638067922214804
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_c",
+      "segment_start": 147062784,
+      "segment_bases": 9437184,
+      "window_bases": 16384,
+      "window_count": 576,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_c/w016384/evo2_optimized",
+          "trace_checksum_sha256": "5432e38bdebd98064845f453302dc441f0c4f6748225aadc825dba1dfb76dffe",
+          "row_count": 9437184,
+          "native_bpb": 1.4599014334102984,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.4598710944379758
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_c",
+      "segment_start": 147062784,
+      "segment_bases": 9437184,
+      "window_bases": 32768,
+      "window_count": 288,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_c/w032768/evo2_optimized",
+          "trace_checksum_sha256": "04a210dd598ca8f04fd8df46e742b29abdf8d216eeda330fea52d7e6e7986191",
+          "row_count": 9437184,
+          "native_bpb": 1.4577957911337838,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.4577829213675164
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_c",
+      "segment_start": 147062784,
+      "segment_bases": 9437184,
+      "window_bases": 65536,
+      "window_count": 144,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_c/w065536/evo2_optimized",
+          "trace_checksum_sha256": "abe333bcb13e17bb58e098926067b800a3e61796626c4af5542ab011aa620fe9",
+          "row_count": 9437184,
+          "native_bpb": 1.4566241113303902,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.456620473011384
+        }
+      },
+      "fusions": {}
+    },
+    {
+      "source": "HoSa",
+      "segment": "segment_c",
+      "segment_start": 147062784,
+      "segment_bases": 9437184,
+      "window_bases": 131072,
+      "window_count": 72,
+      "models": {
+        "evo2_optimized": {
+          "trace": "outputs/dnacorpus_context_length_probe_hosa_seed20260812_w8k131k_v1/traces_position_major/segment_c/w131072/evo2_optimized",
+          "trace_checksum_sha256": "7fa27ee03f2af89bc83b4ae8862df638e310ba2f2baef672ec62950ecf338ad1",
+          "row_count": 9437184,
+          "native_bpb": 1.4558776255848629,
+          "common_mask_bases": 9436032,
+          "common_mask_bpb": 1.4558786718330634
+        }
+      },
+      "fusions": {}
+    }
+  ]
+}

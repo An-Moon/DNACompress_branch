@@ -49,7 +49,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from dna_compress.experiment import resolve_device  # noqa: E402
 from dna_compress.fused_lm_nc_prefix_codec import (  # noqa: E402
     MegabyteStreamingAdapter,
     _carbon_conditional_log_probs_to_base_steps,
@@ -70,6 +69,13 @@ from dna_compress.tokenization import normalize_alphabet  # noqa: E402
 
 
 DEFAULT_MEGABYTE_RUN_DIR = REPO_ROOT / "outputs" / "dna_megabyte_large_opengenome2_11"
+
+
+def resolve_device(device_name: str) -> torch.device:
+    """Resolve a trace device without importing training/data-index dependencies."""
+    if device_name == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return torch.device(device_name)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -121,6 +127,52 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument("--use-kernels", action=argparse.BooleanOptionalAction, default=False, help="Evo2 use_kernels flag.")
+    parser.add_argument(
+        "--evo2-ungated-hcs-kernel",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Route Evo2's non-gated short depthwise FIR through Vortex's Triton HCS kernel.",
+    )
+    parser.add_argument(
+        "--evo2-ungated-hcs-backend",
+        choices=("triton", "torch_chunked"),
+        default="triton",
+        help=(
+            "Backend for the non-gated short FIR dispatch. torch_chunked uses "
+            "the upstream PyTorch conv1d formula on independent channel chunks."
+        ),
+    )
+    parser.add_argument(
+        "--evo2-ungated-hcs-chunk-channels",
+        type=int,
+        default=1024,
+        help="Independent channel chunk size for the non-gated Evo2 HCS Triton kernel.",
+    )
+    parser.add_argument(
+        "--evo2-hcm-chunk-channels",
+        type=int,
+        default=128,
+        help="Independent channel chunk size for Evo2's HCM FFT kernel; zero disables chunking.",
+    )
+    parser.add_argument("--evo2-hcl-chunk-channels", type=int, default=128)
+    parser.add_argument("--evo2-hcm-backend", choices=("triton", "torch_chunked"), default="triton")
+    parser.add_argument("--evo2-hcl-backend", choices=("triton", "torch_chunked"), default="triton")
+    parser.add_argument("--evo2-disable-hcm-kernel", action="store_true")
+    parser.add_argument("--evo2-disable-hcl-kernel", action="store_true")
+    parser.add_argument(
+        "--evo2-filter-chunk-systems",
+        type=int,
+        default=0,
+        help=(
+            "Chunk Evo2 Hyena compute_filter along the independent system/D dimension. "
+            "Zero keeps the upstream implementation."
+        ),
+    )
+    parser.add_argument(
+        "--evo2-force-filter-chunking",
+        action="store_true",
+        help="Use the chunked PyTorch modal-filter build even when HCL kernels are enabled.",
+    )
     parser.add_argument(
         "--evo2-probability-mode",
         choices=("streaming_cache", "full_forward"),
@@ -1054,11 +1106,221 @@ def _carbon_target_probabilities_full_forward(
     return sequence, core_sequence, target_prob, target_symbol, emit_position, metadata
 
 
-def _load_evo2(*, model_name: str, local_path: Path, use_kernels: bool) -> Any:
+def _install_evo2_filter_chunking(chunk_systems: int, force: bool = False) -> None:
+    if int(chunk_systems) <= 0:
+        return
+    from vortex.model import model as vortex_model
+
+    cls = vortex_model.HyenaCascade
+    patch_key = (int(chunk_systems), bool(force))
+    if getattr(cls, "_dna_compress_filter_chunking", None) == patch_key:
+        return
+    original = cls.compute_filter
+
+    def compute_filter_chunked(self: Any, L: int, device: Any) -> Any:
+        if self.engine.use_hcl_kernel and not bool(force):
+            return original(self, L, device)
+        self.update_time(L, device)
+        filter_dtype = torch.float32
+        residues = self.residues.to(filter_dtype)
+        log_poles = self.log_poles.to(filter_dtype)
+        systems = int(residues.shape[0])
+        output = torch.empty((systems, int(L)), dtype=filter_dtype, device=device)
+        for start in range(0, systems, int(chunk_systems)):
+            end = min(start + int(chunk_systems), systems)
+            output[start:end] = (
+                residues[start:end, ..., None]
+                * (log_poles[start:end] * self.t).exp()
+            ).sum(1)
+        return output[None], filter_dtype, log_poles, residues
+
+    cls.compute_filter = compute_filter_chunked
+    cls._dna_compress_filter_chunking = patch_key
+
+
+def _install_evo2_ungated_hcs_dispatch(chunk_channels: int, backend: str = "triton") -> None:
+    import torch.nn.functional as torch_f
+    from vortex.model.engine import HyenaInferenceEngine
+    from vortex.ops.hcs_interface import hcs_depthwise_conv
+
+    cls = HyenaInferenceEngine
+    patch_key = (int(chunk_channels), str(backend))
+    if getattr(cls, "_dna_compress_ungated_hcs_dispatch", None) == patch_key:
+        return
+    original = cls.parallel_fir
+
+    def parallel_fir_with_ungated_hcs(
+        self: Any,
+        fir_fn: Any,
+        u: torch.Tensor,
+        weight: torch.Tensor,
+        bias: torch.Tensor | None,
+        L: int,
+        dims: Any,
+        groups: int | None = None,
+        gated_bias: bool = False,
+        column_split_hyena: bool = False,
+        dim_last: bool = True,
+        fir_length: int = 3,
+        gate: bool = False,
+        inference_params: Any = None,
+        prefill_mode: Any = None,
+        padding_mask: Any = None,
+    ) -> Any:
+        if (
+            not gate
+            and bool(self.use_hcs_kernel)
+            and fir_fn is torch_f.conv1d
+            and int(fir_length) < 128
+        ):
+            if dim_last:
+                u = u.permute(0, 2, 1)
+            data_dtype = u.dtype
+            channels = int(u.shape[1])
+            step = max(1, int(chunk_channels))
+            z = torch.empty_like(u, dtype=data_dtype)
+            for start in range(0, channels, step):
+                end = min(start + step, channels)
+                u_chunk = u[:, start:end].float()
+                weight_chunk = weight[start:end].float()
+                if backend == "torch_chunked":
+                    z_chunk = torch_f.conv1d(
+                        u_chunk,
+                        weight_chunk,
+                        bias=None,
+                        stride=1,
+                        padding=int(fir_length) - 1,
+                        groups=end - start,
+                    )[..., :L]
+                else:
+                    z_chunk = hcs_depthwise_conv(u=u_chunk, weight=weight_chunk)
+                z[:, start:end] = z_chunk.to(data_dtype)
+            if bias is not None:
+                z = z + bias[None, :, None]
+            if isinstance(padding_mask, torch.Tensor):
+                z = z * padding_mask[:, None]
+            fir_state = u[..., -int(fir_length) + 1 :] if inference_params is not None else None
+            return z, fir_state
+        return original(
+            self, fir_fn, u, weight, bias, L, dims, groups=groups,
+            gated_bias=gated_bias, column_split_hyena=column_split_hyena,
+            dim_last=dim_last, fir_length=fir_length, gate=gate,
+            inference_params=inference_params, prefill_mode=prefill_mode,
+            padding_mask=padding_mask,
+        )
+
+    cls.parallel_fir = parallel_fir_with_ungated_hcs
+    cls._dna_compress_ungated_hcs_dispatch = patch_key
+
+
+def _install_evo2_hcm_chunking(chunk_channels: int, backend: str = "triton") -> None:
+    if int(chunk_channels) <= 0:
+        return
+    from vortex.model import engine as vortex_engine
+
+    patch_key = (int(chunk_channels), str(backend))
+    if getattr(vortex_engine, "_dna_compress_hcm_chunking", None) == patch_key:
+        return
+    original = vortex_engine.hcm_fft_conv
+    if original is None:
+        raise RuntimeError("Vortex HCM kernel is unavailable")
+
+    def hcm_fft_conv_chunked(u: torch.Tensor, k: torch.Tensor, D: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        channels = int(u.shape[1])
+        step = max(1, int(chunk_channels))
+        output = torch.empty_like(u)
+        for start in range(0, channels, step):
+            end = min(start + step, channels)
+            dispatch = vortex_engine.fftconv_func if backend == "torch_chunked" else original
+            output[:, start:end] = dispatch(
+                u[:, start:end], k[start:end], D[start:end], *args, **kwargs
+            )
+        return output
+
+    vortex_engine.hcm_fft_conv = hcm_fft_conv_chunked
+    vortex_engine._dna_compress_hcm_chunking = patch_key
+
+
+def _install_evo2_hcl_chunking(chunk_channels: int, backend: str = "triton") -> None:
+    if int(chunk_channels) <= 0:
+        return
+    from vortex.model import engine as vortex_engine
+
+    patch_key = (int(chunk_channels), str(backend))
+    if getattr(vortex_engine, "_dna_compress_hcl_chunking", None) == patch_key:
+        return
+    original = vortex_engine.hcl_fft_conv
+    if original is None:
+        raise RuntimeError("Vortex HCL kernel is unavailable")
+
+    def hcl_fft_conv_chunked(
+        h: torch.Tensor, x1v: torch.Tensor, x2: torch.Tensor, D: torch.Tensor, L: int, fft_size: int
+    ) -> torch.Tensor:
+        channels = int(x1v.shape[1])
+        step = max(1, int(chunk_channels))
+        output = torch.empty_like(x1v)
+        for start in range(0, channels, step):
+            end = min(start + step, channels)
+            if backend == "torch_chunked":
+                h_chunk = h[:, start:end].float()
+                x1v_chunk = x1v[:, start:end]
+                x2_chunk = x2[:, start:end]
+                h_f = torch.fft.rfft(h_chunk, n=fft_size) / fft_size
+                x_f = torch.fft.rfft(x1v_chunk.float(), n=fft_size)
+                y = torch.fft.irfft(x_f * h_f, n=fft_size, norm="forward")[..., :L]
+                output[:, start:end] = (
+                    y.to(x1v_chunk.dtype) + x1v_chunk * D[start:end, None]
+                ) * x2_chunk
+            else:
+                output[:, start:end] = original(
+                    h[:, start:end], x1v[:, start:end], x2[:, start:end], D[start:end], L, fft_size
+                )
+        return output
+
+    vortex_engine.hcl_fft_conv = hcl_fft_conv_chunked
+    vortex_engine._dna_compress_hcl_chunking = patch_key
+
+
+def _load_evo2(
+    *,
+    model_name: str,
+    local_path: Path,
+    use_kernels: bool,
+    filter_chunk_systems: int = 0,
+    force_filter_chunking: bool = False,
+    ungated_hcs_kernel: bool = False,
+    ungated_hcs_backend: str = "triton",
+    ungated_hcs_chunk_channels: int = 1024,
+    hcm_chunk_channels: int = 128,
+    hcl_chunk_channels: int = 128,
+    hcm_backend: str = "triton",
+    hcl_backend: str = "triton",
+    disable_hcm_kernel: bool = False,
+    disable_hcl_kernel: bool = False,
+) -> Any:
     from evo2 import Evo2
 
+    if bool(ungated_hcs_kernel):
+        _install_evo2_ungated_hcs_dispatch(
+            int(ungated_hcs_chunk_channels), str(ungated_hcs_backend)
+        )
+    if bool(use_kernels):
+        _install_evo2_hcm_chunking(int(hcm_chunk_channels), str(hcm_backend))
+        _install_evo2_hcl_chunking(int(hcl_chunk_channels), str(hcl_backend))
+    _install_evo2_filter_chunking(int(filter_chunk_systems), bool(force_filter_chunking))
     torch.serialization.add_safe_globals([codecs.encode])
-    return Evo2(model_name, local_path=str(local_path), use_kernels=use_kernels)
+    model = Evo2(model_name, local_path=str(local_path), use_kernels=use_kernels)
+    model_root = getattr(model, "model", model)
+    if bool(disable_hcm_kernel) or bool(disable_hcl_kernel):
+        for module in model_root.modules():
+            engine = getattr(module, "engine", None)
+            if engine is None:
+                continue
+            if bool(disable_hcm_kernel):
+                engine.use_hcm_kernel = False
+            if bool(disable_hcl_kernel):
+                engine.use_hcl_kernel = False
+    return model
 
 
 def _set_evo2_offsets(inference_params: dict[str, Any], offset: int) -> None:
@@ -1264,6 +1526,14 @@ def _evo2_target_probabilities_full_forward(
             positions = base_start + np.arange(1, length, dtype=np.int64)
             target_prob_by_position[positions] = gathered_cpu[row, : length - 1].astype(np.float64, copy=False)
 
+        # Do not retain the previous window's full logits/FFT-related outputs
+        # while entering the next long-window forward pass. This is lifetime
+        # management only; probabilities have already been copied to NumPy.
+        del outputs, logits, log_probs, targets, gathered, tokens
+        del gathered_cpu, tokens_cpu, token_batch
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
     if np.any(np.isnan(target_prob_by_position)):
         missing = int(np.count_nonzero(np.isnan(target_prob_by_position)))
         raise RuntimeError(f"Evo2 full-forward trace missed {missing} target base probabilities")
@@ -1441,7 +1711,22 @@ def main() -> None:
         local_path = Path(args.local_path or "third_party/evo2_7b_base/evo2_7b_base.pt")
         model_name = str(args.model_name or "evo2_7b_base")
         dtype_name = str(args.dtype or "bfloat16")
-        model = _load_evo2(model_name=model_name, local_path=local_path, use_kernels=bool(args.use_kernels))
+        model = _load_evo2(
+            model_name=model_name,
+            local_path=local_path,
+            use_kernels=bool(args.use_kernels),
+            filter_chunk_systems=int(args.evo2_filter_chunk_systems),
+            force_filter_chunking=bool(args.evo2_force_filter_chunking),
+            ungated_hcs_kernel=bool(args.evo2_ungated_hcs_kernel),
+            ungated_hcs_backend=str(args.evo2_ungated_hcs_backend),
+            ungated_hcs_chunk_channels=int(args.evo2_ungated_hcs_chunk_channels),
+            hcm_chunk_channels=int(args.evo2_hcm_chunk_channels),
+            hcl_chunk_channels=int(args.evo2_hcl_chunk_channels),
+            hcm_backend=str(args.evo2_hcm_backend),
+            hcl_backend=str(args.evo2_hcl_backend),
+            disable_hcm_kernel=bool(args.evo2_disable_hcm_kernel),
+            disable_hcl_kernel=bool(args.evo2_disable_hcl_kernel),
+        )
         window_bases = int(args.nc_prefix_window_bases)
         token_merge_size = 1
         evo2_probability_mode = str(args.evo2_probability_mode)
@@ -1476,6 +1761,17 @@ def main() -> None:
             "device": str(device),
             "dtype": dtype_name,
             "use_kernels": bool(args.use_kernels),
+            "ungated_hcs_kernel": bool(args.evo2_ungated_hcs_kernel),
+            "ungated_hcs_backend": str(args.evo2_ungated_hcs_backend),
+            "ungated_hcs_chunk_channels": int(args.evo2_ungated_hcs_chunk_channels),
+            "hcm_chunk_channels": int(args.evo2_hcm_chunk_channels),
+            "hcl_chunk_channels": int(args.evo2_hcl_chunk_channels),
+            "hcm_backend": str(args.evo2_hcm_backend),
+            "hcl_backend": str(args.evo2_hcl_backend),
+            "disable_hcm_kernel": bool(args.evo2_disable_hcm_kernel),
+            "disable_hcl_kernel": bool(args.evo2_disable_hcl_kernel),
+            "filter_chunk_systems": int(args.evo2_filter_chunk_systems),
+            "force_filter_chunking": bool(args.evo2_force_filter_chunking),
             "evo2_probability_mode": evo2_probability_mode,
             **metadata,
         }

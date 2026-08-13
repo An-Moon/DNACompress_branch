@@ -1,0 +1,27 @@
+{
+  "source": "DaRe",
+  "segment": "segment_b",
+  "segment_start": 23199744,
+  "segment_bases": 2097152,
+  "window_bases": 131072,
+  "window_count": 16,
+  "models": {
+    "carbon": {
+      "trace": "outputs/dnacorpus_context_length_probe_dare_seed20260812_w8k131k_v1/traces_position_major/segment_b/w131072/carbon",
+      "trace_checksum_sha256": "4d5538d07a79db828837d6d28d7d3f86b2671cf4b2959dc53e5c53cbb7721cfe",
+      "row_count": 2097152,
+      "native_bpb": 1.4879247452077007,
+      "common_mask_bases": 2096896,
+      "common_mask_bpb": 1.487927485388241
+    },
+    "evo2_optimized": {
+      "trace": "outputs/dnacorpus_context_length_probe_dare_seed20260812_w8k131k_v1/traces_position_major/segment_b/w131072/evo2_optimized",
+      "trace_checksum_sha256": "c594289b935f07fdafa4b862d70a3bcca64342df18253ed024c22c52fbbaf522",
+      "row_count": 2097152,
+      "native_bpb": 1.5354732282916894,
+      "common_mask_bases": 2096896,
+      "common_mask_bpb": 1.5354782138631307
+    }
+  },
+  "fusions": {}
+}
